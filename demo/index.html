@@ -1,0 +1,21 @@
+<!-- Minimal standalone consumer of the built Station3D package. -->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Station3D demo</title>
+  <link rel="stylesheet" href="./demo.css">
+</head>
+<body>
+  <main>
+    <p class="eyebrow">Station3D alpha</p>
+    <h1>Explore a provider-backed 3D world</h1>
+    <p>This synthetic fixture proves that the engine bundle starts without the Zagreb application or a private service.</p>
+    <button id="open-world" type="button" disabled>Loading engine…</button>
+    <p id="status" role="status">Preparing the browser bundle.</p>
+  </main>
+  <script src="/website/station-3d/dist/loader.js"></script>
+  <script type="module" src="./demo.js"></script>
+</body>
+</html>

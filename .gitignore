@@ -1,0 +1,72 @@
+.DS_Store
+.env
+node_modules/
+test-results/
+playwright-report/
+.last-run.json
+server_log.txt
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+coverage/
+dist/
+output/
+__pycache__/
+# Default output of tools/walk-probe.mjs.
+walk-probe.png
+valhalla_data/
+.local-data/
+# Private, full laptop DB recovery dumps. Never serve or publish these files.
+/.local-db-backups/
+scripts/cache/
+data/
+# Generated, not authored. build/ holds solved rail profiles and the station /
+# level-crossing extracts the scripts under scripts/ write; tmp/ is scratch.
+# They were tracked by accident and had grown to 52 MB of JSON that nothing
+# reads at runtime and the deploy explicitly keeps out of the docroot — every
+# server checkout was pulling them for nothing. Regenerate with the
+# scripts/build-*.mjs that produced them; the imported projects themselves live
+# in the database.
+build/
+tmp/
+recordings/
+# Local playtest captures stay on disk; authored reports and recorder code ship.
+docs/campaign-playtest-2026-09-05/
+docs/campaign-playtest-2026-09-08/
+docs/campaign-playtest-fixes-2026-09-08/*
+!docs/campaign-playtest-fixes-2026-09-08/perf-recorder.mjs
+!docs/campaign-playtest-fixes-2026-09-08/perf-summary.mjs
+docs/campaign-presentation-fixes-2026-09-07/
+docs/campaign-selected-integration-2026-09-07/
+/foot.png
+# Proposal fixtures dumped from a live consensus-builder backend for offline /
+# deterministic walk-mode testing (?consensusApi=fixture). A whole named plan
+# is ~300 files / 7 MB — regenerate by curling /proposals/<id>; the handful of
+# small fixtures committed before this rule stay tracked (ignore is untracked-
+# only) and keep working.
+website/dev-proposal-fixtures/
+# Machine-generated profiler captures, anywhere under performance/. The
+# convention was already stated in performance/README.md ("Generated JSON and
+# screenshots belong in performance/results/, which is intentionally ignored by
+# git") and performance/results/.gitignore, but an archive directory outside
+# results/ slipped 28,666 lines of capture JSON into the tree — enough to push
+# the branch diff past what review tooling accepts. The measured NUMBERS belong
+# in the decision record beside them; the raw payloads do not belong in git.
+performance/**/*.json
+# All of results/ is generated: bake-CLI snapshots and trial binaries, harness
+# logs, screenshots. Ignore the directory itself rather than each run's naming
+# scheme — listing them one by one let a new run kind through again (54 .log
+# files under crowd-faces-2026-09-08-run2, beside 2.8 GB of captures).
+performance/station3d/results/
+!performance/station3d/scenarios.json
+!performance/station3d/ground.scenarios.json
+!performance/station3d/surface-audit.budget.json
+!performance/station3d/paired.scenarios.json
+!performance/station3d/*.summary.json
+# Generated from pinned npm packages by build:station3d and shipped with the
+# site. Keeping the copies out of git avoids maintaining vendored source twice.
+website/vendor/
+# Blender's automatic backup of the previous save (.blend1, .blend2, …) and the
+# export logs a study run leaves beside its GLB; the .blend source is tracked.
+*.blend[0-9]*
+.*-export.log

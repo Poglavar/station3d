@@ -1,0 +1,386 @@
+[
+  {
+    "id": "study-fleet-citycar",
+    "label": "City car",
+    "category": "vehicles",
+    "collection": "studies",
+    "fleet": "current",
+    "model": "website/station-3d/models/vehicles/fleet/citycar.json",
+    "source": "website/station-3d/models/vehicles/studies/fleet/build_fleet.py",
+    "format": "json",
+    "yaw": 3.141592653589793,
+    "nightEmissiveMultiplier": 2.2,
+    "description": "Detailed fleet study, latest continuous-body construction. 3.3 m nominal length. Blender generator and reference renders are stored beside the export.",
+    "referenceImages": [
+      {
+        "label": "Three-quarter",
+        "path": "website/station-3d/models/vehicles/studies/fleet/renders/citycar-hero.png"
+      },
+      {
+        "label": "Side",
+        "path": "website/station-3d/models/vehicles/studies/fleet/renders/citycar-side.png"
+      }
+    ],
+    "provenance": "Blender"
+  },
+  {
+    "id": "study-fleet-hatchback",
+    "label": "Hatchback car",
+    "category": "vehicles",
+    "collection": "studies",
+    "fleet": "current",
+    "model": "website/station-3d/models/vehicles/fleet/hatchback.json",
+    "source": "website/station-3d/models/vehicles/studies/fleet/build_fleet.py",
+    "format": "json",
+    "yaw": 3.141592653589793,
+    "nightEmissiveMultiplier": 2.2,
+    "description": "Detailed fleet study, latest continuous-body construction. 4.05 m nominal length. Blender generator and reference renders are stored beside the export.",
+    "referenceImages": [
+      {
+        "label": "Three-quarter",
+        "path": "website/station-3d/models/vehicles/studies/fleet/renders/hatchback-hero.png"
+      },
+      {
+        "label": "Side",
+        "path": "website/station-3d/models/vehicles/studies/fleet/renders/hatchback-side.png"
+      }
+    ],
+    "provenance": "Blender"
+  },
+  {
+    "id": "study-fleet-sedan",
+    "label": "Sedan car",
+    "category": "vehicles",
+    "collection": "studies",
+    "fleet": "current",
+    "model": "website/station-3d/models/vehicles/fleet/sedan.json",
+    "source": "website/station-3d/models/vehicles/studies/fleet/build_fleet.py",
+    "format": "json",
+    "yaw": 3.141592653589793,
+    "nightEmissiveMultiplier": 2.2,
+    "description": "Detailed fleet study, latest continuous-body construction. 4.75 m nominal length. Blender generator and reference renders are stored beside the export.",
+    "referenceImages": [
+      {
+        "label": "Three-quarter",
+        "path": "website/station-3d/models/vehicles/studies/fleet/renders/sedan-hero.png"
+      },
+      {
+        "label": "Side",
+        "path": "website/station-3d/models/vehicles/studies/fleet/renders/sedan-side.png"
+      }
+    ],
+    "provenance": "Blender"
+  },
+  {
+    "id": "study-fleet-wagon",
+    "label": "Estate car",
+    "category": "vehicles",
+    "collection": "studies",
+    "fleet": "current",
+    "model": "website/station-3d/models/vehicles/fleet/wagon.json",
+    "source": "website/station-3d/models/vehicles/studies/fleet/build_fleet.py",
+    "format": "json",
+    "yaw": 3.141592653589793,
+    "nightEmissiveMultiplier": 2.2,
+    "description": "Detailed fleet study, latest continuous-body construction. 4.85 m nominal length. Blender generator and reference renders are stored beside the export.",
+    "referenceImages": [
+      {
+        "label": "Three-quarter",
+        "path": "website/station-3d/models/vehicles/studies/fleet/renders/wagon-hero.png"
+      },
+      {
+        "label": "Side",
+        "path": "website/station-3d/models/vehicles/studies/fleet/renders/wagon-side.png"
+      }
+    ],
+    "provenance": "Blender"
+  },
+  {
+    "id": "study-fleet-coupe",
+    "label": "Coupé car",
+    "category": "vehicles",
+    "collection": "studies",
+    "fleet": "current",
+    "model": "website/station-3d/models/vehicles/fleet/coupe.json",
+    "source": "website/station-3d/models/vehicles/studies/fleet/build_fleet.py",
+    "format": "json",
+    "yaw": 3.141592653589793,
+    "nightEmissiveMultiplier": 2.2,
+    "description": "Detailed fleet study, latest continuous-body construction. 4.5 m nominal length. Blender generator and reference renders are stored beside the export.",
+    "referenceImages": [
+      {
+        "label": "Three-quarter",
+        "path": "website/station-3d/models/vehicles/studies/fleet/renders/coupe-hero.png"
+      },
+      {
+        "label": "Side",
+        "path": "website/station-3d/models/vehicles/studies/fleet/renders/coupe-side.png"
+      }
+    ],
+    "provenance": "Blender"
+  },
+  {
+    "id": "study-fleet-suv",
+    "label": "Crossover car",
+    "category": "vehicles",
+    "collection": "studies",
+    "fleet": "current",
+    "model": "website/station-3d/models/vehicles/fleet/suv.json",
+    "source": "website/station-3d/models/vehicles/studies/fleet/build_fleet.py",
+    "format": "json",
+    "yaw": 3.141592653589793,
+    "nightEmissiveMultiplier": 2.2,
+    "description": "Detailed fleet study, latest continuous-body construction. 4.65 m nominal length. Blender generator and reference renders are stored beside the export.",
+    "referenceImages": [
+      {
+        "label": "Three-quarter",
+        "path": "website/station-3d/models/vehicles/studies/fleet/renders/suv-hero.png"
+      },
+      {
+        "label": "Side",
+        "path": "website/station-3d/models/vehicles/studies/fleet/renders/suv-side.png"
+      }
+    ],
+    "provenance": "Blender"
+  },
+  {
+    "id": "study-fleet-taxi",
+    "label": "Taxi car",
+    "category": "vehicles",
+    "collection": "studies",
+    "fleet": "current",
+    "model": "website/station-3d/models/vehicles/fleet/taxi.json",
+    "source": "website/station-3d/models/vehicles/studies/fleet/build_fleet.py",
+    "format": "json",
+    "yaw": 3.141592653589793,
+    "nightEmissiveMultiplier": 2.2,
+    "description": "Detailed fleet study, latest continuous-body construction. 4.75 m nominal length. Blender generator and reference renders are stored beside the export.",
+    "referenceImages": [
+      {
+        "label": "Three-quarter",
+        "path": "website/station-3d/models/vehicles/studies/fleet/renders/taxi-hero.png"
+      },
+      {
+        "label": "Side",
+        "path": "website/station-3d/models/vehicles/studies/fleet/renders/taxi-side.png"
+      }
+    ],
+    "provenance": "Blender"
+  },
+  {
+    "id": "study-fleet-pickup",
+    "label": "Pickup truck",
+    "category": "vehicles",
+    "collection": "studies",
+    "fleet": "current",
+    "model": "website/station-3d/models/vehicles/fleet/pickup.json",
+    "source": "website/station-3d/models/vehicles/studies/fleet/build_fleet.py",
+    "format": "json",
+    "yaw": 3.141592653589793,
+    "nightEmissiveMultiplier": 2.2,
+    "description": "Detailed fleet study, latest continuous-body construction. 5.4 m nominal length. Blender generator and reference renders are stored beside the export.",
+    "referenceImages": [
+      {
+        "label": "Three-quarter",
+        "path": "website/station-3d/models/vehicles/studies/fleet/renders/pickup-hero.png"
+      },
+      {
+        "label": "Side",
+        "path": "website/station-3d/models/vehicles/studies/fleet/renders/pickup-side.png"
+      }
+    ],
+    "provenance": "Blender"
+  },
+  {
+    "id": "study-fleet-van",
+    "label": "Panel van",
+    "category": "vehicles",
+    "collection": "studies",
+    "fleet": "current",
+    "model": "website/station-3d/models/vehicles/fleet/van.json",
+    "source": "website/station-3d/models/vehicles/studies/fleet/build_fleet.py",
+    "format": "json",
+    "yaw": 3.141592653589793,
+    "nightEmissiveMultiplier": 2.2,
+    "description": "Detailed fleet study, latest continuous-body construction. 5.4 m nominal length. Blender generator and reference renders are stored beside the export.",
+    "referenceImages": [
+      {
+        "label": "Three-quarter",
+        "path": "website/station-3d/models/vehicles/studies/fleet/renders/van-hero.png"
+      },
+      {
+        "label": "Side",
+        "path": "website/station-3d/models/vehicles/studies/fleet/renders/van-side.png"
+      }
+    ],
+    "provenance": "Blender"
+  },
+  {
+    "id": "study-fleet-minibus",
+    "label": "Minibus",
+    "category": "vehicles",
+    "collection": "studies",
+    "fleet": "current",
+    "model": "website/station-3d/models/vehicles/fleet/minibus.json",
+    "source": "website/station-3d/models/vehicles/studies/fleet/build_fleet.py",
+    "format": "json",
+    "yaw": 3.141592653589793,
+    "nightEmissiveMultiplier": 2.2,
+    "description": "Detailed fleet study, latest continuous-body construction. 5.6 m nominal length. Blender generator and reference renders are stored beside the export.",
+    "referenceImages": [
+      {
+        "label": "Three-quarter",
+        "path": "website/station-3d/models/vehicles/studies/fleet/renders/minibus-hero.png"
+      },
+      {
+        "label": "Side",
+        "path": "website/station-3d/models/vehicles/studies/fleet/renders/minibus-side.png"
+      }
+    ],
+    "provenance": "Blender"
+  },
+  {
+    "id": "study-fleet-citybus",
+    "label": "City bus",
+    "category": "vehicles",
+    "collection": "studies",
+    "fleet": "current",
+    "model": "website/station-3d/models/vehicles/fleet/citybus.json",
+    "source": "website/station-3d/models/vehicles/studies/fleet/build_fleet.py",
+    "format": "json",
+    "yaw": 3.141592653589793,
+    "nightEmissiveMultiplier": 2.2,
+    "description": "Detailed fleet study, latest continuous-body construction. 12 m nominal length. Blender generator and reference renders are stored beside the export.",
+    "referenceImages": [
+      {
+        "label": "Three-quarter",
+        "path": "website/station-3d/models/vehicles/studies/fleet/renders/citybus-hero.png"
+      },
+      {
+        "label": "Side",
+        "path": "website/station-3d/models/vehicles/studies/fleet/renders/citybus-side.png"
+      }
+    ],
+    "provenance": "Blender"
+  },
+  {
+    "id": "study-fleet-artic",
+    "label": "Articulated bus",
+    "category": "vehicles",
+    "collection": "studies",
+    "fleet": "current",
+    "model": "website/station-3d/models/vehicles/fleet/artic.json",
+    "source": "website/station-3d/models/vehicles/studies/fleet/build_fleet.py",
+    "format": "json",
+    "yaw": 3.141592653589793,
+    "nightEmissiveMultiplier": 2.2,
+    "description": "Detailed fleet study, latest continuous-body construction. 18 m nominal length. Blender generator and reference renders are stored beside the export.",
+    "referenceImages": [
+      {
+        "label": "Three-quarter",
+        "path": "website/station-3d/models/vehicles/studies/fleet/renders/artic-hero.png"
+      },
+      {
+        "label": "Side",
+        "path": "website/station-3d/models/vehicles/studies/fleet/renders/artic-side.png"
+      }
+    ],
+    "provenance": "Blender"
+  },
+  {
+    "id": "study-fleet-coach",
+    "label": "Coach bus",
+    "category": "vehicles",
+    "collection": "studies",
+    "fleet": "current",
+    "model": "website/station-3d/models/vehicles/fleet/coach.json",
+    "source": "website/station-3d/models/vehicles/studies/fleet/build_fleet.py",
+    "format": "json",
+    "yaw": 3.141592653589793,
+    "nightEmissiveMultiplier": 2.2,
+    "description": "Detailed fleet study, latest continuous-body construction. 12.4 m nominal length. Blender generator and reference renders are stored beside the export.",
+    "referenceImages": [
+      {
+        "label": "Three-quarter",
+        "path": "website/station-3d/models/vehicles/studies/fleet/renders/coach-hero.png"
+      },
+      {
+        "label": "Side",
+        "path": "website/station-3d/models/vehicles/studies/fleet/renders/coach-side.png"
+      }
+    ],
+    "provenance": "Blender"
+  },
+  {
+    "id": "study-fleet-boxtruck",
+    "label": "Box truck",
+    "category": "vehicles",
+    "collection": "studies",
+    "fleet": "current",
+    "model": "website/station-3d/models/vehicles/fleet/boxtruck.json",
+    "source": "website/station-3d/models/vehicles/studies/fleet/build_fleet.py",
+    "format": "json",
+    "yaw": 3.141592653589793,
+    "nightEmissiveMultiplier": 2.2,
+    "description": "Detailed fleet study, latest continuous-body construction. 7.6 m nominal length. Blender generator and reference renders are stored beside the export.",
+    "referenceImages": [
+      {
+        "label": "Three-quarter",
+        "path": "website/station-3d/models/vehicles/studies/fleet/renders/boxtruck-hero.png"
+      },
+      {
+        "label": "Side",
+        "path": "website/station-3d/models/vehicles/studies/fleet/renders/boxtruck-side.png"
+      }
+    ],
+    "provenance": "Blender"
+  },
+  {
+    "id": "study-fleet-tipper",
+    "label": "Tipper truck",
+    "category": "vehicles",
+    "collection": "studies",
+    "fleet": "current",
+    "model": "website/station-3d/models/vehicles/fleet/tipper.json",
+    "source": "website/station-3d/models/vehicles/studies/fleet/build_fleet.py",
+    "format": "json",
+    "yaw": 3.141592653589793,
+    "nightEmissiveMultiplier": 2.2,
+    "description": "Detailed fleet study, latest continuous-body construction. 7.2 m nominal length. Blender generator and reference renders are stored beside the export.",
+    "referenceImages": [
+      {
+        "label": "Three-quarter",
+        "path": "website/station-3d/models/vehicles/studies/fleet/renders/tipper-hero.png"
+      },
+      {
+        "label": "Side",
+        "path": "website/station-3d/models/vehicles/studies/fleet/renders/tipper-side.png"
+      }
+    ],
+    "provenance": "Blender"
+  },
+  {
+    "id": "study-fleet-semi",
+    "label": "Semi tractor truck",
+    "category": "vehicles",
+    "collection": "studies",
+    "fleet": "current",
+    "model": "website/station-3d/models/vehicles/fleet/semi.json",
+    "source": "website/station-3d/models/vehicles/studies/fleet/build_fleet.py",
+    "format": "json",
+    "yaw": 3.141592653589793,
+    "nightEmissiveMultiplier": 2.2,
+    "description": "Detailed fleet study, latest continuous-body construction. 6.6 m nominal length. Blender generator and reference renders are stored beside the export.",
+    "referenceImages": [
+      {
+        "label": "Three-quarter",
+        "path": "website/station-3d/models/vehicles/studies/fleet/renders/semi-hero.png"
+      },
+      {
+        "label": "Side",
+        "path": "website/station-3d/models/vehicles/studies/fleet/renders/semi-side.png"
+      }
+    ],
+    "provenance": "Blender"
+  }
+]

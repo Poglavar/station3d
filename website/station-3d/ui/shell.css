@@ -1,0 +1,3009 @@
+/* Shared Station3D modal, HUD, loading and campaign presentation for every host. */
+.station-3d-modal, .station-3d-modal * { box-sizing: border-box; }
+.station-3d-modal { font-family: Arial, sans-serif; }
+/* These defaults previously came from the planner's global form rules. Keep
+   their original specificity so individual HUD controls still override them. */
+:where(.station-3d-modal) select, :where(.station-3d-modal) button {
+    width: 100%; padding: 8px; margin-top: 5px; font-size: 0.95em;
+}
+:where(.station-3d-modal) button {
+    background-color: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer;
+}
+:where(.station-3d-modal) button:disabled { background-color: #cccccc; cursor: not-allowed; }
+:where(.station-3d-modal) button:hover:not(:disabled) { background-color: #0056b3; }
+#station3DModal .hidden { display: none; }
+.station-3d-status:not(.hidden) { display: flex; }
+@keyframes station3d-shell-spin { to { transform: rotate(360deg); } }
+
+/* --- Station 3D modal --- */
+.station-3d-modal {
+    position: fixed; inset: 0;
+    background: #000;
+    /* Above the floating #toggleControls (z-index 4001) so it can't peek through. */
+    z-index: 4100;
+    display: flex; align-items: stretch; justify-content: stretch;
+    padding: 0;
+    box-sizing: border-box;
+}
+.station-3d-modal.hidden { display: none; }
+.station-3d-frame {
+    background: #ffffff;
+    border-radius: 0;
+    width: 100%;
+    height: 100%;
+    max-width: 100%;
+    max-height: 100%;
+    display: flex;
+    flex-direction: column;
+    box-shadow: none;
+    overflow: hidden;
+}
+.station-3d-header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 14px;
+    background: #0f172a;
+    color: #f8fafc;
+    border-bottom: 1px solid #1e293b;
+}
+.station-3d-header h3 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    flex: 0 1 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+}
+.station-3d-title-prefix { white-space: nowrap; }
+.station-3d-line-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.8em;
+    padding: 0.18em 0.46em;
+    border-radius: 0.45em;
+    background: #f5a800;
+    color: #111827;
+    font-size: 0.95em;
+    font-weight: 800;
+    line-height: 1;
+    box-shadow: inset 0 0 0 1px rgba(17, 24, 39, 0.18);
+    /* The badge is the long-press target for the hidden mobile gun
+       toggle — make it un-selectable so a 5 s hold doesn't get hijacked
+       by the OS text-selection / magnifier popup. */
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    cursor: pointer;
+}
+.station-3d-header-sound {
+    width: 30px;
+    height: 30px;
+    flex: 0 0 30px;
+    margin: 0 0 0 8px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 8px;
+    background: rgba(16, 18, 22, 0.72);
+    color: #f8fafc;
+    cursor: pointer;
+}
+.station-3d-header-sound svg {
+    display: block;
+    width: 19px;
+    height: 19px;
+}
+.station-3d-header-sound:hover { background: rgba(51, 65, 85, 0.9); }
+.station-3d-header-sound.is-muted {
+    color: #fca5a5;
+    border-color: rgba(248, 113, 113, 0.5);
+}
+.station-3d-header-sound:focus-visible {
+    outline: 2px solid #93c5fd;
+    outline-offset: 2px;
+}
+.station-3d-info {
+    flex: 1 1 auto;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 10px;
+    font-size: 0.85rem;
+    color: #cbd5e1;
+}
+.station-3d-info-item {
+    display: inline-flex;
+    align-items: center;
+    white-space: nowrap;
+}
+.station-3d-close {
+    /* Keep cancellation available while the full-screen world loader is shown. */
+    position: relative;
+    z-index: 41;
+    flex: 0 0 auto;
+    margin-left: auto;
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: #f8fafc;
+    font-size: 1.4rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+}
+.station-3d-close:hover { color: #fca5a5; }
+.station-3d-exit-confirm {
+    /* Lives on <body>: above the modal (4100) and the campaign curtain and
+       reveals (4200), so the question is visible in every session state. */
+    position: fixed;
+    inset: 0;
+    z-index: 4400;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    padding: 20px;
+    background: rgba(2, 6, 23, 0.72);
+}
+.station-3d-exit-confirm.hidden { display: none; }
+.station-3d-exit-confirm-card {
+    width: min(390px, 100%);
+    padding: 22px;
+    border: 1px solid rgba(148, 163, 184, 0.42);
+    border-radius: 14px;
+    background: #ffffff;
+    color: #111827;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.4);
+}
+.station-3d-exit-confirm-card h3 {
+    margin: 0 0 8px;
+    font-size: 1.15rem;
+}
+.station-3d-exit-confirm-card p {
+    margin: 0 0 20px;
+    color: #475569;
+    line-height: 1.5;
+}
+.station-3d-exit-confirm-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+.station-3d-exit-confirm-actions button {
+    min-width: 86px;
+    padding: 9px 16px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font: 600 0.95rem/1.2 system-ui, sans-serif;
+    cursor: pointer;
+}
+.station-3d-exit-confirm-no {
+    background: #ffffff;
+    color: #1e293b;
+}
+.station-3d-exit-confirm-no:hover { background: #f1f5f9; }
+.station-3d-exit-confirm-yes {
+    border-color: #b91c1c !important;
+    background: #b91c1c;
+    color: #ffffff;
+}
+.station-3d-exit-confirm-yes:hover { background: #991b1b; }
+.station-3d-exit-confirm-actions button:focus-visible {
+    outline: 3px solid #60a5fa;
+    outline-offset: 2px;
+}
+.station-3d-container {
+    flex: 1 1 auto;
+    min-height: 0;
+    position: relative;
+    background: #87ceeb;
+}
+.station-3d-container canvas { display: block; width: 100% !important; height: 100% !important; }
+.station-3d-weather-attribution {
+    position: absolute;
+    z-index: 5;
+    right: 8px;
+    bottom: 7px;
+    padding: 3px 6px;
+    border-radius: 4px;
+    color: rgba(241, 245, 249, 0.82);
+    background: rgba(15, 23, 42, 0.58);
+    font: 500 10px/1.2 Arial, sans-serif;
+    text-decoration: none;
+    pointer-events: auto;
+}
+.station-3d-weather-attribution:hover { color: #ffffff; text-decoration: underline; }
+.station-3d-inspector {
+    position: absolute;
+    z-index: 18;
+    top: 12px;
+    right: 12px;
+    bottom: 12px;
+    width: min(430px, calc(100% - 24px));
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    color: #e5edf7;
+    background: rgba(8, 13, 21, 0.94);
+    border: 1px solid rgba(148, 163, 184, 0.42);
+    border-radius: 12px;
+    box-shadow: 0 18px 54px rgba(0, 0, 0, 0.48);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    font: 500 12px/1.4 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    pointer-events: auto;
+}
+.station-3d-has-dashboard .station-3d-inspector { bottom: 120px; }
+.station-3d-inspector-header {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 13px 14px 10px;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.22);
+}
+.station-3d-inspector-header > div {
+    min-width: 0;
+    display: grid;
+    gap: 2px;
+}
+.station-3d-inspector-header strong {
+    color: #f8fafc;
+    font: 800 15px/1.25 ui-sans-serif, system-ui, sans-serif;
+}
+.station-3d-inspector-header span,
+.station-3d-inspector-hint { color: #9fb0c5; }
+.station-3d-inspector-close {
+    flex: 0 0 28px;
+    width: 28px;
+    height: 28px;
+    margin: -4px -5px 0 auto;
+    padding: 0;
+    display: inline-grid;
+    place-items: center;
+    color: #dbe7f4;
+    background: transparent;
+    border: 0;
+    border-radius: 7px;
+    font: 400 22px/1 ui-sans-serif, system-ui, sans-serif;
+    cursor: pointer;
+}
+.station-3d-inspector-close:hover { background: rgba(148, 163, 184, 0.16); }
+.station-3d-inspector-actions {
+    flex: 0 0 auto;
+    display: flex;
+    gap: 8px;
+    padding: 9px 14px;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+}
+.station-3d-inspector-actions button {
+    min-height: 30px;
+    padding: 5px 10px;
+    color: #e5edf7;
+    background: rgba(30, 41, 59, 0.88);
+    border: 1px solid rgba(148, 163, 184, 0.34);
+    border-radius: 7px;
+    font: 700 11px/1.2 ui-sans-serif, system-ui, sans-serif;
+    cursor: pointer;
+}
+.station-3d-inspector-actions button:hover { background: rgba(51, 65, 85, 0.96); }
+.station-3d-inspector button:focus-visible,
+.station-3d-inspector input:focus-visible {
+    outline: 2px solid #67e8f9;
+    outline-offset: 2px;
+}
+.station-3d-inspector-scroll {
+    min-height: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+    scrollbar-color: #52657c transparent;
+}
+.station-3d-inspector-scroll section { padding: 12px 14px 14px; }
+.station-3d-inspector-scroll section + section {
+    border-top: 1px solid rgba(148, 163, 184, 0.24);
+}
+.station-3d-inspector h4 {
+    margin: 0 0 8px;
+    color: #f8fafc;
+    font: 800 12px/1.3 ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: 0.045em;
+    text-transform: uppercase;
+}
+.station-3d-inspector-summary {
+    display: grid;
+    gap: 2px;
+    margin-bottom: 10px;
+    color: #b8c7d9;
+}
+.station-3d-inspector-summary strong { color: #f8fafc; }
+.station-3d-inspector-results {
+    display: grid;
+    gap: 5px;
+    margin-bottom: 14px;
+}
+.station-3d-inspector-hit {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 34px minmax(0, 1fr);
+    align-items: start;
+    gap: 8px;
+    padding: 8px;
+    color: #dbe7f4;
+    text-align: left;
+    background: rgba(30, 41, 59, 0.58);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 8px;
+    cursor: pointer;
+}
+.station-3d-inspector-hit:hover { background: rgba(51, 65, 85, 0.78); }
+.station-3d-inspector-hit.is-selected {
+    background: rgba(219, 39, 119, 0.18);
+    border-color: #f472b6;
+    box-shadow: inset 3px 0 0 #ff3ed1;
+}
+.station-3d-inspector-hit > span:last-child {
+    min-width: 0;
+    display: grid;
+    gap: 1px;
+}
+.station-3d-inspector-hit strong,
+.station-3d-inspector-hit small {
+    overflow-wrap: anywhere;
+}
+.station-3d-inspector-hit strong { color: #f8fafc; }
+.station-3d-inspector-hit small { color: #9fb0c5; }
+.station-3d-inspector-hit-number {
+    display: inline-grid;
+    place-items: center;
+    min-height: 24px;
+    padding: 0 4px;
+    color: #101722;
+    background: #7dd3fc;
+    border-radius: 5px;
+    font-weight: 900;
+}
+.station-3d-inspector-hit.is-selected .station-3d-inspector-hit-number {
+    background: #ff3ed1;
+}
+.station-3d-inspector-divider {
+    margin: 6px 0 2px;
+    padding-top: 8px;
+    color: #c4d2e3;
+    border-top: 1px dashed rgba(148, 163, 184, 0.32);
+    font-weight: 800;
+}
+.station-3d-inspector-details {
+    padding: 10px;
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 8px;
+}
+.station-3d-inspector-details dl {
+    display: grid;
+    grid-template-columns: minmax(72px, auto) minmax(0, 1fr);
+    gap: 4px 10px;
+    margin: 0;
+}
+.station-3d-inspector-details dt { color: #8ea2ba; }
+.station-3d-inspector-details dd {
+    min-width: 0;
+    margin: 0;
+    color: #eef5fc;
+    overflow-wrap: anywhere;
+}
+.station-3d-inspector-classifications {
+    display: grid;
+    gap: 5px;
+    margin-top: 9px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(148, 163, 184, 0.2);
+}
+.station-3d-inspector-classifications > strong { color: #cfe4f7; }
+.station-3d-inspector-classifications > span {
+    display: grid;
+    gap: 1px;
+    padding-left: 8px;
+    border-left: 2px solid #22d3ee;
+}
+.station-3d-inspector-classifications small { color: #8ea2ba; }
+.station-3d-inspector-details details { margin-top: 9px; }
+.station-3d-inspector-details summary {
+    color: #b9caDC;
+    cursor: pointer;
+}
+.station-3d-inspector-facade {
+    padding-top: 8px;
+    border-top: 1px solid rgba(148, 163, 184, 0.2);
+}
+.station-3d-inspector-warning {
+    margin: 7px 0 0;
+    color: #fda4af;
+}
+.station-3d-inspector-details pre {
+    max-height: 260px;
+    margin: 8px 0 0;
+    padding: 8px;
+    overflow: auto;
+    color: #cfe4f7;
+    background: rgba(0, 0, 0, 0.34);
+    border-radius: 6px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+.station-3d-inspector-hint { margin: -3px 0 9px; }
+.station-3d-inspector-layers { display: grid; gap: 7px; }
+.station-3d-inspector-topic {
+    display: grid;
+    grid-template-columns: 34px minmax(0, 1fr);
+    align-items: stretch;
+    overflow: hidden;
+    background: rgba(30, 41, 59, 0.54);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 8px;
+}
+.station-3d-inspector-topic-bulk {
+    display: grid;
+    place-items: start center;
+    padding: 12px 6px 0;
+    border-right: 1px solid rgba(148, 163, 184, 0.18);
+    cursor: pointer;
+}
+.station-3d-inspector-topic-bulk input {
+    margin: 0;
+    accent-color: #22d3ee;
+}
+.station-3d-inspector-topic > details { min-width: 0; }
+.station-3d-inspector-topic > details > summary {
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 9px;
+    list-style: none;
+    cursor: pointer;
+    user-select: none;
+}
+.station-3d-inspector-topic > details > summary::-webkit-details-marker { display: none; }
+.station-3d-inspector-topic > details > summary > span:first-child {
+    min-width: 0;
+    display: grid;
+    gap: 1px;
+}
+.station-3d-inspector-topic > details > summary strong {
+    color: #f1f7fd;
+    font: 800 12px/1.25 ui-sans-serif, system-ui, sans-serif;
+    overflow-wrap: anywhere;
+}
+.station-3d-inspector-topic > details > summary small { color: #8ea2ba; }
+.station-3d-inspector-topic-chevron {
+    margin-left: auto;
+    color: #9fb0c5;
+    font-size: 17px;
+    line-height: 1;
+    transform: rotate(0deg);
+    transition: transform 120ms ease;
+}
+.station-3d-inspector-topic > details[open] .station-3d-inspector-topic-chevron {
+    transform: rotate(180deg);
+}
+@media (prefers-reduced-motion: reduce) {
+    .station-3d-inspector-topic-chevron { transition: none; }
+}
+.station-3d-inspector-topic-layers {
+    display: grid;
+    gap: 5px;
+    padding: 6px;
+    border-top: 1px solid rgba(148, 163, 184, 0.18);
+}
+.station-3d-inspector-layer {
+    display: grid;
+    grid-template-columns: 18px minmax(0, 1fr);
+    align-items: start;
+    gap: 7px;
+    padding: 7px 8px;
+    background: rgba(15, 23, 42, 0.48);
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    border-radius: 7px;
+    cursor: pointer;
+}
+.station-3d-inspector-layer input { margin: 2px 0 0; accent-color: #22d3ee; }
+.station-3d-inspector-layer span { min-width: 0; display: grid; gap: 1px; }
+.station-3d-inspector-layer strong { color: #eef5fc; overflow-wrap: anywhere; }
+.station-3d-inspector-layer small { color: #8ea2ba; overflow-wrap: anywhere; }
+@media (max-width: 640px) {
+    .station-3d-inspector {
+        top: 8px;
+        right: 8px;
+        bottom: 8px;
+        width: min(410px, calc(100% - 16px));
+    }
+    .station-3d-has-dashboard .station-3d-inspector { bottom: 104px; }
+}
+.station-3d-route-overlay {
+    position: absolute;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #f8fafc;
+    font-size: 1.1rem;
+    font-weight: 800;
+    line-height: 1.2;
+    pointer-events: none;
+    white-space: nowrap;
+    background: transparent;
+    padding: 0;
+    border-radius: 0;
+    z-index: 4;
+}
+.station-3d-route-line {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.station-3d-route-speed,
+.station-3d-route-label {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+    box-sizing: border-box;
+    padding: 6px 12px;
+}
+.station-3d-route-speed {
+    font-weight: 700;
+    color: #b9f6ca;
+}
+.station-3d-route-divider {
+    display: none;
+}
+.station-3d-route-line-paused {
+    color: #fca5a5;
+}
+.station-3d-status {
+    position: absolute;
+    left: 20px;
+    /* Top-left, below the dev FPS overlay (top:56, ~50px tall). Was
+       bottom-left, but the mobile fire button now lives at bottom-left
+       and was occluding the speed readout. Stacked column from the top
+       reads: modal header → FPS overlay (dev only) → this status pill. */
+    top: 130px;
+    transform: none;
+    background: rgba(15, 23, 42, 0.85);
+    color: #f8fafc;
+    padding: 10px 18px;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    line-height: 1.35;
+    text-align: left;
+    pointer-events: none;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    max-width: min(420px, calc(100% - 180px));
+}
+.station-3d-status.hidden { display: none; }
+/* The same pill once the HUD has reparented it into the combat row: centred
+   over the row and sized to its text. The width reserve keeps it clear of the
+   kill/ammo counters at the row's right edge on a desktop. */
+.station-3d-combat-hud-row > .station-3d-status {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: auto;
+    transform: none;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: rgba(15, 23, 42, 0.85);
+    color: #f8fafc;
+    padding: 8px 14px;
+    border-radius: 999px;
+    font: 700 0.95rem/1 ui-sans-serif, system-ui, sans-serif;
+    text-align: center;
+    pointer-events: none;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.30);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    max-width: calc(100% - 220px);
+    white-space: nowrap;
+    flex: 0 1 auto;
+    width: max-content;
+    margin: 0 auto;
+}
+.station-3d-status .station-3d-status-line {
+    display: inline-flex;
+    align-items: center;
+}
+.station-3d-status .station-3d-status-interaction-ready {
+    color: #fef08a;
+    text-shadow: 0 0 8px rgba(250, 204, 21, 0.9);
+    animation: station3d-interaction-ready-pulse 0.85s ease-in-out infinite alternate;
+}
+.station-3d-gta-interact-ready {
+    color: #fff7ae !important;
+    border-color: rgba(253, 224, 71, 0.98) !important;
+    background: rgba(113, 63, 18, 0.92) !important;
+    box-shadow:
+        0 0 0 3px rgba(250, 204, 21, 0.28),
+        0 0 24px rgba(250, 204, 21, 0.95),
+        0 12px 30px rgba(0, 0, 0, 0.32) !important;
+    animation: station3d-interaction-ready-pulse 0.85s ease-in-out infinite alternate;
+}
+@keyframes station3d-interaction-ready-pulse {
+    from { filter: brightness(1); transform: scale(1); }
+    to   { filter: brightness(1.28); transform: scale(1.06); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .station-3d-status .station-3d-status-interaction-ready,
+    .station-3d-gta-interact-ready {
+        animation: none;
+    }
+}
+/* Curve-limit safety brake active: pulse the speed line red. */
+.station-3d-status .station-3d-status-overspeed {
+    color: #f87171;
+    animation: station3d-overspeed-pulse 0.7s ease-in-out infinite alternate;
+}
+@keyframes station3d-overspeed-pulse {
+    from { opacity: 1; }
+    to   { opacity: 0.45; }
+}
+
+/* ─── Cab dashboard console ─────────────────────────────────────────────
+   Bottom strip hosting the driving controls and readouts as instruments:
+   [C] [digital speed] [compass] [PIS route display] [◀ ▶ Brake Throttle]. The 3D
+   dashboard cowl renders behind it for depth. */
+.station-3d-dashboard {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 104px;
+    /* Three columns, two rows. The icon cluster and the drive pad each own a
+       full-height column and lay their own buttons out over the two rows; the
+       centre column carries the instrument gauges on top and the PIS next-stop
+       line under them. */
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+    padding: 0 16px;
+    background: linear-gradient(180deg, #2b3037 0%, #1a1e23 35%, #0f1216 100%);
+    border-top: 1px solid rgba(255, 255, 255, 0.10);
+    box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.35);
+    z-index: 6;
+    pointer-events: auto;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+}
+.station-3d-dashboard.hidden { display: none; }
+
+/* Top readout bar: instruments pulled up under the combat-HUD icon row so the
+   bottom console can be pure controls. Centred strip, two-deep on phones. */
+.station-3d-cab-readout {
+    position: absolute;
+    left: 0;
+    right: 0;
+    /* Right below the top icon/counter band - the cab frame is thick enough,
+       so the readout must not eat windshield space. */
+    top: 12px;
+    font-variant-numeric: tabular-nums;
+    margin: 0 auto;
+    width: max-content;
+    max-width: calc(100% - 32px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 6px 10px;
+    border-radius: 14px;
+    background: linear-gradient(180deg, rgba(30, 35, 41, 0.82) 0%, rgba(15, 18, 22, 0.82) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.32);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    z-index: 6;
+    pointer-events: none;
+}
+.station-3d-cab-readout.hidden { display: none; }
+/* Docked into the console's top row: it is part of the console now, so it drops
+   the floating pill's absolute position, chrome and blur. */
+.station-3d-cab-readout--docked {
+    position: static;
+    margin: 0;
+    max-width: 100%;
+    padding: 0;
+    gap: 8px;
+    background: none;
+    border: none;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+/* Docked gauge sizing: one row height for every instrument so they line up and
+   the console keeps its 104 px. The speed readout in particular was 52 px tall
+   for a 30 px digit it did not need. */
+.station-3d-cab-readout--docked .station-3d-dash-speed,
+.station-3d-cab-readout--docked .station-3d-cab-metric,
+.station-3d-cab-readout--docked .station-3d-dash-compass {
+    height: 40px;
+    box-sizing: border-box;
+    padding-top: 0;
+    padding-bottom: 0;
+    align-items: center;
+}
+.station-3d-cab-readout--docked .station-3d-dash-speed { align-items: baseline; padding: 7px 12px; }
+.station-3d-cab-readout--docked .station-3d-dash-speed-value { font-size: 22px; }
+.station-3d-cab-readout--docked .station-3d-dash-speed-limit { font-size: 13px; }
+.station-3d-cab-readout--docked .station-3d-cab-metric-value { font-size: 14px; }
+.station-3d-cab-readout--docked .station-3d-dash-compass { width: 92px; gap: 6px; }
+.station-3d-cab-readout--docked .station-3d-dash-compass-dial { width: 28px; height: 28px; }
+.station-3d-cab-readout--docked .station-3d-dash-compass-needle { inset: 3px 12px; }
+.station-3d-cab-readout--docked .station-3d-dash-compass-point { font-size: 12px; }
+.station-3d-cab-readout--docked .station-3d-dash-compass-degrees { margin-top: 2px; font-size: 10px; }
+/* Walk mode: only the altitude segment is meaningful. */
+.station-3d-cab-readout--altitude-only .station-3d-dash-speed,
+.station-3d-cab-readout--altitude-only .station-3d-cab-grade,
+.station-3d-cab-readout--altitude-only .station-3d-cab-chainage,
+.station-3d-cab-readout--altitude-only .station-3d-dash-compass,
+.station-3d-cab-readout--altitude-only .station-3d-dash-info {
+    display: none;
+}
+.station-3d-cab-readout--altitude-only { background: none; border-color: transparent; box-shadow: none; }
+/* Transient status strip (doors open, switch ahead, line identity): its own
+   bottom row above the console, so the top gauges keep a fixed footprint. */
+.station-3d-dash-statusline {
+    position: absolute;
+    left: 50%;
+    bottom: 118px;
+    transform: translateX(-50%);
+    max-width: calc(100% - 32px);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: #ffd54f;
+    font: 700 13px/1.3 ui-monospace, SFMono-Regular, Menlo, monospace;
+    background: rgba(15, 18, 22, 0.82);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 999px;
+    padding: 6px 14px;
+    pointer-events: none;
+    z-index: 6;
+}
+.station-3d-dash-statusline.hidden { display: none; }
+
+/* Track metrics each own a fixed-width gauge. Together they occupy roughly the
+   old combined readout width, but no value shares another value's box. */
+.station-3d-cab-metric {
+    display: inline-flex;
+    align-items: baseline;
+    flex: none;
+    overflow: hidden;
+    justify-content: center;
+    white-space: nowrap;
+    padding: 8px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 9px;
+    background: rgba(10, 14, 18, 0.92);
+    box-shadow: inset 0 2px 7px rgba(0, 0, 0, 0.78), 0 4px 14px rgba(0, 0, 0, 0.3);
+    color: #b9f6ca;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    pointer-events: none;
+}
+.station-3d-cab-altitude { width: 84px; }
+.station-3d-cab-grade { width: 68px; }
+.station-3d-cab-chainage { width: 96px; }
+.station-3d-cab-metric.hidden { display: none; }
+.station-3d-cab-metric-value {
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Bottom-centre next-stop / at-station display, between the icon cluster and
+   the drive controls. Amber PIS colour; grows to the countdown when stopped. */
+.station-3d-dash-station {
+    /* In the console's centre COLUMN now, so it must not flex vertically. */
+    flex: none;
+    align-self: stretch;
+    min-width: 0;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 0 14px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 16px;
+    font-weight: 650;
+    color: #ffb454;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+    pointer-events: none;
+}
+.station-3d-dash-station--empty { opacity: 0; }
+.station-3d-dash-station-paused { color: #ff6b6b; font-weight: 750; }
+
+/* Centred "loading surroundings" overlay while the photoreal world streams. */
+.station-3d-photo-loading {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: max-content;
+    max-width: calc(100vw - 24px);
+    box-sizing: border-box;
+    padding: 12px 18px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 11px;
+    background: rgba(10, 14, 18, 0.82);
+    box-shadow: 0 6px 22px rgba(0, 0, 0, 0.4);
+    color: #e6edf3;
+    font: 600 14px/1.2 system-ui, sans-serif;
+    pointer-events: none;
+    z-index: 8;
+}
+.station-3d-photo-loading.hidden { display: none; }
+/* Data-outage notice: the photo-loading pill look, parked under the top bar
+   (not dead centre — the world behind it is still walkable) and kept above
+   the revealed scene. Shown while every fetch to a data source is failing. */
+.station-3d-data-outage {
+    top: 64px;
+    transform: translate(-50%, 0);
+    z-index: 41;
+    border-color: rgba(255, 189, 133, 0.4);
+}
+/* The loading screen's development breakdown (localhost or ?stats=1): elapsed
+   time and megabytes over the per-layer segments (ui/dashboard.js). */
+.station-3d-campaign-curtain-diagnostics {
+    display: grid;
+    justify-items: center;
+    gap: 10px;
+    margin-top: 6px;
+}
+.station-3d-campaign-curtain-telemetry {
+    color: rgba(252, 244, 208, 0.72);
+    font: 500 12px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
+    letter-spacing: 0;
+}
+.station-3d-photo-loading-telemetry {
+    color: rgba(230, 237, 243, 0.72);
+    font: 500 11px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
+    white-space: nowrap;
+}
+.station-3d-photo-loading-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.28);
+    border-top-color: #ffffff;
+    border-radius: 50%;
+    animation: station3d-shell-spin 0.8s linear infinite;
+}
+/* Photo loading: a compact determinate bar in the pill, driven by the
+   3D-tiles streamer's real loaded fraction (setPhotoLoadProgress). */
+.station-3d-loading-bar {
+    width: 120px;
+    height: 5px;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.16);
+    overflow: hidden;
+}
+.station-3d-loading-fill {
+    display: block;
+    height: 100%;
+    width: 0%;
+    border-radius: 3px;
+    background: #4ea1ff;
+    transition: width 0.2s ease;
+}
+/* Model loading: no true fraction, so a row of component segments — one per
+   streaming component, turned green as each settles (setWorldLoadComponents). */
+.station-3d-loading-segments {
+    display: grid;
+    grid-template-columns: repeat(24, minmax(0, 1fr));
+    column-gap: 5px;
+    row-gap: 11px;
+    width: min(640px, calc(100vw - 24px));
+    box-sizing: border-box;
+    align-items: flex-start;
+}
+.station-3d-loading-seg {
+    grid-column: auto / span var(--load-span, 6);
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 0 4px;
+}
+.station-3d-loading-seg.load-row-start { grid-column-start: 1; }
+.station-3d-loading-seg-bar {
+    height: 7px;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.16);
+    transition: background 0.25s ease;
+}
+.station-3d-loading-seg.active .station-3d-loading-seg-bar {
+    background: #176b3a;
+    box-shadow: 0 0 0 1px rgba(52, 199, 89, 0.18);
+}
+.station-3d-loading-seg.done .station-3d-loading-seg-bar { background: #34c759; }
+.station-3d-loading-seg.done.active .station-3d-loading-seg-bar {
+    background: #34c759;
+    box-shadow: 0 0 0 1px rgba(126, 240, 151, 0.5), 0 0 7px rgba(52, 199, 89, 0.32);
+}
+.station-3d-loading-seg-label {
+    font: 500 10px/1.1 system-ui, sans-serif;
+    color: rgba(230, 237, 243, 0.7);
+    text-align: center;
+    min-height: 2.2em;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+@media (max-width: 480px) {
+    .station-3d-loading-segments {
+        grid-template-columns: repeat(12, minmax(0, 1fr));
+        row-gap: 10px;
+    }
+    .station-3d-loading-seg {
+        grid-column-end: span var(--load-mobile-span, 4);
+    }
+    .station-3d-loading-seg.load-row-start { grid-column-start: auto; }
+    .station-3d-loading-seg.load-mobile-row-start { grid-column-start: 1; }
+}
+.station-3d-loading-seg.done .station-3d-loading-seg-label { color: rgba(230, 237, 243, 0.95); }
+.station-3d-loading-seg.active .station-3d-loading-seg-label { color: rgba(205, 239, 215, 0.92); }
+.station-3d-dash-slot { display: flex; align-items: center; }
+/* Centre column: gauges over the PIS line, both centred on the console axis. */
+.station-3d-dash-center {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+.station-3d-dash-readout-dock {
+    display: flex;
+    justify-content: center;
+    min-width: 0;
+}
+.station-3d-dash-speed {
+    display: flex;
+    align-items: baseline;
+    gap: 5px;
+    background: #0a0e12;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 10px;
+    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.8);
+    padding: 9px 14px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    color: #b9f6ca;
+    /* A FIXED width, not a floor: the gauges sit in a row, so a value that
+       outgrew its minimum used to widen this box and shove its neighbours
+       sideways mid-ride. Reserves the driver-mode " / 88" curve-limit suffix. */
+    width: 158px;
+    overflow: hidden;
+    justify-content: center;
+    flex: none;
+}
+.station-3d-dash-speed-value {
+    font-size: 30px;
+    font-weight: 700;
+    line-height: 1;
+    /* 9 -> 10 -> 100 km/h must not move the needle-side label. Three digits
+       reserved, right-aligned, with tabular numerals so each is the same width. */
+    font-variant-numeric: tabular-nums;
+    min-width: 3ch;
+    display: inline-block;
+    text-align: right;
+}
+.station-3d-dash-speed-unit { font-size: 11px; opacity: 0.65; }
+.station-3d-dash-speed-limit {
+    font-size: 15px;
+    color: #ffd54f;
+    /* '/80' appears and disappears with the curve restriction; reserve its width
+       so the speed value does not shift when it does. */
+    font-variant-numeric: tabular-nums;
+    min-width: 4ch;
+    display: inline-block;
+    text-align: left;
+}
+.station-3d-dash-speed.overspeed .station-3d-dash-speed-value {
+    color: #ff6b6b;
+    animation: station3d-overspeed-pulse 0.7s ease-in-out infinite alternate;
+}
+.station-3d-dash-compass {
+    width: 104px;
+    height: 52px;
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 5px 8px;
+    box-sizing: border-box;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+    background: #0a0e12;
+    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.8);
+    color: #d8f3ff;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    pointer-events: none;
+}
+.station-3d-dash-compass-dial {
+    position: relative;
+    width: 36px;
+    height: 36px;
+    flex: none;
+    overflow: hidden;
+    border: 1px solid rgba(216, 243, 255, 0.4);
+    border-radius: 50%;
+    background: radial-gradient(circle at center, #1e2933 0 20%, #0d1319 22% 100%);
+}
+.station-3d-dash-compass-dial::before,
+.station-3d-dash-compass-dial::after {
+    content: '';
+    position: absolute;
+    background: rgba(216, 243, 255, 0.28);
+}
+.station-3d-dash-compass-dial::before { left: 50%; top: 4px; bottom: 4px; width: 1px; }
+.station-3d-dash-compass-dial::after { top: 50%; left: 4px; right: 4px; height: 1px; }
+.station-3d-dash-compass-needle {
+    position: absolute;
+    inset: 4px 16px;
+    z-index: 1;
+    border-radius: 999px;
+    background: linear-gradient(180deg, #ff5c5c 0 47%, #d8f3ff 48% 100%);
+    transform-origin: 50% 50%;
+    will-change: transform;
+}
+.station-3d-dash-compass-lubber {
+    position: absolute;
+    top: 1px;
+    left: 50%;
+    z-index: 2;
+    width: 0;
+    height: 0;
+    transform: translateX(-50%);
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 6px solid #ffd54f;
+}
+.station-3d-dash-compass-readout { display: flex; flex-direction: column; align-items: center; line-height: 1; }
+.station-3d-dash-compass-point {
+    color: #ffd54f;
+    font-size: 14px;
+    font-weight: 800;
+    /* N / NE / ENE is one to three characters, which moved this label and its
+       own left edge every time the heading crossed a compass point. Reserve the
+       widest and centre within it. */
+    min-width: 3ch;
+    display: inline-block;
+    text-align: center;
+}
+.station-3d-dash-compass-degrees {
+    margin-top: 4px;
+    font-size: 11px;
+    color: #d8f3ff;
+    /* 9° -> 99° -> 359° keeps the compass point label still. */
+    font-variant-numeric: tabular-nums;
+    min-width: 4ch;
+    display: inline-block;
+    text-align: center;
+}
+.station-3d-dash-info {
+    flex: 1;
+    min-width: 0;
+    align-self: center;
+    background: #16110a;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.75);
+    padding: 0 14px;
+    height: 52px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    color: #ffb454;
+    font-size: 15px;
+    line-height: 1.25;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* One instrument language for both floating readouts and the dashboard:
+   every gauge owns its own recessed console box instead of sharing a pill. */
+.station-3d-route-speed,
+.station-3d-route-label,
+.station-3d-dash-speed,
+.station-3d-cab-metric,
+.station-3d-dash-compass {
+    border: 1px solid rgba(216, 243, 255, 0.22);
+    border-radius: 8px;
+    background: linear-gradient(180deg, #111820 0%, #080c10 100%);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.06),
+        inset 0 2px 8px rgba(0, 0, 0, 0.82),
+        0 1px 0 rgba(255, 255, 255, 0.06);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.station-3d-sound-prompt { bottom: 28px; }
+.station-3d-night-notice { bottom: 84px; }
+/* Console control sizing. Driver buttons retain their own operating colours;
+   the icon controls below look like raised, short-travel hardware switches. */
+.station-3d-dash-btn {
+    width: 84px;
+    height: 42px;
+    flex: none;
+    padding: 4px 8px;
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 1.05;
+}
+.station-3d-dash-btn-arrow { width: 84px; font-size: 22px; }
+.station-3d-console-button {
+    width: 46px;
+    height: 42px;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.30);
+    border-radius: 8px;
+    background: linear-gradient(180deg, #4a515a 0%, #2b3138 48%, #1b2026 100%);
+    color: #f8fafc;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.22),
+        inset 0 -2px 0 rgba(0, 0, 0, 0.45),
+        0 3px 0 #090c0f,
+        0 5px 9px rgba(0, 0, 0, 0.45);
+    font: 800 19px/1 ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: 0;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.75);
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    pointer-events: auto;
+    cursor: pointer;
+    transform: translateY(0);
+    transition: transform 70ms ease, filter 90ms ease, border-color 90ms ease, box-shadow 70ms ease;
+}
+.station-3d-console-button:hover { filter: brightness(1.12); }
+.station-3d-console-button svg {
+    display: block;
+    width: 22px;
+    height: 22px;
+}
+.station-3d-console-button:active {
+    transform: translateY(2px);
+    box-shadow:
+        inset 0 2px 4px rgba(0, 0, 0, 0.55),
+        inset 0 1px 0 rgba(255, 255, 255, 0.10),
+        0 1px 0 #090c0f,
+        0 2px 4px rgba(0, 0, 0, 0.42);
+}
+.station-3d-console-button:focus-visible {
+    outline: 2px solid #93c5fd;
+    outline-offset: 3px;
+}
+.station-3d-console-button.is-on {
+    border-color: rgba(74, 222, 128, 0.92);
+    background: linear-gradient(180deg, #2f8b54 0%, #176b3a 55%, #0d4325 100%);
+    box-shadow:
+        inset 0 1px 0 rgba(220, 252, 231, 0.35),
+        inset 0 -2px 0 rgba(0, 0, 0, 0.35),
+        0 3px 0 #071a0f,
+        0 0 10px rgba(74, 222, 128, 0.30);
+}
+/* Icon cluster (view / bell / door) spread over two rows, bottom-left. */
+.station-3d-dash-left {
+    display: grid;
+    grid-template-columns: repeat(2, auto);
+    grid-auto-rows: auto;
+    gap: 8px;
+    align-content: center;
+}
+.station-3d-dash-controls-row { gap: 10px; }
+/* Drive pad, bottom-right: throttle+brake on top, ◀/▶ underneath. */
+.station-3d-dash-controls-grid {
+    display: grid;
+    grid-template-columns: repeat(2, auto);
+    grid-auto-rows: auto;
+    gap: 8px;
+    justify-content: end;
+    align-content: center;
+}
+/* Lift bottom-anchored pills above the console. */
+.station-3d-has-dashboard .station-3d-toast { bottom: 120px; }
+.station-3d-has-dashboard .station-3d-sound-prompt { bottom: 120px; }
+.station-3d-has-dashboard .station-3d-night-notice { bottom: 176px; }
+@media (max-width: 768px), (orientation: landscape) and (max-height: 500px) {
+    .station-3d-dashboard { height: 88px; gap: 5px; padding: 0 6px; }
+    .station-3d-cab-readout { top: 50px; gap: 6px; padding: 4px 7px; max-width: calc(100% - 16px); }
+    .station-3d-dash-statusline { bottom: 108px; font-size: 11px; }
+    .station-3d-cab-metric { padding: 5px 4px; }
+    .station-3d-cab-altitude { width: 64px; }
+    .station-3d-cab-grade { width: 50px; }
+    .station-3d-cab-chainage { width: 72px; }
+    .station-3d-cab-metric-value { font-size: 12px; }
+    .station-3d-dash-station { font-size: 12px; height: 40px; padding: 0 6px; }
+    .station-3d-dash-speed { width: 108px; padding: 5px 6px; }
+    .station-3d-dash-speed-value { font-size: 20px; }
+    .station-3d-dash-speed-limit { font-size: 11px; }
+    .station-3d-dash-compass { width: 66px; height: 40px; gap: 4px; padding: 4px; }
+    .station-3d-dash-compass-dial { width: 28px; height: 28px; }
+    .station-3d-dash-compass-needle { inset: 3px 12px; }
+    .station-3d-dash-compass-point { font-size: 11px; }
+    .station-3d-dash-compass-degrees { margin-top: 2px; font-size: 9px; }
+    .station-3d-dash-info { font-size: 11px; padding: 0 6px; min-width: 36px; }
+    .station-3d-dash-btn { width: 62px; height: 36px; padding: 3px 3px; font-size: 10px; }
+    .station-3d-dash-btn-arrow { width: 62px; font-size: 17px; }
+    .station-3d-console-button { width: 36px; height: 34px; font-size: 15px; }
+    .station-3d-dash-left { gap: 5px; }
+    .station-3d-dash-controls-row { gap: 5px; }
+    .station-3d-dash-controls-grid { gap: 5px; }
+    .station-3d-cab-readout--docked .station-3d-dash-speed,
+    .station-3d-cab-readout--docked .station-3d-cab-metric,
+    .station-3d-cab-readout--docked .station-3d-dash-compass { height: 34px; }
+    .station-3d-cab-readout--docked .station-3d-dash-speed-value { font-size: 17px; }
+    .station-3d-cab-readout--docked .station-3d-dash-compass { width: 66px; }
+    .station-3d-dash-center { gap: 4px; }
+    .station-3d-has-dashboard .station-3d-toast { bottom: 106px; }
+    .station-3d-has-dashboard .station-3d-sound-prompt { bottom: 106px; }
+    .station-3d-has-dashboard .station-3d-night-notice { bottom: 162px; }
+}
+
+/* Narrow portrait phones need a separate gauge row: the complete readout is
+   wider than the centre track left between the two control columns. Keeping it
+   in that track lets the flex row overflow over the door and brake buttons. */
+@media (max-width: 480px) and (orientation: portrait) {
+    .station-3d-header {
+        gap: 6px;
+        padding-inline: 10px;
+    }
+    .station-3d-header h3 {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .station-3d-header .station-3d-title-prefix {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .station-3d-dashboard {
+        height: 128px;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        grid-template-rows: 40px minmax(0, 1fr);
+        grid-template-areas:
+            "readout readout readout"
+            "left center controls";
+        row-gap: 4px;
+    }
+    .station-3d-dash-left { grid-area: left; }
+    .station-3d-dash-center {
+        display: contents;
+    }
+    .station-3d-dash-readout-dock {
+        grid-area: readout;
+        width: 100%;
+        overflow: hidden;
+    }
+    .station-3d-dash-station {
+        grid-area: center;
+        height: 40px;
+    }
+    .station-3d-dash-controls { grid-area: controls; }
+    .station-3d-cab-readout--docked {
+        width: 100%;
+        justify-content: center;
+        gap: 3px;
+        overflow: hidden;
+    }
+    .station-3d-cab-readout--docked .station-3d-dash-speed { width: 100px; padding: 5px 4px; }
+    .station-3d-cab-readout--docked .station-3d-dash-speed-value { font-size: 16px; }
+    .station-3d-cab-readout--docked .station-3d-dash-speed-limit { font-size: 10px; }
+    .station-3d-cab-readout--docked .station-3d-cab-altitude { width: 64px; }
+    .station-3d-cab-readout--docked .station-3d-cab-grade { width: 50px; }
+    .station-3d-cab-readout--docked .station-3d-cab-chainage { width: 72px; }
+    .station-3d-cab-readout--docked .station-3d-cab-metric-value { font-size: 11px; }
+    .station-3d-cab-readout--docked .station-3d-dash-compass { width: 60px; }
+    .station-3d-dash-statusline { bottom: 140px; }
+    .station-3d-has-dashboard .station-3d-toast,
+    .station-3d-has-dashboard .station-3d-sound-prompt { bottom: 140px; }
+    .station-3d-has-dashboard .station-3d-night-notice { bottom: 196px; }
+}
+
+@media (max-width: 380px) and (orientation: portrait) {
+    .station-3d-dashboard {
+        height: 164px;
+        grid-template-rows: 76px minmax(0, 1fr);
+    }
+    .station-3d-cab-readout--docked {
+        flex-wrap: wrap;
+        align-content: center;
+        row-gap: 3px;
+    }
+    .station-3d-dash-statusline { bottom: 176px; }
+    .station-3d-has-dashboard .station-3d-toast,
+    .station-3d-has-dashboard .station-3d-sound-prompt { bottom: 176px; }
+    .station-3d-has-dashboard .station-3d-night-notice { bottom: 232px; }
+}
+.station-3d-toast {
+    position: absolute;
+    left: 50%;
+    bottom: 34px;
+    transform: translateX(-50%);
+    background: rgba(15, 23, 42, 0.9);
+    color: #f8fafc;
+    padding: 10px 16px;
+    border-radius: 999px;
+    font-size: 0.92rem;
+    font-weight: 700;
+    line-height: 1;
+    text-align: center;
+    pointer-events: none;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 7;
+}
+.station-3d-toast.hidden,
+.station-3d-route-overlay.hidden { display: none; }
+/* Tighten the in-frame overlays (status pill, route header, toast) on
+   small viewports — narrow portraits and landscape phones whose width
+   exceeds 768 px but height is short (iPhone Pro is 932 × 430).
+   The frame itself is full-screen on every viewport now. */
+@media (max-width: 768px),
+       (orientation: landscape) and (max-height: 500px) {
+    .station-3d-status {
+        left: 16px;
+        top: 56px;
+        max-width: calc(100% - 168px);
+        font-size: 0.9rem;
+        padding: 10px 14px;
+    }
+    /* A prompt must fit its pill: the desktop counter reserve left 170 px on
+       a 390 px phone, less than "E · Uđi u obližnje vozilo". Wrap rather than
+       clip when a named vehicle makes it longer still. */
+    .station-3d-combat-hud-row > .station-3d-status {
+        max-width: calc(100% - 96px);
+        white-space: normal;
+        line-height: 1.2;
+        padding: 7px 12px;
+        font-size: 0.9rem;
+    }
+    /* Phones: the minimap owns the top-left, so the speed and altitude
+       readouts stack in the top-right as one right-aligned column with a
+       fixed top (the HUD keeps it under the status band, see
+       routeOverlayTopPx). Centred and wrapping, the speed box lay over the
+       minimap and the row broke into two lines whenever a value widened.
+       They are glanced at, not read: nearly transparent, and small. */
+    .station-3d-route-overlay {
+        top: 60px;
+        left: auto;
+        right: 12px;
+        transform: none;
+        max-width: calc(100% - 184px);
+        font-size: 0.85rem;
+        font-weight: 700;
+    }
+    .station-3d-route-line {
+        flex-direction: column;
+        flex-wrap: nowrap;
+        align-items: flex-end;
+        gap: 4px;
+    }
+    .station-3d-route-speed,
+    .station-3d-route-label {
+        min-height: 26px;
+        padding: 3px 8px;
+        background: rgba(8, 12, 16, 0.22);
+        border-color: rgba(255, 255, 255, 0.14);
+        box-shadow: none;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
+    }
+    .station-3d-minimap-panel { opacity: 0.55; }
+    .station-3d-minimap-wrap > button { opacity: 0.75; }
+    .station-3d-toast {
+        bottom: 22px;
+        max-width: calc(100% - 32px);
+    }
+}
+
+/* Campaign presentation palette, sampled from the Sloboda logo
+   (logo/raster/04): cream type, sunset gold, teal banner, maroon wordmark.
+   Menus are cream paper; in-world surfaces (dialogue, objective, captions)
+   are warm dark glass so they stay readable over bright scenes. The tokens
+   sit on :root because the chapter curtain lives on <body>, outside the
+   modal, and inherits from nothing else. */
+@font-face {
+    font-family: 'Bebas Neue';
+    src: url('../../logo/fonts/BebasNeue.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+:root {
+    --campaign-cream: #fcf4d0;
+    --campaign-cream-soft: #fcedaf;
+    --campaign-paper: #fff8e3;
+    --campaign-sand: #e9d5a0;
+    --campaign-gold: #f2b74d;
+    --campaign-orange: #f2981f;
+    --campaign-ember: #bb5222;
+    --campaign-maroon: #77070b;
+    --campaign-maroon-deep: #510408;
+    --campaign-ink: #2a0a0c;
+    --campaign-teal: #3f94a9;
+    --campaign-teal-deep: #125f75;
+    --campaign-glass: rgba(42, 8, 12, 0.88);
+    --campaign-display: 'Bebas Neue', 'Arial Narrow', Impact, sans-serif;
+}
+
+/* Narrow screens place the minimap below the objective card; wide screens
+   keep them in opposite corners. */
+#station3DContainer.has-campaign-objective {
+    --station3d-minimap-top: 128px;
+}
+
+.station-3d-campaign-objective {
+    box-sizing: border-box;
+    position: absolute;
+    z-index: 38;
+    top: 14px;
+    left: auto;
+    right: 14px;
+    width: min(260px, calc(100% - 36px));
+    display: grid;
+    gap: 5px;
+    padding: 9px 12px 10px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    color: #eef2f5;
+    background: rgba(14, 21, 29, 0.48);
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.12);
+    backdrop-filter: blur(4px);
+    font: 400 13px/1.4 ui-sans-serif, system-ui, sans-serif;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+    pointer-events: none;
+}
+
+.station-3d-campaign-objective.hidden,
+.station-3d-campaign-overlay.hidden,
+.station-3d-campaign-interaction.hidden,
+.station-3d-campaign-spoken-caption.hidden {
+    display: none;
+}
+
+.station-3d-campaign-interaction {
+    position: absolute;
+    z-index: 42;
+    left: 50%;
+    bottom: 142px;
+    translate: -50% 0;
+    padding: 10px 18px 8px;
+    border: 2px solid var(--campaign-gold);
+    border-radius: 12px;
+    color: var(--campaign-cream);
+    background: var(--campaign-glass);
+    box-shadow: 0 3px 0 var(--campaign-maroon-deep), 0 8px 30px rgba(0, 0, 0, 0.4);
+    font: 400 1.05rem/1 var(--campaign-display);
+    letter-spacing: 0.08em;
+    pointer-events: none;
+    white-space: nowrap;
+    animation: station-3d-campaign-prompt-pulse 1.4s ease-in-out infinite alternate;
+}
+
+@keyframes station-3d-campaign-prompt-pulse {
+    from { scale: 1; }
+    to { scale: 1.05; }
+}
+
+/* The phone-width pulse: the same attention beat without changing the box. */
+@keyframes station-3d-campaign-prompt-glow {
+    from { box-shadow: 0 3px 0 var(--campaign-maroon-deep), 0 8px 30px rgba(0, 0, 0, 0.4); }
+    to { box-shadow: 0 3px 0 var(--campaign-maroon-deep), 0 8px 30px rgba(0, 0, 0, 0.4), 0 0 18px rgba(242, 183, 77, 0.55); }
+}
+
+/* Spoken campaign warnings remain readable with muted audio. This is a real
+   caption rather than a transient HUD pill: speaker/cue on one line, shouted
+   dialogue beneath it, and enough contrast for bright exterior scenes. */
+.station-3d-campaign-spoken-caption {
+    position: absolute;
+    z-index: 44;
+    left: 50%;
+    bottom: clamp(124px, 19vh, 196px);
+    display: grid;
+    gap: 4px;
+    width: min(760px, calc(100% - 36px));
+    padding: 10px 18px 12px;
+    border: 2px solid rgba(242, 183, 77, 0.55);
+    border-radius: 10px;
+    color: var(--campaign-cream);
+    background: var(--campaign-glass);
+    box-shadow: 0 8px 34px rgba(0, 0, 0, 0.46);
+    text-align: center;
+    text-shadow: 0 2px 8px #000;
+    translate: -50% 0;
+    pointer-events: none;
+}
+
+.station-3d-campaign-spoken-caption.is-visible {
+    animation: station-3d-campaign-spoken-caption
+        var(--campaign-spoken-caption-duration, 3600ms) ease-out both;
+}
+
+@keyframes station-3d-campaign-spoken-caption {
+    0%, 84% { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+/* Story captions over live gameplay (the flight opening): the cinematic caption
+   look, bottom-centred, with no overlay, lease or pause behind it. */
+.station-3d-campaign-gameplay-caption {
+    position: absolute;
+    z-index: 44;
+    left: 50%;
+    bottom: clamp(96px, 16vh, 168px);
+    width: min(820px, calc(100% - 36px));
+    margin: 0;
+    color: var(--campaign-cream);
+    font: 620 clamp(1.08rem, 2.8vw, 1.55rem)/1.35 ui-sans-serif, system-ui, sans-serif;
+    text-align: center;
+    text-wrap: balance;
+    text-shadow: 0 2px 8px #000, 0 0 24px #000;
+    translate: -50% 0;
+    pointer-events: none;
+}
+
+.station-3d-campaign-gameplay-caption.hidden {
+    display: none;
+}
+
+.station-3d-campaign-spoken-caption-cue {
+    color: var(--campaign-gold);
+    font: 400 0.95rem/1.1 var(--campaign-display);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+}
+
+.station-3d-campaign-spoken-caption-cue.is-generic {
+    letter-spacing: 0.18em;
+}
+
+.station-3d-campaign-spoken-caption-line {
+    font: 680 clamp(1.05rem, 2.4vw, 1.45rem)/1.3 ui-sans-serif, system-ui, sans-serif;
+    text-wrap: balance;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .station-3d-campaign-spoken-caption.is-visible {
+        animation-duration: var(--campaign-spoken-caption-duration, 3600ms) !important;
+        animation-timing-function: steps(1, end);
+    }
+}
+
+.station-3d-campaign-eyebrow {
+    font: 400 0.95rem/1.1 var(--campaign-display);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+}
+
+.station-3d-campaign-eyebrow {
+    color: var(--campaign-teal-deep);
+}
+
+.station-3d-campaign-objective span,
+.station-3d-campaign-objective small {
+    color: #eef2f5;
+    font: 400 13px/1.4 ui-sans-serif, system-ui, sans-serif;
+}
+
+.station-3d-campaign-objective small {
+    color: #c3cbd2;
+}
+
+.station-3d-campaign-chapter-transition {
+    position: absolute;
+    z-index: 96;
+    top: 22%;
+    left: 50%;
+    display: grid;
+    min-width: min(430px, calc(100vw - 36px));
+    place-items: center;
+    gap: 9px;
+    padding: 18px 28px 21px;
+    color: var(--campaign-cream);
+    text-align: center;
+    text-shadow: 0 3px 18px rgba(0, 0, 0, 0.95);
+    background: radial-gradient(ellipse, rgba(42, 8, 12, 0.84), rgba(42, 8, 12, 0) 72%);
+    pointer-events: none;
+    animation: station-3d-campaign-chapter-mark 2.8s ease both;
+}
+
+.station-3d-campaign-chapter-transition span {
+    color: var(--campaign-gold);
+    font: 400 1.05rem/1.1 var(--campaign-display);
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+}
+
+.station-3d-campaign-chapter-transition i {
+    display: block;
+    width: min(260px, 62vw);
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--campaign-gold) 20% 80%, transparent);
+    box-shadow: 0 0 12px rgba(242, 183, 77, 0.7);
+}
+
+.station-3d-campaign-chapter-transition strong {
+    font: 400 clamp(2.3rem, 6.4vw, 3.9rem)/1 var(--campaign-display);
+    letter-spacing: 0.06em;
+    text-shadow: 0 3px 0 var(--campaign-maroon-deep), 0 8px 26px rgba(0, 0, 0, 0.85);
+}
+
+@keyframes station-3d-campaign-chapter-mark {
+    0% { opacity: 0; transform: translate(-50%, -18px) scale(0.98); }
+    15%, 72% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, 7px) scale(1.01); }
+}
+
+/* Between chapters the Station3D modal is hidden while the old session closes,
+   so this cover lives on <body> and sits above the modal (z-index 4100) — the
+   /prijevoz map behind it must never be on screen mid-campaign. */
+.station-3d-campaign-curtain {
+    position: fixed;
+    inset: 0;
+    z-index: 4200;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    padding: 24px;
+    box-sizing: border-box;
+    /* A phone on its side with the developer breakdown open can be taller than
+       the screen: scroll rather than clip. */
+    overflow-y: auto;
+    color: var(--campaign-cream);
+    text-align: center;
+    background: radial-gradient(ellipse at 50% 32%, #6a0f16, #2a0a0c 62%, #150406);
+    /* No fade-in: the curtain exists to cover the world underneath from its
+       first frame. A 220 ms fade let the bare sky of the opening modal show
+       through as a light-blue flash before every chapter load. */
+}
+
+/* The brand rides every chapter load; decorative, so no markup needed. */
+.station-3d-campaign-curtain::before {
+    width: min(440px, 74vw);
+    aspect-ratio: 720 / 344;
+    margin-bottom: 4px;
+    content: '';
+    background: url('../assets/logo/vagabond-croatia.webp') center / contain no-repeat;
+    filter: drop-shadow(0 10px 24px rgba(0, 0, 0, 0.4));
+}
+
+/* Eyebrow, rule and mark, as the chapter card: "Poglavlje 6" over "Toranj" for a
+   chapter, "Sloboda" over "Zagreb" for a free-roam start. */
+.station-3d-campaign-curtain-title {
+    display: grid;
+    place-items: center;
+    gap: 9px;
+    margin-bottom: 6px;
+    color: var(--campaign-cream);
+    text-align: center;
+    text-shadow: 0 3px 18px rgba(0, 0, 0, 0.95);
+}
+
+.station-3d-campaign-curtain-title span {
+    color: var(--campaign-gold);
+    font: 400 1.05rem/1.1 var(--campaign-display);
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+}
+
+.station-3d-campaign-curtain-title i {
+    display: block;
+    width: min(260px, 62vw);
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--campaign-gold) 20% 80%, transparent);
+    box-shadow: 0 0 12px rgba(242, 183, 77, 0.7);
+}
+
+.station-3d-campaign-curtain-title strong {
+    font: 400 clamp(2rem, 5.6vw, 3.4rem)/1 var(--campaign-display);
+    letter-spacing: 0.06em;
+    text-shadow: 0 3px 0 var(--campaign-maroon-deep), 0 8px 26px rgba(0, 0, 0, 0.85);
+}
+
+.station-3d-campaign-curtain-label {
+    color: var(--campaign-gold);
+    font: 400 1.05rem/1.2 var(--campaign-display);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    max-width: min(560px, 86vw);
+    text-align: center;
+}
+
+.station-3d-campaign-curtain-stage,
+.station-3d-campaign-curtain-tasks,
+.station-3d-campaign-curtain-activity {
+    display: block;
+}
+
+.station-3d-campaign-curtain-tasks,
+.station-3d-campaign-curtain-activity {
+    margin-top: 10px;
+    color: var(--campaign-cream);
+    font: 400 13px/1.55 system-ui, sans-serif;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: normal;
+    text-transform: none;
+    white-space: pre-line;
+}
+
+.station-3d-campaign-curtain-activity {
+    opacity: 0.75;
+}
+
+/* Only a named stage with measured progress gets a determinate bar. */
+.station-3d-campaign-curtain-bar {
+    display: block;
+    width: min(360px, 62vw);
+    height: 5px;
+    margin-top: 6px;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.16);
+    overflow: hidden;
+}
+
+.station-3d-campaign-curtain[hidden],
+.station-3d-campaign-curtain > [hidden],
+.station-3d-campaign-curtain-label > [hidden] {
+    display: none;
+}
+
+.station-3d-campaign-curtain > .station-3d-photo-loading-spinner {
+    width: 26px;
+    height: 26px;
+    border-width: 3px;
+}
+
+/* The way back to the map on every load a host started. */
+.station-3d-campaign-curtain-cancel {
+    margin-top: 10px;
+    min-height: 44px;
+    padding: 10px 14px 8px;
+    border: 2px solid var(--campaign-cream);
+    border-radius: 12px;
+    background: transparent;
+    color: var(--campaign-cream);
+    font: 400 16px/1 var(--campaign-display);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+}
+
+.station-3d-campaign-curtain-cancel:hover {
+    background: var(--campaign-cream);
+    color: var(--campaign-maroon-deep);
+}
+
+.station-3d-campaign-curtain-fill {
+    display: block;
+    height: 100%;
+    width: 0%;
+    border-radius: 3px;
+    background: var(--campaign-gold);
+    transition: width 0.25s ease;
+}
+
+.station-3d-campaign-curtain-bar.is-indeterminate .station-3d-campaign-curtain-fill {
+    width: 35%;
+    transition: none;
+    animation: station-3d-load-activity 1.8s ease-in-out infinite alternate;
+}
+
+@keyframes station-3d-load-activity {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(286%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .station-3d-campaign-curtain-bar.is-indeterminate .station-3d-campaign-curtain-fill {
+        animation: none;
+        transform: translateX(93%);
+        opacity: 0.65;
+    }
+    .station-3d-campaign-curtain-fill { transition: none; }
+}
+
+/* The bake indicator (offline compiler sessions only): above everything,
+   because it is the only thing that tells a settling wait from a stall. */
+.station-3d-bake-status {
+    position: fixed;
+    top: 14px;
+    left: 14px;
+    transform: none;
+    /* Above the chapter curtain (4200) and the modal (4100). */
+    z-index: 4300;
+    gap: 8px;
+    border-color: rgba(242, 183, 77, 0.55);
+    font: 600 13px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.station-3d-bake-status strong {
+    color: var(--campaign-gold, #f2b74d);
+    letter-spacing: 0.18em;
+}
+
+.station-3d-bake-status em {
+    font-style: normal;
+    color: rgba(230, 237, 243, 0.75);
+}
+
+.station-3d-bake-status small {
+    flex-basis: 100%;
+    color: rgba(230, 237, 243, 0.82);
+    font-size: 12px;
+}
+
+.station-3d-bake-status.is-failed {
+    border-color: rgba(255, 99, 99, 0.7);
+}
+
+.station-3d-bake-status.is-done {
+    border-color: rgba(52, 199, 89, 0.7);
+}
+
+.station-3d-campaign-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 80;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    overflow: auto;
+    color: var(--campaign-cream);
+    background: rgba(38, 8, 12, 0.74);
+    backdrop-filter: blur(8px);
+}
+
+/* Cinematics and staged dialogue are the world view, not modals over it. Keep
+   menu/failure glass blurred, but leave camera-led presentation sharp and only
+   shade the caption edge enough for white type to remain readable. */
+.station-3d-campaign-overlay[data-kind="cinematic"] {
+    --campaign-letterbox-size: clamp(34px, 6.5vh, 76px);
+    overflow: hidden;
+    padding: var(--campaign-letterbox-size) 24px;
+    background: linear-gradient(
+        to bottom,
+        rgba(20, 5, 6, 0.02) 0 58%,
+        rgba(20, 5, 6, 0.4) 100%
+    );
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
+.station-3d-campaign-overlay[data-kind="conversation"] {
+    --campaign-dialogue-bar-size: clamp(26px, 4.5vh, 52px);
+    place-items: end center;
+    overflow: hidden;
+    padding: var(--campaign-dialogue-bar-size) 24px;
+    background: linear-gradient(
+        to bottom,
+        rgba(20, 5, 6, 0.04) 0 56%,
+        rgba(20, 5, 6, 0.6) 100%
+    );
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
+/* Cinematic presentation owns the complete frame. The renderer canvas and the
+   cinematic overlay remain; route cards, instruments, touch pads, minimap,
+   debug panels and any future direct-child HUD stay out of the composition. */
+.station-3d-modal.has-campaign-cinematic .station-3d-header {
+    display: none;
+}
+
+.station-3d-modal.has-campaign-cinematic > [data-cab-walk-controls],
+.station-3d-modal.has-campaign-cinematic > [data-cab-walk-jetpack] {
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+}
+
+#station3DContainer.has-campaign-cinematic
+    > :not(canvas):not(.station-3d-campaign-overlay):not(.station-3d-campaign-cinematic-reveal):not(.station-3d-campaign-spoken-caption) {
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+}
+
+body.station3d-cinematic-active .station3d-dev-overlay {
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Dialogue also owns the complete frame. The lower-third remains interactive;
+   every unrelated HUD surface yields until the response returns control. */
+.station-3d-modal.has-campaign-dialogue .station-3d-header {
+    display: none;
+}
+
+.station-3d-modal.has-campaign-dialogue > [data-cab-walk-controls],
+.station-3d-modal.has-campaign-dialogue > [data-cab-walk-jetpack] {
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+}
+
+#station3DContainer.has-campaign-dialogue
+    > :not(canvas):not(.station-3d-campaign-overlay):not(.station-3d-campaign-dialogue-reveal) {
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+}
+
+body.station3d-dialogue-active .station3d-dev-overlay {
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.station-3d-campaign-overlay[data-kind="cinematic"]::before,
+.station-3d-campaign-overlay[data-kind="cinematic"]::after {
+    position: absolute;
+    z-index: 5;
+    left: 0;
+    width: 100%;
+    height: var(--campaign-letterbox-size);
+    content: '';
+    background: #0d0304;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.72);
+    pointer-events: none;
+    animation: station-3d-campaign-letterbox-in 520ms ease-out both;
+}
+
+.station-3d-campaign-overlay[data-kind="cinematic"]::before { top: 0; }
+.station-3d-campaign-overlay[data-kind="cinematic"]::after { bottom: 0; }
+
+.station-3d-campaign-overlay[data-kind="conversation"]::before,
+.station-3d-campaign-overlay[data-kind="conversation"]::after {
+    position: absolute;
+    z-index: 5;
+    left: 0;
+    width: 100%;
+    height: var(--campaign-dialogue-bar-size);
+    content: '';
+    background: #0d0304;
+    box-shadow: 0 0 24px rgba(0, 0, 0, 0.62);
+    pointer-events: none;
+    animation: station-3d-campaign-letterbox-in 360ms ease-out both;
+}
+
+.station-3d-campaign-overlay[data-kind="conversation"]::before { top: 0; }
+.station-3d-campaign-overlay[data-kind="conversation"]::after { bottom: 0; }
+
+.station-3d-campaign-cinematic-curtain {
+    position: absolute;
+    z-index: 10;
+    inset: 0;
+    opacity: 1;
+    background: #0d0304;
+    pointer-events: none;
+    will-change: opacity;
+}
+
+.station-3d-campaign-dialogue-curtain {
+    position: absolute;
+    z-index: 10;
+    inset: 0;
+    opacity: 1;
+    background: #0d0304;
+    pointer-events: none;
+    will-change: opacity;
+}
+
+.station-3d-campaign-cinematic-reveal {
+    position: absolute;
+    z-index: 4200;
+    inset: 0;
+    opacity: 1;
+    background: #0d0304;
+    pointer-events: none;
+}
+
+.station-3d-campaign-dialogue-reveal {
+    position: absolute;
+    z-index: 4200;
+    inset: 0;
+    opacity: 1;
+    background: #0d0304;
+    pointer-events: none;
+}
+
+@keyframes station-3d-campaign-letterbox-in {
+    from { transform: scaleY(0); }
+    to { transform: scaleY(1); }
+}
+
+.station-3d-campaign-card {
+    width: min(660px, 100%);
+    max-height: min(760px, calc(100vh - 56px));
+    overflow: auto;
+    padding: 26px 28px 28px;
+    border: 3px solid var(--campaign-maroon);
+    border-radius: 20px;
+    color: var(--campaign-ink);
+    background: linear-gradient(180deg, var(--campaign-paper), #fcf0cc);
+    box-shadow: 0 0 0 5px var(--campaign-cream), 0 0 0 6px rgba(81, 4, 8, 0.4), 0 28px 90px rgba(0, 0, 0, 0.55);
+    animation: station-3d-campaign-card-in 340ms cubic-bezier(0.2, 1.3, 0.4, 1) both;
+}
+
+@keyframes station-3d-campaign-card-in {
+    from { opacity: 0; scale: 0.94; translate: 0 14px; }
+    to { opacity: 1; scale: 1; translate: 0 0; }
+}
+
+.station-3d-campaign-card h2,
+.station-3d-campaign-card h3,
+.station-3d-campaign-card p {
+    margin: 0;
+}
+
+.station-3d-campaign-card h2 {
+    margin-top: 6px;
+    color: var(--campaign-maroon-deep);
+    font: 400 clamp(2rem, 5vw, 2.9rem)/1 var(--campaign-display);
+    letter-spacing: 0.04em;
+}
+
+.station-3d-campaign-card > p,
+.station-3d-campaign-menu-notice {
+    margin: 0.4rem 0 0.6rem;
+    font-size: 0.92rem;
+    line-height: 1.5;
+    color: var(--campaign-ember);
+}
+
+.station-3d-campaign-menu-item p {
+    margin-top: 8px;
+    color: #4a2a20;
+    line-height: 1.5;
+}
+
+.station-3d-campaign-menu-item h3 {
+    color: var(--campaign-teal-deep);
+    font: 400 1.6rem/1.05 var(--campaign-display);
+    letter-spacing: 0.04em;
+}
+
+.station-3d-campaign-menu-item {
+    margin-top: 18px;
+    padding: 16px 18px;
+    border: 2px solid var(--campaign-sand);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.55);
+}
+
+/* End-card run summary: chapters, objectives, scenes and (for a real
+   playthrough) the time it took. Wraps to one column on a narrow phone. */
+.station-3d-campaign-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 26px;
+    margin: 16px 0 0;
+    padding: 14px 0 0;
+    border-top: 2px solid var(--campaign-sand);
+}
+
+.station-3d-campaign-stats div {
+    min-width: 74px;
+}
+
+.station-3d-campaign-stats dt {
+    margin: 0;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    opacity: 0.7;
+}
+
+.station-3d-campaign-stats dd {
+    margin: 2px 0 0;
+    font-size: 20px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.station-3d-campaign-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 9px;
+    margin-top: 18px;
+}
+
+.station-3d-campaign-action {
+    width: auto;
+    min-height: 44px;
+    margin-top: 0;
+    padding: 11px 18px 8px;
+    border: 2px solid var(--campaign-maroon);
+    border-radius: 12px;
+    color: var(--campaign-maroon-deep);
+    background: var(--campaign-paper);
+    font: 400 1.15rem/1 var(--campaign-display);
+    letter-spacing: 0.08em;
+    box-shadow: 0 3px 0 var(--campaign-maroon-deep);
+    cursor: pointer;
+    transition: translate 120ms ease, box-shadow 120ms ease, filter 120ms ease;
+}
+
+/* Three pseudo-classes so the hover outranks the modal's generic button hover. */
+.station-3d-campaign-action:hover:not(:disabled):not(:active) {
+    translate: 0 -1px;
+    box-shadow: 0 4px 0 var(--campaign-maroon-deep);
+    filter: brightness(1.05);
+}
+
+.station-3d-campaign-action:active:not(:disabled) {
+    translate: 0 2px;
+    box-shadow: 0 1px 0 var(--campaign-maroon-deep);
+}
+
+.station-3d-campaign-action:focus-visible {
+    outline: 3px solid rgba(242, 183, 77, 0.8);
+    outline-offset: 2px;
+}
+
+.station-3d-campaign-action.is-primary {
+    border-color: var(--campaign-maroon);
+    color: var(--campaign-maroon-deep);
+    background: linear-gradient(180deg, #f8c65e, var(--campaign-orange));
+}
+
+.station-3d-campaign-action.is-danger {
+    border-color: var(--campaign-maroon-deep);
+    color: var(--campaign-cream);
+    background: var(--campaign-maroon);
+}
+
+.station-3d-campaign-action:disabled {
+    opacity: 0.45;
+    box-shadow: none;
+    cursor: not-allowed;
+}
+
+.station-3d-campaign-gallery {
+    margin-top: 15px;
+    color: #4a2a20;
+}
+
+.station-3d-campaign-gallery summary {
+    cursor: pointer;
+    color: var(--campaign-teal-deep);
+    font: 400 1.15rem/1.2 var(--campaign-display);
+    letter-spacing: 0.06em;
+}
+
+.station-3d-campaign-gallery .station-3d-campaign-action {
+    margin: 9px 7px 0 0;
+}
+
+.station-3d-campaign-dialogue {
+    position: relative;
+    z-index: 6;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas:
+        "portrait speaker"
+        "portrait direction"
+        "portrait line"
+        "portrait responses";
+    align-items: end;
+    column-gap: 18px;
+    width: min(920px, calc(100% - 32px));
+    max-height: calc(100vh - (2 * var(--campaign-dialogue-bar-size)) - 20px);
+    margin-bottom: 8px;
+    padding: 18px 24px 16px;
+    overflow: auto;
+    border: 2px solid rgba(242, 183, 77, 0.6);
+    border-bottom: 0;
+    border-radius: 16px 16px 0 0;
+    color: var(--campaign-cream);
+    background:
+        linear-gradient(90deg, rgba(42, 8, 12, 0.94), rgba(64, 14, 20, 0.86) 72%, rgba(42, 8, 12, 0.62)),
+        radial-gradient(ellipse at center, rgba(42, 8, 12, 0.76), transparent 78%);
+    box-shadow: 0 -16px 44px rgba(0, 0, 0, 0.4);
+    animation: station-3d-campaign-dialogue-in 280ms cubic-bezier(0.2, 1.2, 0.4, 1) both;
+}
+
+.station-3d-campaign-dialogue.is-stage-direction {
+    min-height: 150px;
+    display: grid;
+    place-content: center;
+    text-align: center;
+}
+
+.station-3d-campaign-dialogue.is-stage-direction h2 {
+    font-style: italic;
+    font-weight: 600;
+}
+
+.station-3d-campaign-dialogue .station-3d-campaign-dialogue-direction {
+    grid-area: direction;
+    color: var(--campaign-cream);
+    margin: 8px 0 0;
+    font-style: italic;
+    opacity: 0.78;
+}
+
+@keyframes station-3d-campaign-dialogue-in {
+    from { opacity: 0; translate: 0 18px; }
+    to { opacity: 1; translate: 0 0; }
+}
+
+/* The speaker's name is a slanted teal banner, like the logo's CROATIA ribbon. */
+.station-3d-campaign-dialogue .station-3d-campaign-eyebrow {
+    grid-area: speaker;
+    align-self: end;
+    justify-self: start;
+    padding: 6px 12px 4px;
+    border: 2px solid var(--campaign-teal);
+    border-radius: 6px;
+    color: var(--campaign-cream);
+    background: var(--campaign-teal-deep);
+    font-size: 1.05rem;
+    letter-spacing: 0.14em;
+    text-shadow: none;
+    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.4);
+    transform: skewX(-6deg);
+}
+
+.station-3d-campaign-dialogue h2 {
+    grid-area: line;
+    max-width: 62ch;
+    margin-top: 8px;
+    color: var(--campaign-cream);
+    font: 600 clamp(1.08rem, 2.3vw, 1.48rem)/1.4 ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: 0;
+    text-wrap: balance;
+    text-shadow: 0 2px 10px #000, 0 0 22px rgba(0, 0, 0, 0.75);
+}
+
+.station-3d-campaign-dialogue .station-3d-campaign-actions {
+    grid-area: responses;
+    margin-top: 12px;
+}
+
+.station-3d-campaign-dialogue .station-3d-campaign-action {
+    min-height: 38px;
+    padding: 9px 16px 6px;
+    border-color: rgba(252, 244, 208, 0.55);
+    color: var(--campaign-cream);
+    background: rgba(81, 4, 8, 0.62);
+    font-size: 1rem;
+    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.5);
+}
+
+.station-3d-campaign-dialogue .station-3d-campaign-action.is-primary {
+    border-color: var(--campaign-maroon-deep);
+    color: var(--campaign-maroon-deep);
+    background: linear-gradient(180deg, #f8c65e, var(--campaign-orange));
+}
+
+.station-3d-campaign-portrait {
+    float: left;
+    width: 68px;
+    height: 82px;
+    margin: 0 18px 12px 0;
+    border: 3px solid var(--campaign-cream);
+    border-radius: 14px;
+    object-fit: cover;
+    display: grid;
+    place-items: center;
+    color: #fff;
+    font-size: 28px;
+    background:
+        radial-gradient(circle at 50% 28%, #e5b98d 0 17%, transparent 18%),
+        linear-gradient(155deg, var(--campaign-portrait-color, #475569) 0 62%, #2a0a0c 63%);
+    box-shadow: 0 0 0 2px var(--campaign-maroon), inset 0 0 28px rgba(0, 0, 0, 0.25);
+}
+
+/* Illustrated portraits earn more room than the placeholder glyph. */
+.station-3d-campaign-portrait.is-image {
+    width: 104px;
+    height: 124px;
+    background: #2a0a0c;
+}
+
+/* A tilted, cream-framed sticker that pops in with each new speaker. */
+.station-3d-campaign-dialogue .station-3d-campaign-portrait {
+    grid-area: portrait;
+    align-self: end;
+    float: none;
+    width: 84px;
+    height: 102px;
+    margin: 0;
+    border-radius: 12px;
+    box-shadow: 0 0 0 2px var(--campaign-maroon), 0 8px 24px rgba(0, 0, 0, 0.5);
+    rotate: -2.5deg;
+    animation: station-3d-campaign-portrait-in 360ms cubic-bezier(0.2, 1.5, 0.4, 1) both;
+}
+
+@keyframes station-3d-campaign-portrait-in {
+    from { opacity: 0; scale: 0.82; rotate: -9deg; }
+    to { opacity: 1; scale: 1; rotate: -2.5deg; }
+}
+
+.station-3d-campaign-dialogue .station-3d-campaign-portrait.is-image {
+    width: 112px;
+    height: 136px;
+}
+
+@media (min-width: 700px) {
+    .station-3d-campaign-portrait.is-image {
+        width: 136px;
+        height: 160px;
+    }
+}
+
+.station-3d-campaign-cinematic {
+    position: relative;
+    z-index: 6;
+    align-self: end;
+    width: min(880px, calc(100% - 32px));
+    margin-bottom: 8px;
+    padding: 12px 22px 8px;
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    color: var(--campaign-cream);
+    text-align: center;
+    background: radial-gradient(
+        ellipse at center,
+        rgba(42, 8, 12, 0.72) 0,
+        rgba(42, 8, 12, 0.38) 54%,
+        transparent 78%
+    );
+    box-shadow: none;
+    animation: none;
+}
+
+.station-3d-campaign-cinematic h2 {
+    margin: 0;
+    color: var(--campaign-gold);
+    font: 400 1.1rem/1.1 var(--campaign-display);
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    text-shadow: 0 2px 14px #000;
+}
+
+.station-3d-campaign-cinematic .station-3d-campaign-actions {
+    justify-content: center;
+    margin-top: 9px;
+}
+
+.station-3d-campaign-cinematic .station-3d-campaign-action {
+    flex: 0 0 auto;
+    min-width: 112px;
+    min-height: 38px;
+    padding: 9px 18px 6px;
+    border-color: rgba(252, 244, 208, 0.55);
+    color: var(--campaign-cream);
+    background: rgba(81, 4, 8, 0.6);
+    font-size: 1rem;
+    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+}
+
+.station-3d-campaign-cinematic .station-3d-campaign-action.is-primary {
+    border-color: var(--campaign-maroon-deep);
+    color: var(--campaign-maroon-deep);
+    background: linear-gradient(180deg, #f8c65e, var(--campaign-orange));
+}
+
+.station-3d-campaign-cinematic-artwork {
+    position: absolute;
+    z-index: 1;
+    top: 43%;
+    left: 50%;
+    width: min(76vw, 1080px);
+    max-height: 64vh;
+    margin: 0;
+    opacity: 0;
+    overflow: hidden;
+    isolation: isolate;
+    border-radius: 4px;
+    transform: translate(-50%, -50%) scale(0.975);
+    transition: opacity 420ms ease, transform 520ms ease;
+    pointer-events: none;
+}
+
+.station-3d-campaign-cinematic-artwork.is-visible {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+.station-3d-campaign-cinematic-artwork img {
+    position: relative;
+    z-index: 0;
+    display: block;
+    width: 100%;
+    max-height: 64vh;
+    border: 2px solid rgba(252, 244, 208, 0.8);
+    border-radius: 6px;
+    object-fit: contain;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.74), 0 0 35px rgba(242, 183, 77, 0.22);
+}
+
+.station-3d-campaign-cinematic-artwork.has-shimmer::after {
+    position: absolute;
+    z-index: 1;
+    inset: -18% -42%;
+    content: '';
+    opacity: 0;
+    background: linear-gradient(
+        108deg,
+        transparent 37%,
+        rgba(242, 183, 77, 0.08) 44%,
+        rgba(255, 255, 255, 0.48) 50%,
+        rgba(252, 244, 208, 0.14) 56%,
+        transparent 63%
+    );
+    mix-blend-mode: screen;
+    transform: translateX(-58%);
+    pointer-events: none;
+}
+
+.station-3d-campaign-cinematic-artwork.has-shimmer.is-visible::after {
+    animation: station-3d-campaign-blueprint-shimmer 3.4s ease-in-out infinite;
+}
+
+@keyframes station-3d-campaign-blueprint-shimmer {
+    0%, 17% { opacity: 0; transform: translateX(-58%); }
+    27% { opacity: 0.75; }
+    48% { opacity: 0.28; transform: translateX(58%); }
+    49%, 100% { opacity: 0; transform: translateX(58%); }
+}
+
+.station-3d-campaign-newspapers {
+    position: absolute;
+    z-index: 2;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    padding: 28px 32px 125px;
+    overflow: hidden;
+    background: radial-gradient(ellipse at 50% 40%, #463c32, #171311 65%, #080706);
+    pointer-events: none;
+}
+
+.station-3d-campaign-newspaper {
+    box-sizing: border-box;
+    width: min(100%, 990px);
+    padding: clamp(15px, 2.5vw, 32px);
+    color: #25221c;
+    border: 1px solid #b6aa8e;
+    background: repeating-linear-gradient(0deg, #00000003 0 1px, transparent 1px 3px), #e9dfc5;
+    box-shadow: 0 18px 70px #000b, 5px 5px 0 #b9ae92, -3px -3px 0 #d3c7a9;
+    font-family: Georgia, 'Times New Roman', serif;
+    transform-origin: center;
+    will-change: transform, opacity;
+}
+
+.station-3d-campaign-newspaper[hidden] { display: none; }
+.station-3d-newspaper-masthead {
+    padding-bottom: 10px;
+    border-bottom: 5px double currentColor;
+    font-size: clamp(30px, 5.5vw, 70px);
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: -0.055em;
+    text-align: center;
+}
+
+.station-3d-campaign-newspaper[data-style="evening"] .station-3d-newspaper-masthead { font-style: italic; }
+.station-3d-campaign-newspaper[data-style="tabloid"] .station-3d-newspaper-masthead,
+.station-3d-campaign-newspaper[data-style="youth"] .station-3d-newspaper-masthead {
+    font-family: Impact, 'Arial Narrow', sans-serif;
+    letter-spacing: -0.035em;
+}
+.station-3d-campaign-newspaper[data-style="party"] .station-3d-newspaper-masthead {
+    color: #7d2921;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+}
+.station-3d-newspaper-edition {
+    margin: 8px 0 14px;
+    padding-bottom: 7px;
+    border-bottom: 1px solid currentColor;
+    font: 600 clamp(10px, 1.1vw, 13px)/1.3 ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    text-align: center;
+}
+.station-3d-newspaper-headline {
+    margin: 0;
+    color: inherit;
+    font: 900 clamp(26px, 4.1vw, 52px)/1.02 Georgia, 'Times New Roman', serif;
+    letter-spacing: -0.035em;
+    text-wrap: balance;
+    text-align: center;
+}
+.station-3d-newspaper-deck {
+    margin: 13px auto 16px;
+    max-width: 70ch;
+    font-size: clamp(13px, 1.5vw, 19px);
+    line-height: 1.25;
+    font-style: italic;
+    text-align: center;
+}
+.station-3d-newspaper-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    border-top: 2px solid currentColor;
+    padding-top: 12px;
+}
+.station-3d-newspaper-picture {
+    width: 100%;
+    height: clamp(85px, 19vh, 165px);
+    object-fit: cover;
+    object-position: center 44%;
+    filter: grayscale(1) sepia(0.3) contrast(1.2);
+    mix-blend-mode: multiply;
+}
+.station-3d-newspaper-summary {
+    margin: 0 0 10px;
+    font-size: clamp(12px, 1.35vw, 16px);
+    line-height: 1.3;
+}
+.station-3d-newspaper-rules {
+    height: 55px;
+    opacity: 0.27;
+    background: repeating-linear-gradient(transparent 0 4px, #4f483c 4px 5px, transparent 5px 8px);
+}
+.station-3d-newspaper-folio {
+    margin-top: 10px;
+    padding-top: 6px;
+    border-top: 1px solid currentColor;
+    text-align: right;
+    font: 11px/1.1 ui-sans-serif, system-ui, sans-serif;
+}
+.station-3d-campaign-overlay[data-newspapers="true"] .station-3d-campaign-caption { display: none; }
+.station-3d-campaign-overlay[data-newspapers="true"] .station-3d-campaign-cinematic { background: none; }
+@media (max-width: 640px) {
+    .station-3d-campaign-newspapers { padding: 18px 16px 120px; }
+    .station-3d-newspaper-edition { letter-spacing: 0.04em; }
+    .station-3d-newspaper-columns { gap: 10px; }
+    .station-3d-newspaper-rules { display: none; }
+}
+@media (max-height: 600px) {
+    .station-3d-campaign-newspapers { padding-top: 12px; padding-bottom: 100px; }
+    .station-3d-newspaper-masthead { font-size: 34px; padding-bottom: 4px; }
+    .station-3d-newspaper-headline { font-size: 28px; }
+    .station-3d-newspaper-columns { display: none; }
+    .station-3d-newspaper-deck { margin: 8px 0; }
+    .station-3d-newspaper-edition { margin: 5px 0 8px; }
+}
+
+.station-3d-campaign-card > .station-3d-campaign-caption {
+    min-height: 1.5em;
+    margin-top: 7px;
+    color: var(--campaign-cream);
+    font: 620 clamp(1.08rem, 2.8vw, 1.55rem)/1.35 ui-sans-serif, system-ui, sans-serif;
+    text-wrap: balance;
+    text-shadow: 0 2px 8px #000, 0 0 24px #000;
+}
+
+.station-3d-campaign-cinematic progress {
+    width: min(520px, 76%);
+    height: 2px;
+    opacity: 0.72;
+    accent-color: var(--campaign-gold);
+}
+
+@media (max-width: 640px) {
+    .station-3d-campaign-objective {
+        top: 10px;
+        left: auto;
+        right: 10px;
+        width: min(260px, calc(100% - 20px));
+    }
+
+    .station-3d-campaign-overlay {
+        padding: 12px;
+    }
+
+    .station-3d-campaign-overlay[data-kind="cinematic"] {
+        --campaign-letterbox-size: clamp(24px, 5vh, 44px);
+        padding: var(--campaign-letterbox-size) 12px;
+    }
+
+    .station-3d-campaign-overlay[data-kind="conversation"] {
+        --campaign-dialogue-bar-size: clamp(20px, 3.8vh, 34px);
+        padding: var(--campaign-dialogue-bar-size) 8px;
+    }
+
+    .station-3d-campaign-card {
+        padding: 19px;
+        border-radius: 14px;
+    }
+
+    .station-3d-campaign-action {
+        flex: 1 1 46%;
+    }
+
+    .station-3d-campaign-dialogue {
+        column-gap: 11px;
+        width: calc(100% - 4px);
+        margin-bottom: 4px;
+        padding: 11px 10px 10px;
+    }
+
+    .station-3d-campaign-dialogue .station-3d-campaign-portrait,
+    .station-3d-campaign-dialogue .station-3d-campaign-portrait.is-image {
+        width: 72px;
+        height: 88px;
+    }
+
+    .station-3d-campaign-dialogue h2 {
+        font-size: clamp(0.98rem, 4.2vw, 1.22rem);
+        line-height: 1.34;
+    }
+
+    .station-3d-campaign-dialogue .station-3d-campaign-actions {
+        gap: 6px;
+        margin-top: 8px;
+    }
+
+    .station-3d-campaign-dialogue .station-3d-campaign-action {
+        flex: 1 1 44%;
+        min-height: 32px;
+        padding: 6px 9px;
+        font-size: 0.74rem;
+    }
+
+    .station-3d-campaign-cinematic-artwork {
+        top: 39%;
+        width: calc(100vw - 24px);
+        max-height: 54vh;
+    }
+
+    .station-3d-campaign-cinematic-artwork img {
+        max-height: 54vh;
+    }
+
+    .station-3d-campaign-cinematic {
+        width: calc(100% - 8px);
+        padding-inline: 4px;
+    }
+
+    .station-3d-campaign-cinematic .station-3d-campaign-action {
+        flex: 0 0 auto;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .station-3d-campaign-chapter-transition {
+        animation-name: station-3d-campaign-chapter-mark-reduced;
+        animation-duration: 1.8s;
+    }
+
+    .station-3d-campaign-cinematic-artwork {
+        transition: none;
+    }
+
+    .station-3d-campaign-card,
+    .station-3d-campaign-dialogue,
+    .station-3d-campaign-dialogue .station-3d-campaign-portrait,
+    .station-3d-campaign-interaction {
+        animation: none;
+    }
+
+    .station-3d-campaign-action {
+        transition: none;
+    }
+
+    .station-3d-campaign-cinematic-artwork.has-shimmer.is-visible::after {
+        animation: none;
+    }
+
+    .station-3d-campaign-overlay[data-kind="cinematic"]::before,
+    .station-3d-campaign-overlay[data-kind="cinematic"]::after,
+    .station-3d-campaign-overlay[data-kind="conversation"]::before,
+    .station-3d-campaign-overlay[data-kind="conversation"]::after {
+        animation: none;
+    }
+}
+
+@keyframes station-3d-campaign-chapter-mark-reduced {
+    0%, 82% { opacity: 1; transform: translate(-50%, 0); }
+    100% { opacity: 0; transform: translate(-50%, 0); }
+}
+
+/* Parking brake: same console family as the doors, lit while it is applied. */
+.station-3d-dash-brake { font-weight: 700; letter-spacing: 0; }
+
+/* Let presentation CSS control these elements without fighting inline display. */
+.station-3d-modal :is([data-cab-walk-mode], [data-cab-weapon-toggle]):not([hidden]) { display: inline-flex; }
+.station-3d-modal > :is([data-cab-walk-controls], [data-cab-walk-jetpack]):not([hidden]) { display: flex; }
+
+/* Campaign presentation also covers console siblings outside the canvas host. */
+.station-3d-modal:is(.has-campaign-cinematic, .has-campaign-dialogue)
+    :is(.station-3d-driver-hud, .station-3d-dashboard, .station-3d-cab-readout, .station-3d-dash-statusline) {
+    visibility: hidden;
+    pointer-events: none;
+}
+.station-3d-modal.has-campaign-hud [data-cab-walk-mode],
+.station-3d-modal.has-campaign-hud:not(.has-campaign-encounter) [data-cab-weapon-toggle],
+.station-3d-modal.has-campaign-hud:not(.has-campaign-encounter) .station-3d-gun-hint,
+.station-3d-modal.has-campaign-hud:not(.has-campaign-encounter) .station-3d-kill-counter,
+.station-3d-modal.has-campaign-hud:not(.has-campaign-encounter) .station-3d-demolished-counter {
+    display: none;
+}
+/* A sidearm in the inventory brings the weapon button back: it draws and
+   holsters on foot, arms and disarms in a vehicle. */
+.station-3d-modal.has-campaign-hud.has-campaign-sidearm [data-cab-weapon-toggle]:not([hidden]) {
+    display: inline-flex;
+}
+@media (pointer: fine) and (min-width: 800px) {
+    .station-3d-modal.has-campaign-hud:not(.show-touch-controls) > [data-cab-walk-controls],
+    .station-3d-modal.has-campaign-hud:not(.show-touch-controls) > [data-cab-walk-jetpack] { display: none; }
+}
+@media (min-width: 800px) {
+    #station3DContainer.has-campaign-objective { --station3d-minimap-top: 18px; }
+}
+
+@media (pointer: coarse), (max-width: 799px) {
+    /* A phone already has the pads on screen; the toggle is a desktop affordance. */
+    .station-3d-campaign-touch-toggle { display: none; }
+}
+
+@media (max-width: 799px) {
+    #station3DContainer.has-campaign-objective {
+        --station3d-minimap-top: var(--station3d-campaign-hud-bottom, 128px);
+    }
+}
+
+/* The notebook is read on demand; progress publishes only changed seconds. */
+.station-3d-campaign-objective .station-3d-campaign-action,
+.station-3d-campaign-objective .station-3d-campaign-action.is-primary,
+.station-3d-campaign-objective .station-3d-campaign-action.is-danger {
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #d2d9df;
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+.station-3d-campaign-objective .station-3d-campaign-action:hover:not(:disabled):not(:active) {
+    background: rgba(255, 255, 255, 0.14);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+    filter: brightness(1.08);
+}
+.station-3d-campaign-objective .station-3d-campaign-action:active:not(:disabled) {
+    translate: 0 1px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+.station-3d-campaign-objective .station-3d-campaign-action:focus-visible {
+    outline: 2px solid rgba(210, 217, 223, 0.85);
+    outline-offset: 2px;
+}
+.station-3d-campaign-journal { display: grid; gap: 10px; margin-top: 16px; }
+.station-3d-campaign-journal details { padding: 12px 14px; border: 2px solid var(--campaign-sand); border-radius: 10px; background: rgba(255, 255, 255, 0.5); }
+.station-3d-campaign-journal summary { cursor: pointer; color: var(--campaign-teal-deep); font: 400 1.2rem/1.2 var(--campaign-display); letter-spacing: 0.05em; }
+.station-3d-campaign-journal p { white-space: pre-line; line-height: 1.55; color: #4a2a20; }
+.station-3d-campaign-motion-progress { width: 100%; height: 3px; accent-color: #c3cbd2; }
+
+/* Both halves of the F-key performance panel scroll independently. Native
+   light scrollbars were visually louder than the diagnostic text itself. */
+.station3d-perf-scroll-pane {
+    scrollbar-color: #55616b #171b1f;
+    scrollbar-width: thin;
+}
+.station3d-perf-scroll-pane::-webkit-scrollbar {
+    width: 9px;
+    height: 9px;
+}
+.station3d-perf-scroll-pane::-webkit-scrollbar-track {
+    background: #171b1f;
+    border-radius: 8px;
+}
+.station3d-perf-scroll-pane::-webkit-scrollbar-thumb {
+    background: #55616b;
+    border: 2px solid #171b1f;
+    border-radius: 8px;
+}
+.station3d-perf-scroll-pane::-webkit-scrollbar-thumb:hover {
+    background: #74818c;
+}
+
+/* ── Campaign HUD, phone first ─────────────────────────────────────────────
+   The story owns the frame: one objective line carrying its own two icons,
+   the control list folded away behind the movement button, and a dialogue
+   card whose portrait sits with the speaker while the answers stack, one per
+   line, under what was said. */
+
+.station-3d-campaign-objective-line {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    pointer-events: auto;
+}
+
+.station-3d-campaign-objective-text { flex: 1 1 auto; min-width: 0; }
+
+.station-3d-campaign-objective .station-3d-campaign-journal-compact,
+.station-3d-campaign-objective .station-3d-campaign-movement-help {
+    flex: 0 0 auto;
+    width: 34px;
+    min-width: 34px;
+    height: 30px;
+    min-height: 30px;
+    padding: 0;
+    font-size: 15px;
+    line-height: 1;
+}
+
+.station-3d-campaign-controls-panel {
+    display: grid;
+    gap: 6px;
+    margin-top: 6px;
+    pointer-events: auto;
+}
+
+.station-3d-campaign-controls-panel[hidden] { display: none; }
+
+.station-3d-campaign-controls-panel .station-3d-campaign-action {
+    padding: 6px 10px 5px;
+    min-height: 28px;
+    font: 400 12px/1.3 ui-sans-serif, system-ui, sans-serif;
+}
+
+.station-3d-campaign-controls-hint {
+    margin: 0;
+    color: #c3cbd2;
+    font: 400 12px/1.35 ui-sans-serif, system-ui, sans-serif;
+}
+
+/* The portrait belongs with the voice — top of the card beside the speaker's
+   name and their line — not down among the answers. */
+.station-3d-campaign-dialogue {
+    align-items: start;
+    grid-template-areas:
+        "portrait speaker"
+        "portrait direction"
+        "portrait line"
+        "responses responses";
+}
+
+.station-3d-campaign-dialogue .station-3d-campaign-portrait { align-self: start; }
+
+/* Answers read as a list of things to say: full width, one per line. */
+.station-3d-campaign-dialogue .station-3d-campaign-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+}
+
+.station-3d-campaign-dialogue .station-3d-campaign-action {
+    width: 100%;
+    text-align: left;
+}
+
+@media (max-width: 799px) {
+    .station-3d-campaign-dialogue { column-gap: 12px; padding: 14px 16px 12px; }
+    .station-3d-campaign-dialogue .station-3d-campaign-portrait,
+    .station-3d-campaign-dialogue .station-3d-campaign-portrait.is-image {
+        width: 58px;
+        height: 70px;
+    }
+    .station-3d-campaign-dialogue h2 { font-size: 1.02rem; }
+    .station-3d-campaign-dialogue .station-3d-campaign-eyebrow { font-size: 0.9rem; }
+
+    /* An answer is a thing you tap: it clears the 44 px touch minimum even
+       when its text is one short line. */
+    .station-3d-campaign-dialogue .station-3d-campaign-action {
+        min-height: 44px;
+        padding: 11px 14px 9px;
+    }
+}
+
+/* On a phone the story's own line runs the full width of the frame, and
+   everything else it says to the player stays in the upper half: the thumb
+   pads own the bottom third, and a prompt lying across them is a prompt the
+   player cannot obey. */
+@media (max-width: 799px) {
+    .station-3d-campaign-objective {
+        left: 12px;
+        right: 12px;
+        top: 10px;
+        width: auto;
+    }
+
+    /* Clear the objective card: its measured height when the layout has
+       published one, a two-line card's worth otherwise. */
+    /* A full-width banner must not breathe past its own gutters: the 1.05
+       scale was designed for a small centred pill, and on a phone it painted
+       the box 8 px outside the 12 px margins it is laid out in. It still
+       pulses — on light, not on size. */
+    .station-3d-campaign-interaction {
+        animation-name: station-3d-campaign-prompt-glow;
+    }
+
+    .station-3d-campaign-interaction {
+        top: max(92px, var(--station3d-campaign-hud-bottom, 0px));
+        bottom: auto;
+        /* Same band as the objective line above it: edge to edge, one gutter.
+           Border-box, or its padding and 2 px border push it wider than the
+           line it is meant to align with. */
+        box-sizing: border-box;
+        left: 12px;
+        right: 12px;
+        translate: none;
+        max-width: none;
+        white-space: normal;
+        text-align: center;
+        line-height: 1.25;
+    }
+
+    /* Rows under the prompt, in the order they matter. The game often toasts
+       the very sentence the prompt is showing, so the toast takes the next row
+       down rather than printing behind it; narration and the night notice sit
+       below that again. */
+    #station3DContainer.has-campaign-objective :is(.station-3d-toast, .station-3d-sound-prompt) {
+        top: calc(max(92px, var(--station3d-campaign-hud-bottom, 0px)) + 84px);
+        bottom: auto;
+    }
+
+    .station-3d-campaign-spoken-caption,
+    .station-3d-campaign-gameplay-caption,
+    #station3DContainer.has-campaign-objective .station-3d-night-notice {
+        top: calc(max(92px, var(--station3d-campaign-hud-bottom, 0px)) + 150px);
+        bottom: auto;
+    }
+}
+
+/* The header keeps its icons; the ride's title belongs to the map, not to a
+   chapter that names itself on screen. */
+.station-3d-modal.has-campaign-hud .station-3d-header h3 { display: none; }
+
+.s3d-world-menu {
+    position: absolute; z-index: 110; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: min(360px, calc(100% - 40px)); padding: 22px; box-sizing: border-box;
+    color: #edf3fa; background: #152334f5; border: 1px solid #8ca6be80;
+    border-radius: 14px; box-shadow: 0 12px 48px #0008; font: 16px/1.5 system-ui;
+}
+.s3d-world-menu strong { display: block; font-size: 20px; margin-bottom: 12px; }
+.s3d-world-menu button { display: block; width: 100%; margin-top: 10px; padding: 10px 14px;
+    border: 1px solid #a5bed477; border-radius: 8px; background: #324b65; color: white; cursor: pointer; font: inherit; }
+.s3d-world-menu button:focus-visible { outline: 3px solid #f4cd72; }

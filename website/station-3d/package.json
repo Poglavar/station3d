@@ -1,0 +1,9 @@
+{
+  "comment": "Scopes the browser ES modules in this dir as ESM for Node (headless unit tests). Browser loading via <script type=module> is unaffected. No build step, no deps.",
+  "name": "station-3d",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:unit": "node --test '__tests__/**/*.test.mjs'"
+  }
+}

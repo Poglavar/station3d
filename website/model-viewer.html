@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Model library · Station3D</title>
+    <link rel="stylesheet" href="./station-3d/viewers/model-viewer.css">
+    <script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/examples/jsm/"}}</script>
+</head>
+<body>
+    <header class="app-header">
+        <a class="brand" href="./model-viewer.html"><span class="brand-mark" aria-hidden="true">◈</span><span>Station3D <strong>Model library</strong></span></a>
+        <span class="header-note">Vehicles · People · Objects</span>
+        <button id="open-import" type="button">＋ Open a model</button>
+    </header>
+    <main class="workspace">
+        <aside class="catalog-panel" aria-label="Model catalog">
+            <div class="catalog-heading"><h1>Library</h1><span id="catalog-count"></span></div>
+            <input id="search" type="search" placeholder="Find a model…" aria-label="Search models">
+            <select id="category" aria-label="Model category"><option value="all">All models</option><option value="studies">Detailed studies</option><option value="vehicles">Vehicles</option><option value="people">People & faces</option><option value="objects">Small objects</option><option value="archive">Earlier studies</option><option value="imports">Your imports</option></select>
+            <nav id="model-list" aria-label="Models"></nav>
+            <p class="catalog-note">Buildings and landmarks keep their separate viewer in zagreb-zgrade-datiranje.</p>
+        </aside>
+        <section class="stage" aria-label="3D inspection">
+            <div class="stage-toolbar">
+                <label class="camera-select">View <select id="camera-view" aria-label="Camera view"></select></label>
+                <button id="frame" type="button" title="Fit the model in the viewport">Fit</button>
+                <label><input id="grid" type="checkbox" checked> Grid</label>
+                <label><input id="wireframe" type="checkbox"> Wireframe</label>
+                <label><input id="night" type="checkbox"> Night</label>
+                <label id="sea-control" hidden><input id="sea" type="checkbox" checked> Sea</label>
+                <select id="background" aria-label="Background"><option value="slate">Slate</option><option value="light">Light</option><option value="dark">Dark</option></select>
+                <button id="capture" type="button" title="Save the current view as a PNG">Save image</button>
+            </div>
+            <div id="viewport" aria-label="Drag to orbit, scroll to zoom, right-drag to pan" tabindex="0">
+                <div id="reference-preview" hidden><img alt="Model reference"><button id="close-reference" type="button">Back to 3D</button></div>
+            </div>
+            <div class="stage-caption"><span id="stage-label">Choose a model</span><span>Drag to orbit · scroll to zoom</span></div>
+            <div class="transport" aria-label="Animation playback">
+                <button id="play" type="button" aria-label="Play animation">▶ Play</button>
+                <button id="rewind" type="button" aria-label="Rewind animation">↤</button>
+                <input id="timeline" aria-label="Animation time" type="range" min="0" max="10" step="0.01" value="0">
+                <output id="time">0.00 s</output>
+                <select id="speed" aria-label="Playback speed"><option value="0.25">¼×</option><option value="0.5">½×</option><option value="1" selected>1×</option><option value="2">2×</option></select>
+            </div>
+            <p id="status" role="status" aria-live="polite">Loading library…</p>
+        </section>
+        <aside class="inspector" aria-label="Model details and controls">
+            <div id="inspect-tabs" class="inspect-tabs" hidden><button data-slot="0" type="button">Primary</button><button data-slot="1" type="button">Comparison</button></div>
+            <p id="model-category" class="eyebrow"></p><h2 id="model-title">Model details</h2><p id="model-provenance" hidden></p><p id="model-description"></p>
+            <dl id="model-stats"></dl>
+            <div id="context-controls"></div>
+            <div id="references" hidden></div>
+            <button id="shuffle" type="button" hidden>↻ New people</button>
+            <label class="field compare-field">Compare with<select id="compare"><option value="">No comparison</option></select></label>
+            <label class="normalize-control" hidden><input id="normalize-size" type="checkbox"> Match displayed size</label>
+            <p id="comparison-note" hidden>Models use their original scale. Select either model to adjust its controls.</p>
+            <details class="source-details"><summary>Model source</summary><a id="source" target="_blank" rel="noopener"></a></details>
+        </aside>
+    </main>
+    <dialog id="import-dialog">
+        <form method="dialog" class="dialog-heading"><h2>Open a model</h2><button aria-label="Close import dialog">✕</button></form>
+        <p>Drop files onto the canvas, or choose a model and its companion textures and buffers.</p>
+        <div class="file-actions"><label class="file-button">Choose files<input id="model-files" type="file" multiple></label><label class="file-button secondary">Choose folder<input id="model-folder" type="file" webkitdirectory multiple></label></div>
+        <p class="format-note">GLB, glTF, Blender, Three.js JSON, JavaScript, OBJ/MTL, FBX, STL, PLY and Collada.</p>
+        <p id="blender-status" class="format-note">Blender files are converted locally. Packed textures travel with the file.</p>
+        <form id="url-form">
+            <label class="field">Model or module URL<input id="model-url" type="text" placeholder="./station-3d/models/vehicles/boat-airplane.js" required></label>
+            <div class="module-fields"><label class="field">JavaScript export<input id="module-export" type="text" placeholder="createAirplaneMesh"></label><label class="field">Factory arguments (JSON)<input id="module-args" type="text" value="[]"></label></div>
+            <p class="format-note">Use a served URL for JavaScript modules with relative imports. Arguments can be an options object or an array of positional arguments.</p>
+            <button class="primary" type="submit">Open URL</button>
+        </form>
+        <p id="import-error" role="alert"></p>
+    </dialog>
+    <script type="module" src="./station-3d/viewers/model-viewer.js"></script>
+</body>
+</html>

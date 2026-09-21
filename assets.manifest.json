@@ -1,0 +1,133 @@
+{
+  "comment": "Allowlist for assets copied into the candidate browser distribution; omitted paths are not publishable by default.",
+  "schemaVersion": 1,
+  "status": "release-cleared",
+  "groups": [
+    {
+      "id": "bird-calls",
+      "paths": ["audio/sfx/birds"],
+      "license": "CC0-1.0 OR Public-Domain",
+      "provenance": "audio/sfx/birds/SOURCES.md",
+      "includeInCandidate": true,
+      "releaseCleared": true
+    },
+    {
+      "id": "dog-barks",
+      "paths": ["audio/sfx/dogs"],
+      "license": "CC0-1.0",
+      "provenance": "audio/sfx/dogs/SOURCES.md",
+      "includeInCandidate": true,
+      "releaseCleared": true
+    },
+    {
+      "id": "fireworks",
+      "paths": ["audio/sfx/fireworks"],
+      "license": "CC0-1.0",
+      "provenance": "audio/sfx/fireworks/SOURCES.md",
+      "includeInCandidate": true,
+      "releaseCleared": true
+    },
+    {
+      "id": "fish-splash",
+      "paths": ["audio/sfx/fish"],
+      "license": "CC0-1.0",
+      "provenance": "audio/sfx/fish/SOURCES.md",
+      "includeInCandidate": true,
+      "releaseCleared": true
+    },
+    {
+      "id": "rain",
+      "paths": ["audio/sfx/rain"],
+      "license": "CC0-1.0",
+      "provenance": "audio/sfx/rain/SOURCES.md",
+      "includeInCandidate": true,
+      "releaseCleared": true
+    },
+    {
+      "id": "car-engine",
+      "paths": ["audio/sfx/car-engine"],
+      "license": "CC0-1.0",
+      "provenance": "audio/sfx/car-engine/ATTRIBUTION.md",
+      "includeInCandidate": true,
+      "releaseCleared": true
+    },
+    {
+      "id": "special-vehicle-audio",
+      "paths": ["audio/sfx/special-vehicles"],
+      "license": "CC0-1.0",
+      "provenance": "audio/sfx/special-vehicles/ATTRIBUTION.md",
+      "includeInCandidate": true,
+      "releaseCleared": true
+    },
+    {
+      "id": "tire-skid",
+      "paths": ["audio/sfx/tire-skid"],
+      "license": "CC-BY-3.0",
+      "provenance": "audio/sfx/tire-skid/ATTRIBUTION.md",
+      "includeInCandidate": true,
+      "releaseCleared": true
+    },
+    {
+      "id": "track-clang",
+      "paths": ["audio/sfx/track-clang"],
+      "license": "CC0-1.0 OR Public-Domain",
+      "provenance": "audio/sfx/track-clang/ATTRIBUTION.md",
+      "includeInCandidate": true,
+      "releaseCleared": true
+    },
+    {
+      "id": "train-audio",
+      "paths": ["audio/sfx/train"],
+      "license": "CC0-1.0 OR Public-Domain",
+      "provenance": "audio/sfx/train/ATTRIBUTION.md",
+      "includeInCandidate": true,
+      "releaseCleared": true
+    },
+    {
+      "id": "dog-pant",
+      "paths": ["audio/world/dog-pant.wav", "audio/world/dog-pant.LICENSE.md"],
+      "license": "CC0-1.0",
+      "provenance": "audio/world/dog-pant.LICENSE.md",
+      "includeInCandidate": true,
+      "releaseCleared": true
+    },
+    {
+      "id": "generic-road-fleet",
+      "paths": [
+        "models/vehicles/fleet/hatchback.json",
+        "models/vehicles/fleet/sedan.json",
+        "models/vehicles/fleet/suv.json",
+        "models/vehicles/fleet/van.json",
+        "models/vehicles/fleet/boxtruck.json",
+        "models/vehicles/fleet/citybus.json",
+        "models/vehicles/fleet/pickup.json"
+      ],
+      "author": "Poglavar Svemira",
+      "license": "MIT",
+      "provenance": "models/vehicles/fleet/LICENSE.md",
+      "includeInCandidate": true,
+      "releaseCleared": true
+    },
+    {
+      "id": "creator-aircraft-model",
+      "paths": ["models/vehicles/utva-liaison.glb"],
+      "author": "Poglavar Svemira",
+      "license": "MIT",
+      "provenance": "models/vehicles/LICENSE.md",
+      "includeInCandidate": true,
+      "releaseCleared": true
+    }
+  ],
+  "excluded": [
+    "assets/campaign",
+    "audio/announcements",
+    "audio/conversations",
+    "audio/enemy-*",
+    "audio/music",
+    "audio/shoot",
+    "audio/wreck",
+    "models/characters",
+    "models/structures",
+    "models/vehicles/studies"
+  ]
+}

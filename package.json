@@ -1,0 +1,99 @@
+{
+  "name": "station3d",
+  "version": "0.1.0-alpha.1",
+  "private": false,
+  "description": "A travel and game engine for explorable 3D worlds, powered by OpenStreetMap and other open data.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Poglavar/station3d.git"
+  },
+  "homepage": "https://github.com/Poglavar/station3d#readme",
+  "bugs": {
+    "url": "https://github.com/Poglavar/station3d/issues"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "exports": {
+    ".": "./website/station-3d/dist/index.js",
+    "./debug": "./website/station-3d/dist/debug.js",
+    "./host": "./website/station-3d/dist/host.js",
+    "./inspection": "./website/station-3d/dist/inspection.js",
+    "./loader": "./website/station-3d/dist/loader.js",
+    "./planning": "./website/station-3d/dist/planning.js",
+    "./provider": "./website/station-3d/core/api.js",
+    "./terrain-tools": "./website/station-3d/dist/terrain-tools.js",
+    "./voice-tools": "./website/station-3d/dist/voice-tools.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "README.md",
+    "AGENTS.md",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md",
+    "assets.manifest.json",
+    "bin/",
+    "demo/",
+    "docs/consumer-integration.md",
+    "docs/provider-contract.md",
+    "docs/extraction-boundary.md",
+    "docs/asset-audit.md",
+    "website/station-3d/core/api.js",
+    "website/station-3d/**/*.js",
+    "website/station3d-links.js",
+    "website/tram-switch-utils.js",
+    "website/tunnel-cover-rule.js",
+    "website/shared/transit-station-models.js",
+    "website/station-3d/dist/"
+  ],
+  "bin": {
+    "station3d-vendor": "bin/station3d-vendor.mjs",
+    "station3d-build": "bin/station3d-build.mjs"
+  },
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "scripts": {
+    "build:station3d": "node tools/build-station3d.mjs",
+    "test": "node tools/run-engine-tests.mjs",
+    "test:unit": "node tools/run-engine-tests.mjs",
+    "test:package": "node tools/verify-package.mjs",
+    "assets:audit": "node tools/audit-assets.mjs",
+    "assets:audit:release": "node tools/audit-assets.mjs --release",
+    "demo:serve": "node tools/serve-demo.mjs",
+    "prepack": "npm run build:station3d && npm run assets:audit",
+    "models:viewer": "python3 website/serve.py",
+    "models:codes": "node tools/update-model-codes.mjs --write",
+    "models:codes:check": "node tools/update-model-codes.mjs"
+  },
+  "keywords": [
+    "3d",
+    "game-engine",
+    "openstreetmap",
+    "simulation",
+    "travel"
+  ],
+  "author": "",
+  "license": "MIT",
+  "type": "commonjs",
+  "devDependencies": {
+    "html2canvas": "1.4.1",
+    "leaflet": "1.9.4",
+    "leaflet.heat": "0.2.0",
+    "maplibre-gl": "6.8.0",
+    "polyclip-ts": "0.16.8",
+    "dotenv": "^17.4.0",
+    "pg": "^8.20.0"
+  },
+  "dependencies": {
+    "3d-tiles-renderer": "^0.5.0",
+    "@dimforge/rapier3d-compat": "0.19.3",
+    "@turf/turf": "7.4.0",
+    "clipper2-ts": "2.0.1-18",
+    "earcut": "3.2.3",
+    "esbuild": "^0.28.2",
+    "robust-predicates": "2.0.4",
+    "three": "^0.184.0"
+  }
+}

@@ -1,0 +1,24 @@
+# Validates the reusable engine and the exact npm consumer boundary on every change.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  engine:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build:station3d
+      - run: npm run assets:audit
+      - run: npm run test:package
