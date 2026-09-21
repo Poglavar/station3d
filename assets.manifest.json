@@ -116,6 +116,15 @@
       "provenance": "models/vehicles/LICENSE.md",
       "includeInCandidate": true,
       "releaseCleared": true
+    },
+    {
+      "id": "readme-runtime-gallery",
+      "paths": ["media/readme-gallery"],
+      "author": "Poglavar Svemira",
+      "license": "CC-BY-4.0",
+      "provenance": "media/readme-gallery/SOURCES.md",
+      "includeInCandidate": false,
+      "releaseCleared": true
     }
   ],
   "excluded": [

@@ -8,6 +8,40 @@ games. It renders streamed terrain, buildings, roads, paths, rails, water,
 vehicles and pedestrians around geographic coordinates and provides walking,
 driving, rail and static-view modes.
 
+## In-engine gallery
+
+These are live Station3D scenes inside the Zagreb and Sloboda applications.
+Select an image to open the full-resolution capture.
+
+<table>
+  <tr>
+    <td colspan="2">
+      <a href="https://raw.githubusercontent.com/Poglavar/station3d/main/website/station-3d/media/readme-gallery/zagreb-street.jpg"><img src="https://raw.githubusercontent.com/Poglavar/station3d/main/website/station-3d/media/readme-gallery/zagreb-street.jpg" alt="Street-level Station3D view in Zagreb with roads, a cycle lane, buildings, trees and a pedestrian." width="100%"></a><br>
+      <sub>Zagreb street scene: streamed roads, cycle infrastructure, buildings and street life.</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <a href="https://raw.githubusercontent.com/Poglavar/station3d/main/website/station-3d/media/readme-gallery/split-st-duje.jpg"><img src="https://raw.githubusercontent.com/Poglavar/station3d/main/website/station-3d/media/readme-gallery/split-st-duje.jpg" alt="Station3D aerial view of the Cathedral of Saint Domnius and the surrounding Split roofscape." width="100%"></a><br>
+      <sub>Split landmark geometry integrated with the streamed city.</sub>
+    </td>
+    <td width="50%">
+      <a href="https://raw.githubusercontent.com/Poglavar/station3d/main/website/station-3d/media/readme-gallery/split-rail-cab.jpg"><img src="https://raw.githubusercontent.com/Poglavar/station3d/main/website/station-3d/media/readme-gallery/split-rail-cab.jpg" alt="Station3D rail-cab view inside a lit tunnel near Split." width="100%"></a><br>
+      <sub>Rail-cab mode with formed track, tunnel geometry and lighting.</sub>
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2" align="center">
+      <a href="https://raw.githubusercontent.com/Poglavar/station3d/main/website/station-3d/media/readme-gallery/vis-mobile-campaign.jpg"><img src="https://raw.githubusercontent.com/Poglavar/station3d/main/website/station-3d/media/readme-gallery/vis-mobile-campaign.jpg" alt="Station3D mobile walking view on the Vis waterfront with touch controls and a campaign objective." width="300"></a><br>
+      <sub>Mobile walking and campaign UI on the Vis waterfront.</sub>
+    </td>
+  </tr>
+</table>
+
+World data in these captures includes
+[OpenStreetMap contributors](https://www.openstreetmap.org/copyright) under
+ODbL and the provider datasets credited by each host application.
+
 Station3D is the temporary project name. Original engine code and the generic
 road-fleet models are MIT licensed. Third-party audio keeps the licences listed
 in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
