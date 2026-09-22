@@ -1678,6 +1678,9 @@
    so this cover lives on <body> and sits above the modal (z-index 4100) — the
    /prijevoz map behind it must never be on screen mid-campaign. */
 .station-3d-campaign-curtain {
+    --station3d-loading-background: #111827;
+    --station3d-loading-foreground: #f8fafc;
+    --station3d-loading-accent: #60a5fa;
     position: fixed;
     inset: 0;
     z-index: 4200;
@@ -1691,21 +1694,21 @@
     /* A phone on its side with the developer breakdown open can be taller than
        the screen: scroll rather than clip. */
     overflow-y: auto;
-    color: var(--campaign-cream);
+    color: var(--station3d-loading-foreground);
     text-align: center;
-    background: radial-gradient(ellipse at 50% 32%, #6a0f16, #2a0a0c 62%, #150406);
+    background: var(--station3d-loading-background);
     /* No fade-in: the curtain exists to cover the world underneath from its
        first frame. A 220 ms fade let the bare sky of the opening modal show
        through as a light-blue flash before every chapter load. */
 }
 
-/* The brand rides every chapter load; decorative, so no markup needed. */
-.station-3d-campaign-curtain::before {
+/* Optional product branding supplied through configureHost(). */
+.station-3d-campaign-curtain-brand {
+    display: block;
     width: min(440px, 74vw);
-    aspect-ratio: 720 / 344;
+    max-height: min(220px, 32vh);
     margin-bottom: 4px;
-    content: '';
-    background: url('../assets/logo/vagabond-croatia.webp') center / contain no-repeat;
+    object-fit: contain;
     filter: drop-shadow(0 10px 24px rgba(0, 0, 0, 0.4));
 }
 
@@ -1716,13 +1719,13 @@
     place-items: center;
     gap: 9px;
     margin-bottom: 6px;
-    color: var(--campaign-cream);
+    color: var(--station3d-loading-foreground);
     text-align: center;
     text-shadow: 0 3px 18px rgba(0, 0, 0, 0.95);
 }
 
 .station-3d-campaign-curtain-title span {
-    color: var(--campaign-gold);
+    color: var(--station3d-loading-accent);
     font: 400 1.05rem/1.1 var(--campaign-display);
     letter-spacing: 0.32em;
     text-transform: uppercase;
@@ -1732,18 +1735,18 @@
     display: block;
     width: min(260px, 62vw);
     height: 2px;
-    background: linear-gradient(90deg, transparent, var(--campaign-gold) 20% 80%, transparent);
-    box-shadow: 0 0 12px rgba(242, 183, 77, 0.7);
+    background: linear-gradient(90deg, transparent, var(--station3d-loading-accent) 20% 80%, transparent);
+    box-shadow: 0 0 12px color-mix(in srgb, var(--station3d-loading-accent) 70%, transparent);
 }
 
 .station-3d-campaign-curtain-title strong {
     font: 400 clamp(2rem, 5.6vw, 3.4rem)/1 var(--campaign-display);
     letter-spacing: 0.06em;
-    text-shadow: 0 3px 0 var(--campaign-maroon-deep), 0 8px 26px rgba(0, 0, 0, 0.85);
+    text-shadow: 0 3px 0 rgba(0, 0, 0, 0.42), 0 8px 26px rgba(0, 0, 0, 0.85);
 }
 
 .station-3d-campaign-curtain-label {
-    color: var(--campaign-gold);
+    color: var(--station3d-loading-accent);
     font: 400 1.05rem/1.2 var(--campaign-display);
     letter-spacing: 0.16em;
     text-transform: uppercase;
@@ -1760,7 +1763,7 @@
 .station-3d-campaign-curtain-tasks,
 .station-3d-campaign-curtain-activity {
     margin-top: 10px;
-    color: var(--campaign-cream);
+    color: var(--station3d-loading-foreground);
     font: 400 13px/1.55 system-ui, sans-serif;
     font-variant-numeric: tabular-nums;
     letter-spacing: normal;
@@ -1793,6 +1796,8 @@
     width: 26px;
     height: 26px;
     border-width: 3px;
+    border-color: color-mix(in srgb, var(--station3d-loading-foreground) 28%, transparent);
+    border-top-color: var(--station3d-loading-foreground);
 }
 
 /* The way back to the map on every load a host started. */
@@ -1800,10 +1805,10 @@
     margin-top: 10px;
     min-height: 44px;
     padding: 10px 14px 8px;
-    border: 2px solid var(--campaign-cream);
+    border: 2px solid var(--station3d-loading-foreground);
     border-radius: 12px;
     background: transparent;
-    color: var(--campaign-cream);
+    color: var(--station3d-loading-foreground);
     font: 400 16px/1 var(--campaign-display);
     letter-spacing: 0.1em;
     text-transform: uppercase;
@@ -1811,8 +1816,8 @@
 }
 
 .station-3d-campaign-curtain-cancel:hover {
-    background: var(--campaign-cream);
-    color: var(--campaign-maroon-deep);
+    background: var(--station3d-loading-foreground);
+    color: var(--station3d-loading-background);
 }
 
 .station-3d-campaign-curtain-fill {
@@ -1820,7 +1825,7 @@
     height: 100%;
     width: 0%;
     border-radius: 3px;
-    background: var(--campaign-gold);
+    background: var(--station3d-loading-accent);
     transition: width 0.25s ease;
 }
 

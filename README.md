@@ -180,6 +180,13 @@ the lightweight facade available through `window.__station3DReady`.
   station3d.configureHost({
     name: 'My application',
     basePath: '/explore',
+    loadingScreen: {
+      logoUrl: '/brand.svg',
+      logoAlt: 'My application',
+      background: '#102030',
+      foreground: '#f8fafc',
+      accent: '#38bdf8'
+    },
     devOverlays: false,
     campaigns: false,
     onExit() {
@@ -203,7 +210,7 @@ The common entry points are:
 | Method | Purpose |
 | --- | --- |
 | `configureWorld(options)` | Select the data service, bounds, attribution and world profile. |
-| `configureHost(options)` | Set the host name, exit callback, campaign availability and development-overlay policy. |
+| `configureHost(options)` | Set host identity, loading-screen branding, exit callback, campaign availability and development-overlay policy. |
 | `ready()` / `preload()` | Load the full runtime without opening a session. |
 | `open(lat, lon, name?, options?)` | Open a static 3D inspection view. |
 | `openWalk(lat, lon, options?)` | Start a first-person walking session. |
