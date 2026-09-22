@@ -167,7 +167,7 @@ export function resolveDynamicTerrainGridRequest(ctx, {
 // read like the orthophoto — cuttings, portals, embankments. If the requested
 // half-size would exceed the cell budget, the WINDOW SHRINKS rather than the
 // resolution coarsening: a smaller true-resolution window beats a bigger
-// aliased one (see docs/terrain-detail-window.md).
+// aliased one (see Station3D docs/performance/audit.md, bounded terrain window).
 export function resolveDetailTerrainWindowRequest(ctx, {
     halfSizeM = 600,
     elevationSource,

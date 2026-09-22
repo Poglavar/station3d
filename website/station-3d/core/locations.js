@@ -107,7 +107,7 @@ export const LOCATIONS = {
         // 20 m DTM smooths away. The grid resolver's cell cap still governs
         // the delivered resolution for corridor-sized boxes; the DETAIL
         // window is what brings true 1 m ground near the walker
-        // (docs/terrain-detail-window.md).
+        // (Station3D docs/performance/audit.md, bounded terrain window).
         terrain: {
             surfaceStyle: 'dalmatian-karst',
             // The BASE corridor grid stays on the 20 m DTM: at its ~12 m

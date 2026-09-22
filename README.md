@@ -307,6 +307,11 @@ tag or npm publication.
 
 ## Develop Station3D
 
+Performance work has two canonical documents: the [measured audit](docs/performance/audit.md)
+and [ranked next steps](docs/performance/next-steps.md). They distinguish completed
+work, confirmed failures, experiments and rejected directions. Update them in
+place rather than creating another dated audit or ground-delivery tracker.
+
 ```sh
 npm ci
 npm test

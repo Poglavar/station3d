@@ -56,6 +56,10 @@ or a second implementation of a world rule in product code.
 
 ## Implementation and tests
 
+- Maintain only `docs/performance/audit.md` and `docs/performance/next-steps.md`
+  as the canonical performance audit and backlog. Update them in place; keep
+  dated measurements in machine-readable receipts, not new Markdown trackers.
+  Preserve failed-run evidence and cross-mode support/appearance/selection gates.
 - Keep meaningful logic in plain modules that can run under Node; keep DOM and
   WebGL wiring thin.
 - Add deterministic tests for changed logic and contracts.
