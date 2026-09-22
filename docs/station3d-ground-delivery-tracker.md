@@ -1,5 +1,11 @@
 # Ground engine delivery tracker
 
+> **Archived execution tracker.** This file preserves the September 2026
+> delivery history and its release evidence, but its “next” steps and estimates
+> are no longer the active roadmap. Use the measured
+> [22 September performance audit](performance-audit-2026-09-22.md) for current
+> priorities.
+
 Updated: 16 September 2026. This is the short execution tracker. The
 [ground hierarchy plan](station3d-ground-hierarchy-2026-09-11.md) remains the technical specification
 and acceptance contract.

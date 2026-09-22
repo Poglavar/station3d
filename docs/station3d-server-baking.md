@@ -1,6 +1,12 @@
 <!-- Approved incremental rollout and evidence ledger for base-world server baking. -->
 # Station3D server baking
 
+> **Archived experiment and evidence ledger.** Baking remains deferred. The
+> current measured priorities are the publication/readiness and cab-profile
+> fixes in the
+> [22 September performance audit](performance-audit-2026-09-22.md). Resume
+> this document only after those bounded runtime issues are accepted.
+
 The aim is smooth travel without sacrificing scenery, elevation or gameplay. Baking moves
 repeatable geometry work out of the browser; it does not remove the need to bound decoding,
 GPU upload and publication. A green synthetic test is not a city-performance verdict.

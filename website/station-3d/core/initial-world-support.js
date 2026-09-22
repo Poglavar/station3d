@@ -7,12 +7,17 @@ export function initialWorldSupportTileKeys() {
     return new Set(['0_0', '-1_0', '0_-1', '-1_-1']);
 }
 
-// The startup curtain needs one complete physical ground publication under the
-// observer. Successor generations may immediately start for a route-ahead
-// corridor; they retain the already published world and must stream behind the
-// visible scene instead of reopening the initial hold.
+// The startup curtain needs the current physical ground generation under the
+// observer. A published predecessor is not sufficient: source layers can finish
+// immediately afterwards and enqueue the rail/road/planner successor that makes
+// the first generation obsolete. Revealing between those two publications
+// exposes a mixed world (for example a vehicle already on an authored alignment
+// while the visible track and terrain still belong to the predecessor).
+//
+// This check is only used while the initial world-data hold is active. Once it
+// has settled, later route-ahead generations continue behind the visible scene
+// and do not reopen the curtain.
 export function initialGroundSupportReady(groundGenerations) {
     if (!groundGenerations) return true;
-    if (groundGenerations.isSettled()) return true;
-    return Number(groundGenerations.snapshot?.().published) > 0;
+    return groundGenerations.isSettled() === true;
 }
