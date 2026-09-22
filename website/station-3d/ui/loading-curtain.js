@@ -1,5 +1,5 @@
-// The one loading screen of every Station3D session: Sloboda's Vagabond Croatia
-// curtain, on <body> above the 3D modal (z-index 4100), from the click that asks
+// The one loading screen of every Station3D session, on <body> above the 3D
+// modal (z-index 4100), from the click that asks
 // for a world until that world is built. A host raises it before the engine has
 // loaded; the engine adopts the same element, feeds its bar, and drops it when the
 // world is ready. Every piece of state lives on the element, so the host's copy of
@@ -7,10 +7,12 @@
 // began as the campaign's chapter curtain, which is why the class keeps that name.
 
 import { noteWorldMilestone } from '../core/world-ready.js';
+import { getSessionHost } from '../core/session-host.js';
 
 export const LOADING_CURTAIN_CLASS = 'station-3d-campaign-curtain';
 
 const PARTS = [
+    ['brand', 'img', `${LOADING_CURTAIN_CLASS}-brand`],
     ['spinner', 'span', 'station-3d-photo-loading-spinner'],
     ['title', 'div', `${LOADING_CURTAIN_CLASS}-title`],
     ['label', 'span', `${LOADING_CURTAIN_CLASS}-label`],
@@ -42,6 +44,11 @@ function part(curtain, name) {
     if (element) return element;
     element = doc().createElement(tag);
     element.className = className;
+    if (name === 'brand') {
+        element.alt = '';
+        element.decoding = 'async';
+        element.hidden = true;
+    }
     if (name === 'spinner') element.setAttribute('aria-hidden', 'true');
     if (name === 'bar') {
         element.hidden = true;
@@ -54,6 +61,31 @@ function part(curtain, name) {
         .find(Boolean);
     curtain.insertBefore(element, next || null);
     return element;
+}
+
+const LOADING_THEME_PROPERTIES = Object.freeze({
+    background: '--station3d-loading-background',
+    foreground: '--station3d-loading-foreground',
+    accent: '--station3d-loading-accent',
+});
+
+function applyLoadingScreenConfiguration(curtain) {
+    const loadingScreen = getSessionHost().loadingScreen;
+    const brand = part(curtain, 'brand');
+    if (loadingScreen?.logoUrl) {
+        brand.src = loadingScreen.logoUrl;
+        brand.alt = loadingScreen.logoAlt || '';
+        brand.hidden = false;
+    } else {
+        brand.removeAttribute('src');
+        brand.alt = '';
+        brand.hidden = true;
+    }
+    for (const [field, property] of Object.entries(LOADING_THEME_PROPERTIES)) {
+        const value = loadingScreen?.[field];
+        if (value) curtain.style.setProperty(property, value);
+        else curtain.style.removeProperty(property);
+    }
 }
 
 export function raiseLoadingCurtain({ eyebrow, headline, label, cancelLabel, onCancel } = {}) {
@@ -71,6 +103,7 @@ export function raiseLoadingCurtain({ eyebrow, headline, label, cancelLabel, onC
     curtain.classList.remove('hidden');
     curtain.setAttribute('aria-atomic', 'false');
     for (const [name] of PARTS) part(curtain, name);
+    applyLoadingScreenConfiguration(curtain);
     if (eyebrow !== undefined || headline !== undefined) setLoadingCurtainHeading({ eyebrow, headline });
     if (typeof label === 'string') setLoadingCurtainLabel(label);
     if (typeof onCancel === 'function') {

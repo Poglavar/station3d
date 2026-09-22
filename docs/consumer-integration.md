@@ -45,6 +45,13 @@ Draco files, CSS and assets.
   });
   station3d.configureHost({
     name: 'Product name',
+    loadingScreen: {
+      logoUrl: '/brand.svg',
+      logoAlt: 'Product name',
+      background: '#102030',
+      foreground: '#f8fafc',
+      accent: '#38bdf8'
+    },
     devOverlays: false,
     campaigns: false,
     onExit: () => history.back()
@@ -55,6 +62,12 @@ Draco files, CSS and assets.
 Configuration must happen before the first `open*()` call. For provider fields,
 endpoint families and data-licence responsibilities, read
 [Provider contract](provider-contract.md).
+
+`loadingScreen` is optional. Station3D owns the loading layout and progress
+behavior; each product may supply its own logo and palette. With no object, the
+engine shows its neutral unbranded curtain. Logo URLs resolve in the embedding
+page, so include the asset in the consumer's public build rather than the
+Station3D package.
 
 `campaigns` defaults to `true` because the campaign runtime is a reusable
 engine capability. Set it to `false` in planners and inspectors that do not
