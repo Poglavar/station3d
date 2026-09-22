@@ -9,8 +9,17 @@ game or standalone map. The root README contains the full first-use example.
 npm install --save-exact station3d@0.1.0-alpha.1
 ```
 
-Before the registry release, run `npm pack` in Station3D and install the
-resulting absolute `.tgz` path. Do not use `npm link` as release evidence.
+Before the registry release, an exact public Git tag is supported:
+
+```sh
+npm install --save-exact \
+  git+https://github.com/Poglavar/station3d.git#v0.1.0-alpha.1
+```
+
+The Git package runs `prepare` to generate its ignored `dist/` before npm packs
+it. Never depend on a moving branch. Alternatively, run `npm pack` in
+Station3D and install the resulting absolute `.tgz` path. Do not use `npm link`
+as release evidence.
 
 ## 2. Vendor the browser assets
 

@@ -62,6 +62,7 @@
     "assets:audit": "node tools/audit-assets.mjs",
     "assets:audit:release": "node tools/audit-assets.mjs --release",
     "demo:serve": "node tools/serve-demo.mjs",
+    "prepare": "npm run build:station3d",
     "prepack": "npm run build:station3d && npm run assets:audit",
     "models:viewer": "python3 website/serve.py",
     "models:codes": "node tools/update-model-codes.mjs --write",

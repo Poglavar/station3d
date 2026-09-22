@@ -48,7 +48,8 @@ in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 > **Alpha status:** the package and integration boundary are working locally,
 > but `station3d@0.1.0-alpha.1` has not yet been published to npm. Until it is,
-> install a tarball produced by `npm pack`. Pin every alpha exactly.
+> install an exact Git tag or a tarball produced by `npm pack`. Pin every alpha
+> exactly.
 
 ## What the package includes
 
@@ -80,6 +81,19 @@ Once the alpha is on npm, pin it exactly:
 ```sh
 npm install --save-exact station3d@0.1.0-alpha.1
 ```
+
+An exact public Git tag is also supported. Git installs run Station3D's
+`prepare` lifecycle and generate the ignored browser distribution before npm
+packs the dependency:
+
+```sh
+npm install --save-exact \
+  git+https://github.com/Poglavar/station3d.git#v0.1.0-alpha.1
+```
+
+Never depend on `main`: use an immutable tag or commit. A registry release is
+preferred for ordinary consumers because its package contents are built and
+audited once by the publisher rather than rebuilt on every install.
 
 Before publication, build a real package tarball from a Station3D checkout and
 install that tarball in the consumer:

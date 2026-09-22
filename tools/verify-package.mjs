@@ -6,6 +6,10 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const packageJson = JSON.parse(readFileSync(resolve(repoRoot, 'package.json'), 'utf8'));
+if (packageJson.scripts?.prepare !== 'npm run build:station3d') {
+    throw new Error('Git installs must build the browser distribution through prepare');
+}
 const npmCache = mkdtempSync(resolve(tmpdir(), 'station3d-npm-cache-'));
 const fixtureRoot = mkdtempSync(resolve(tmpdir(), 'station3d-consumer-'));
 try {
