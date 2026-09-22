@@ -1,6 +1,8 @@
 # Station3D precomputed world geometry plan
 
-Status: deferred until the road overpass/underpass work is complete.
+Status: deferred. The measured publication/readiness work in the
+[22 September performance audit](performance-audit-2026-09-22.md) takes
+priority; precomputation is not the next response to the current defects.
 
 This document is the implementation plan for moving stable Station3D geometry out of
 the browser's hot path. It is intentionally not an implementation specification for
@@ -369,4 +371,3 @@ Resume only when:
    and swept-vehicle envelopes;
 4. both repositories have clean, attributable baselines from which A/B measurements
    can be repeated.
-
