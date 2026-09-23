@@ -6367,13 +6367,17 @@ function overtureMaterialExcluded(base) {
 // Medium/low use smaller entries; their limits are pinned until the next complete
 // world reset, never changed beneath live UVs. Source/repair textures stay exact. The
 // nearby controller replaces selected facades with a separately bounded
-// high-resolution texture. Keep the backing page power-of-two and small:
-// measured 768 px CanvasTexture updates caused three consecutive 63–68 ms
+// high-resolution texture. Keep the backing page power-of-two and bounded:
+// measured 768 px CanvasTexture updates once caused three consecutive 63–68 ms
 // render frames on the Zagreb tram as the driver uploaded/mipmapped each page.
-// A 512 px page preserves every entry pixel while bounding each transfer; the
-// modest extra pages remain region/material batches rather than per-building
-// draws.
-const FACADE_ATLAS_PAGE_SIZE = 512;
+// Page count, not page size, is what the frame pays for every frame: at 512 px
+// a dense Zagreb region needed 16 pages per family, and ~170 of 474 visible
+// building meshes were one-material atlas pages of 30–120 triangles
+// (2026-09-23). Re-measured the same day on M1 Pro/ANGLE Metal, a full
+// 1024 px canvas page upload plus mipmaps took ~1.2 ms (2048 px: ~2 ms), so
+// 1024 px quarters those draws while each transfer stays small and a sparse
+// region still reserves only 4 MB per page.
+const FACADE_ATLAS_PAGE_SIZE = 1024;
 const FACADE_ATLAS_PADDING = 2;
 let buildingQualityProfile = STATION3D_QUALITY_PROFILES.high;
 const facadeAtlasGroups = new Map(); // `${region}|punched|glass` -> layout/pages

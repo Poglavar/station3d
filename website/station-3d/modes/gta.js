@@ -2,6 +2,7 @@ import { createVehicleExitPreview } from '../core/vehicle-exit-preview.js';
 import * as THREE from 'three';
 
 import { finiteOrNull, geoToLocal, localToGeo } from '../core/math.js';
+import { setWorldBuildBlocker } from '../core/world-ready.js';
 import { boatExitAllowedAt } from '../core/campaign-vehicle-policy.js';
 import { createGroundMotionTracker, vehicleExitSpeedMps } from '../core/ground-motion.js';
 import { worldProviderContains } from '../core/api.js';
@@ -948,8 +949,12 @@ export function createGtaSession({
 
     function surfaceColliderReplacement(key, kind, data, friction, onPublished, isCurrent, coverage) {
         if (data.truncated) {
-            const error = new Error(`${key} collider exceeds its complete coverage budget`);
+            const needed = Number.isFinite(data.requiredTriangles) ? ` (${data.requiredTriangles} triangles)` : '';
+            const error = new Error(`${key} collider exceeds its complete coverage budget${needed}`);
             error.code = 'surface-collider-coverage-capacity';
+            error.details = { code: error.code, key, coverage,
+                requiredTriangles: data.requiredTriangles ?? null, storedTriangles: data.triangleCount,
+                candidateProfiles: data.candidateProfiles ?? null };
             throw error;
         }
         return {
@@ -965,8 +970,8 @@ export function createGtaSession({
     function buildFormationDressingCollider(centerX, centerZ, candidate = null) {
         const formation = candidate ? candidate.formation : roadFormationReference();
         const revision = Number(formation?.revision) || 0;
-        const profiles = typeof formation?.surfaceProfilesNear === 'function'
-            ? formation.surfaceProfilesNear(
+        const profiles = typeof formation?.dressingProfilesNear === 'function'
+            ? formation.dressingProfilesNear(
                 centerX, centerZ, GTA_PHYSICS.formationDressingColliderRadiusM, { allowStale: true },
             ) : formation?.getSurfaceProfiles?.() || [];
         const data = buildRoadFormationDressingTrimeshData({
@@ -1009,8 +1014,14 @@ export function createGtaSession({
     function buildRailFormationDressingCollider(centerX, centerZ, candidate = null) {
         const formation = candidate ? candidate.formation : terrainReference()?.railFormation || null;
         const revision = Number(formation?.revision) || 0;
+        // Same bounded query as roads: selecting every rail profile and filtering
+        // afterwards generated whole corridors for one 112 m bubble.
+        const profiles = typeof formation?.dressingProfilesNear === 'function'
+            ? formation.dressingProfilesNear(
+                centerX, centerZ, GTA_PHYSICS.railFormationDressingColliderRadiusM,
+            ) : formation?.getSurfaceProfiles?.() || [];
         const data = buildRoadFormationDressingTrimeshData({
-            profiles: formation?.getSurfaceProfiles?.() || [], centerX, centerZ,
+            profiles, centerX, centerZ,
             radiusM: GTA_PHYSICS.railFormationDressingColliderRadiusM,
             toPhysics: (x, z) => toPhysics(x, z),
             maxTriangles: GTA_PHYSICS.maxRailFormationDressingTriangles,
@@ -1400,7 +1411,11 @@ export function createGtaSession({
             request.steps.return();
             if (pendingBubbleBuild !== request) return;
             pendingBubbleBuild = null;
-            if (request.result === true) { failedSurfaceRequest = null; return; }
+            if (request.result === true) {
+                failedSurfaceRequest = null;
+                setWorldBuildBlocker('gta-ground-support', null);
+                return;
+            }
             const previous = failedSurfaceRequest;
             const same = previous && inputs.length === previous.inputs.length
                 && inputs.every((value, index) => Object.is(value, previous.inputs[index]));
@@ -1408,6 +1423,10 @@ export function createGtaSession({
                 attempts: same ? previous.attempts + 1 : 1,
                 error: error ? String(error.message || error) : 'Ground support inputs changed during preparation' };
             if (error) console.error('[gta] Ground bubble preparation failed; previous support retained', error);
+            // Loading cannot see this private support queue; name the failure so a
+            // curtain released by timeout reports why rather than an anonymous stall.
+            if (error) setWorldBuildBlocker('gta-ground-support', { code: error.code || 'gta-ground-support-failed',
+                message: failedSurfaceRequest.error });
         };
         request.job = bubbleQueue.enqueue([request], () => {
             if (!current()) return;

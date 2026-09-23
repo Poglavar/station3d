@@ -33,7 +33,7 @@ import {
 } from '../core/photo-track-frame.js';
 import {
     scene, camera, renderer, groundMesh, ringMesh, northArrowMesh, stationMarker, sun, fill, ambient,
-    getResizeHandler, SIDEWALK_UV_PER_M, getRenderQualityContext,
+    getResizeHandler, SIDEWALK_UV_PER_M, getRenderQualityContext, getShadowCacheSnapshot, setShadowCacheEnabled,
 } from '../scene/setup.js';
 import {
     isPerformanceProfilingActive,
@@ -83,6 +83,7 @@ import {
     resolveRenderOriginRebase,
     setSceneRenderOrigin,
 } from '../core/render-origin.js';
+import { quantizeDirection, snapShadowAnchor } from '../core/shadow-caster-cache.js';
 import {
     nextWalkCameraMode,
     thirdPersonWalkCameraPose,
@@ -146,6 +147,7 @@ import {
     noteWorldQueueProgress,
     noteWorldTransferBytes,
     onWorldReady,
+    getWorldBuildBlockers,
     setWorldBuildOptionalQueues,
     tickWorldReady,
 } from '../core/world-ready.js';
@@ -952,7 +954,7 @@ async function startSessionLayers(cabState, ctx, entries) {
             // experienced-width EWMA, then drop the overlay.
             recordWorldLoadDurations(getWorldLoadDurations());
             stopWorldTransferObserver();
-            setWorldLoading(false, reason);
+            setWorldLoading(false, reason, { blockers: getWorldBuildBlockers() });
             // A free-roam world takes the loading screen away now; a campaign
             // chapter leaves it to the director, which drops it once the scene
             // has opened (core/campaign-director.js).
@@ -5182,11 +5184,18 @@ function cabStep() {
     const sunDir = getSunDirection();
     const SUN_DIST = 216;
     if (sun) {
-        sun.target.position.set(local.x, terrainGroundY, local.z);
+        // The shadow map is reused while the light and casters are unchanged, so
+        // the shadow anchor steps on a world grid and the solar path in small
+        // angular steps instead of changing every frame (core/cached-shadow-map.js).
+        const shadowDir = quantizeDirection(sunDir, SHADOW_SUN_STEP_RAD);
+        const anchorX = snapShadowAnchor(local.x, SHADOW_ANCHOR_STEP_M);
+        const anchorY = snapShadowAnchor(terrainGroundY, SHADOW_ANCHOR_HEIGHT_STEP_M);
+        const anchorZ = snapShadowAnchor(local.z, SHADOW_ANCHOR_STEP_M);
+        sun.target.position.set(anchorX, anchorY, anchorZ);
         sun.position.set(
-            local.x + sunDir.x * SUN_DIST,
-            terrainGroundY + sunDir.y * SUN_DIST,
-            local.z + sunDir.z * SUN_DIST,
+            anchorX + shadowDir.x * SUN_DIST,
+            anchorY + shadowDir.y * SUN_DIST,
+            anchorZ + shadowDir.z * SUN_DIST,
         );
     }
     if (fill) {
@@ -5333,6 +5342,12 @@ function cabStep() {
         SESSION_CAPABILITY.RENDER_ORIGIN_REBASING,
     )) applyRenderOriginForRender(scene, camera);
 }
+
+// Shadow light stepping: at ±100 m of shadow frustum an 8 m anchor step keeps the
+// observer within ~6 m of centre; 0.25° solar steps are below visible change.
+const SHADOW_ANCHOR_STEP_M = 8;
+const SHADOW_ANCHOR_HEIGHT_STEP_M = 2;
+const SHADOW_SUN_STEP_RAD = Math.PI / 720;
 
 // ─── Driver mode handoff ───────────────────────────────────────────────────
 
@@ -7595,6 +7610,8 @@ if (typeof window !== 'undefined'
         get scene() { return scene; },
         get camera() { return camera; },
         get renderer() { return renderer; },
+        get shadowCache() { return getShadowCacheSnapshot(); },
+        setShadowCacheEnabled,
         getWalkGroundY,
         THREE,
     };

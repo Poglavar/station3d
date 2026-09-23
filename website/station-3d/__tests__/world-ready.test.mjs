@@ -20,6 +20,7 @@ const {
     canReleaseWorldBuildRequirement,
     setWorldBuildOptionalQueues,
     setWorldDataOutage, getWorldDataOutage,
+    setWorldBuildBlocker, getWorldBuildBlockers,
 } = await import('../core/world-ready.js');
 
 function fresh() { _resetWorldReady(); clock = 0; }
@@ -610,4 +611,24 @@ test('a build may carry its own absolute ceiling; the default stays at 120 s', (
     for (clock = 0; clock <= 120_100; clock += 100) { noteWorldQueueActive('roads'); tickWorldReady(); }
     assert.deepEqual(plain, ['timeout'], 'free roam keeps the 120 s ceiling');
     _resetWorldReady();
+});
+
+test('a timeout release reports the blockers that were diagnosed during the build', () => {
+    fresh();
+    beginWorldBuild({ ceilingMs: 60_000 });
+    setWorldBuildBlocker('gta-ground-support', { code: 'surface-collider-coverage-capacity',
+        message: 'rail-formation-dressings collider exceeds its complete coverage budget' });
+    setWorldBuildBlocker('other', { code: 'transient' });
+    setWorldBuildBlocker('other', null);
+    assert.deepEqual(getWorldBuildBlockers().map(b => b.code), ['surface-collider-coverage-capacity']);
+    let reason = null;
+    onWorldReady(value => { reason = value; });
+    clock = 61_000;
+    tickWorldReady();
+    assert.equal(reason, 'timeout');
+    assert.deepEqual(getWorldBuildBlockers().map(b => b.key), ['gta-ground-support']);
+    assert.equal(getWorldLoadTelemetry().blockers[0].code, 'surface-collider-coverage-capacity');
+    beginWorldBuild();
+    assert.deepEqual(getWorldBuildBlockers(), [], 'a new build starts without inherited blockers');
+    fresh();
 });

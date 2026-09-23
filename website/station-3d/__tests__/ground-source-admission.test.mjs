@@ -7,6 +7,7 @@ import { createGroundSourceAdmission } from '../core/ground-source-admission.js'
 import { GROUND_GENERATION_LIMITS } from '../core/ground-generation-limits.js';
 import { createPublishedGroundReadSlot } from '../core/published-ground-read.js';
 import { initialWorldSupportTileKeys } from '../core/initial-world-support.js';
+import { createHeldDeliveryWake } from '../core/held-delivery-wake.js';
 import { beginWorldBuild, isWorldBuilding, noteWorldPhase, noteWorldQueueActive,
     noteWorldQueueIdle, _resetWorldReady } from '../core/world-ready.js';
 
@@ -248,12 +249,14 @@ test('the production world admission requests missing curb masks before handing 
     const worldSource = readFileSync(new URL('../world/ground-generations.js', import.meta.url), 'utf8');
     let lease = null, admissions = 0, buildersReady = false, managed = 0;
     const realm = vm.createContext({ tileFeatures, maskTileFeatures, createGroundSourceAdmission,
-        createPublishedGroundReadSlot, initialWorldSupportTileKeys,
+        createPublishedGroundReadSlot, initialWorldSupportTileKeys, createHeldDeliveryWake,
+        isWorldBuilding: () => true,
+        GROUND_ROAD_SOURCE_KEYS: ['roads:cab', 'roads:graph', 'roads:vertical-alignments', 'roads:curbs'],
         GROUND_GENERATION_LIMITS, FRAME_CHUNK_REPEAT_ITEM: Symbol(), FRAME_CHUNK_DEFER_ITEM: Symbol(),
         FRAME_CHUNK_WAIT_ITEM: Symbol(),
         createFrameChunkQueue: () => ({ dispose() {} }), registerBackgroundActivityReader: () => () => {},
         createGroundGenerationCoordinator({ admit }) { return {
-            invalidate() {}, close() { lease?.release(); }, snapshot: () => ({ pending: 1 }),
+            invalidate() {}, close() { lease?.release(); }, snapshot: () => ({ pending: 1 }), isSettled: () => false,
             onFrame() { if (!lease) { lease = admit(); if (lease) admissions++; } },
         }; } });
     const dependencies = vm.runInContext(`({${dependencyMethod}})`, realm);

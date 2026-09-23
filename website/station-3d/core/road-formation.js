@@ -3710,6 +3710,32 @@ export class RoadFormationModel {
         return Array.from(profiles);
     }
 
+    // Profiles whose civil dressing can reach a disc, from the index keyed by
+    // the same overlap/cut-out/outer bounds the dressing builders use. The
+    // surface index is keyed by the paved ring only and can miss a collar.
+    dressingProfilesNear(x, z, radiusM, { allowStale = false } = {}) {
+        if (!allowStale) this._ensureBuilt();
+        const localX = finiteOrNull(x);
+        const localZ = finiteOrNull(z);
+        const radius = finiteOrNull(radiusM);
+        if (localX === null || localZ === null || radius === null || radius < 0) return [];
+        const profiles = new Set();
+        for (let cellZ = Math.floor((localZ - radius) / INDEX_CELL_M); cellZ <= Math.floor((localZ + radius) / INDEX_CELL_M); cellZ += 1) {
+            for (let cellX = Math.floor((localX - radius) / INDEX_CELL_M); cellX <= Math.floor((localX + radius) / INDEX_CELL_M); cellX += 1) {
+                for (const profile of this._civilGroundProfileIndex.get(`${cellX}_${cellZ}`) || []) {
+                    const bounds = profile.overlapBounds || profile.terrainCutoutBounds
+                        || profile.outerBounds || profile.bounds;
+                    const dx = localX < bounds.minX ? bounds.minX - localX
+                        : localX > bounds.maxX ? localX - bounds.maxX : 0;
+                    const dz = localZ < bounds.minZ ? bounds.minZ - localZ
+                        : localZ > bounds.maxZ ? localZ - bounds.maxZ : 0;
+                    if (dx * dx + dz * dz <= radius * radius) profiles.add(profile);
+                }
+            }
+        }
+        return Array.from(profiles);
+    }
+
     getSurfaceProfilesForOsmId(osmId, { allowStale = false } = {}) {
         if (!allowStale) this._ensureBuilt();
         const requestedId = numericId(osmId);
@@ -4949,7 +4975,7 @@ export class RoadFormationModel {
                 'toLocal', '_baseY', '_nearestOnSegments', '_genericSegmentsNear', '_nearestOnOwnSegments',
                 'formationAtLocal', 'sceneYAtLocal', 'groundSceneYAtLocal', 'civilGroundSceneYAtLocal',
                 'hasDressedSurfaceBoundaryAtLocal', 'nearbyCenterlineSegments', 'surfaceAtLocal',
-                'publishedSurfaceAtLocal', '_surfaceAtLocalBuilt', 'surfaceProfilesNear',
+                'publishedSurfaceAtLocal', '_surfaceAtLocalBuilt', 'surfaceProfilesNear', 'dressingProfilesNear',
                 'getSurfaceProfiles', 'getSurfaceProfilesForOsmId', 'getSurfaceProfilesForFeature',
                 'getReplacementTerrainCutoutRegions',
             ];

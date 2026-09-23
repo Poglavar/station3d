@@ -429,6 +429,14 @@ class SharedTileSource {
         };
     }
 
+    // Callbacks parked behind the closed generation's admission barrier. They
+    // are delivered only by the next admission, and nothing but an admission
+    // removes the barrier, so a stationary owner must be told they exist or
+    // the downloaded tiles wait forever (docs/performance/next-steps.md, S1).
+    heldDeliveryCount() {
+        return this.admissionBarrier ? this.pendingCallbacks.size : 0;
+    }
+
     capturePriorityTileKeys({ maxTiles, includeTileKeys = [] } = {}) {
         if (!Number.isSafeInteger(maxTiles) || maxTiles < 1 || !Array.isArray(includeTileKeys)
             || new Set(includeTileKeys).size !== includeTileKeys.length) {
@@ -1758,6 +1766,12 @@ export function createSharedTileSession({
         },
         sourceKeys() {
             return sources.keys();
+        },
+        heldSourceDeliveries(keys) {
+            if (!Array.isArray(keys)) throw new TypeError('Held delivery count requires source keys');
+            let held = 0;
+            for (const key of keys) held += sources.get(key)?.heldDeliveryCount() || 0;
+            return held;
         },
         capturePrioritySourceTileKeys(sourceKey, options) {
             const source = sources.get(sourceKey);

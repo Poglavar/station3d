@@ -81,6 +81,11 @@ let activitySerial = 0;
 let transferBytes = 0;             // bytes on the wire since the build began
 let completedMs = null;
 let completedReason = null;
+// Named reasons the world cannot become ready (a capacity failure, a missing
+// evidence source). They do not hold the curtain themselves; they say why a
+// timeout release happened instead of leaving an anonymous 'timeout'.
+const buildBlockers = new Map();   // key → { code, message }
+let completedBlockers = [];
 const activeDataRequests = new Map(); // request key → overlapping request count
 // Some authored scenes have a stronger contract than the generic near-field
 // reveal: gameplay is invalid until a named world requirement is complete.
@@ -122,6 +127,8 @@ export function beginWorldBuild({ ceilingMs = null } = {}) {
     transferBytes = 0;
     completedMs = null;
     completedReason = null;
+    buildBlockers.clear();
+    completedBlockers = [];
     activeDataRequests.clear();
     requiredBuilds.clear();
     componentOrder.length = 0;
@@ -129,6 +136,19 @@ export function beginWorldBuild({ ceilingMs = null } = {}) {
     firstIdleMs.clear();
     phaseDoneMs.clear();
     milestoneDoneMs.clear();
+}
+
+// Record or clear (detail = null) a diagnosed reason this build cannot finish.
+export function setWorldBuildBlocker(key, detail) {
+    if (!key) return;
+    if (!detail) { buildBlockers.delete(String(key)); return; }
+    buildBlockers.set(String(key), Object.freeze({ key: String(key),
+        code: String(detail.code || 'blocked'), message: String(detail.message || '') }));
+}
+
+// Current blockers while building; the ones present at completion afterwards.
+export function getWorldBuildBlockers() {
+    return building ? [...buildBlockers.values()] : completedBlockers.slice();
 }
 
 export function isWorldBuilding() {
@@ -402,6 +422,7 @@ export function getWorldLoadTelemetry() {
             : Math.max(0, Number(completedMs) || 0),
         completedMs,
         readyReason: completedReason,
+        blockers: getWorldBuildBlockers(),
         receivedBytes,
         transferBytes,
         activitySerial,
@@ -471,6 +492,7 @@ function check() {
 function finish(reason) {
     completedMs = Math.max(0, nowMs() - buildStartMs);
     completedReason = reason;
+    completedBlockers = [...buildBlockers.values()];
     building = false;
     const callbacks = readyCallbacks;
     readyCallbacks = [];
@@ -503,6 +525,8 @@ export function _resetWorldReady() {
     transferBytes = 0;
     completedMs = null;
     completedReason = null;
+    buildBlockers.clear();
+    completedBlockers = [];
     activeDataRequests.clear();
     requiredBuilds.clear();
     componentOrder.length = 0;

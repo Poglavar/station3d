@@ -126,6 +126,7 @@ import { retainReadSnapshot } from '../core/read-snapshot-lifetime.js';
 import { buildFormationTerrainCutoutQuerySteps } from '../core/formation-terrain-cutout-query.js';
 import { roadStructureMatchesAlignment, roadStructurePublicationKey } from '../core/road-replacement-publication.js';
 import { markInspectionLayer } from '../core/scene-inspection.js';
+import { createTerrainEvidenceScope } from '../core/terrain-evidence-scope.js';
 import {
     SURFACE_BACKSTOP_CUT_OPERATION,
     SURFACE_CLASS,
@@ -2005,7 +2006,7 @@ function* enqueueTerrainPublicationSteps(build, batch, boundary, onPublished = n
 // One captured set authorizes both exact receiver triangles and the civil
 // removal channels. Source model availability alone cannot open a backstop.
 function* prepareGroundOwnershipGenerationSteps({ ground, roadReceivers, railReceivers, structureReceivers,
-    centerX, centerZ, radiusM, maxProfiles, maxRegions, isCurrent = () => true }) {
+    centerX, centerZ, radiusM, maxProfiles, maxRegions, terrainEvidence = null, isCurrent = () => true }) {
     if (!Object.isFrozen(ground) || !ground?.terrain || !ground?.roadFormation || !ground?.railFormation
         || !ground?.verticalAlignments || typeof ground.isCurrent !== 'function'
         || typeof roadReceivers?.formationBackstopReady !== 'function'
@@ -2054,14 +2055,26 @@ function* prepareGroundOwnershipGenerationSteps({ ground, roadReceivers, railRec
         const views = []; let profiles = 0, regions = 0;
         for (const input of inputs) {
             const road = input.model === held.roadFormation;
+            const kept = [];
             for (const profile of input.profiles) {
                 if (++profiles > maxProfiles) throw Object.assign(new Error('Ground profile capacity exceeded'), { code: 'ground-generation-capacity' });
                 if (road && !profile.terrainCutoutDisabled && formationTerrainCutoutMaskRegions(profile).length
                     && !roadReceivers.formationBackstopReady(profile)) {
+                    // A road deferred for lying past the requested terrain evidence
+                    // has no receiver by design: leave its terrain uncut (no road,
+                    // no hole) until the generation that admits it. Anywhere else a
+                    // cut without a receiver is a hole and stays an error.
+                    const bounds = profile.overlapBounds || profile.terrainCutoutBounds || profile.outerBounds || profile.bounds;
+                    if (terrainEvidence && !terrainEvidence.contains(bounds)) {
+                        yield { phase: 'ground-cut-deferred' }; check();
+                        continue;
+                    }
                     throw Object.assign(new Error('Road terrain cut has no matching receiver'), { code: 'ground-backstop-unavailable' });
                 }
+                kept.push(profile);
                 yield { phase: 'ground-cut-backstops' }; check();
             }
+            input.profiles = kept;
             for (const region of input.replacementRegions) {
                 if (++regions > maxRegions) throw Object.assign(new Error('Ground opening capacity exceeded'), { code: 'ground-generation-capacity' });
                 if (road) {
@@ -3303,6 +3316,15 @@ export const terrainLayer = {
         return { tileKeys: scope.tileKeys, removeKeys: scope.removeKeys };
     },
     prepareOwnershipGroundSteps: prepareGroundOwnershipGenerationSteps,
+    // Base evidence that is loaded or already requested. Ground producers use
+    // it to defer owners that reach beyond it instead of waiting forever on a
+    // tile outside the streamed ring. null when terrain is not streamed.
+    captureEvidenceScope() {
+        const state = terrainGridStreamState;
+        if (!state || state.closed) return null;
+        return createTerrainEvidenceScope({ anchorLon: state.ctx.anchorLon, anchorLat: state.ctx.anchorLat,
+            tileKeys: [...state.loadedTiles.keys(), ...state.requests.keys()] });
+    },
     admitGroundGeneration: admitTerrainGroundGeneration,
     prepareGroundGenerationSteps: prepareTerrainGroundGenerationSteps,
     async beginSession(ctx) {

@@ -1,6 +1,6 @@
 # Station3D performance audit
 
-Updated 22 September 2026. This and [next-steps.md](next-steps.md) are the only
+Updated 23 September 2026. This and [next-steps.md](next-steps.md) are the only
 current performance documents. Update them in place; keep dated measurements in
 machine-readable receipts, not another audit or delivery tracker.
 
@@ -240,6 +240,72 @@ not 402,000 visible triangles. Asynchronous warm-up renders can also overwrite
 `renderer.info`; isolated one-call samples must not be mistaken for an empty
 product frame. The diagnostic experiments above test hypotheses; they are not
 permission to remove scenery.
+
+### 23 September re-measurement
+
+Same served bundles as above (`cdd475cb…`, `d6ba6799…`), engine `8f5c485`
+(docs-only after alpha.2), Zagreb host `e87fb651`. The host was busier than on
+22 September: load 6–18, and 13.3 of 14.3 GB swap in use. The repeated
+collector walk was rejected by its own gate at 70 % clean host coverage. Numbers
+below are diagnostic and were chosen for proportions and counts, not FPS claims.
+
+- **Stationary delivery deadlock (new).** On a stationary dense-walk start,
+  `tile-delivery` held 171 items for the whole observation (≥250 s in one run,
+  ≥100 s in a second). They made 368,902 attempts at 315 ms total CPU, and the
+  network was idle. Live source state showed four road-family sources with
+  `admissionBarrier: true` and 19/95/38/19 pending callbacks. The barrier in
+  `core/shared-tile-session.js` is removed only by the next admission, which
+  those blocked deliveries would themselves trigger. Consequence: every
+  "drained" phase in the 22 September captures was reached only after movement.
+- **Car collider failure re-reproduced** with the identical message. During
+  the failure, `groundGenerations.snapshot()` reported `failed: 0` and
+  `capacityBlocked: false`: the error takes the fixed-bubble path, not the
+  coordinator.
+- **Ground generation.** Two 60 s out/back walks (55 m corridor, 25 m/s)
+  published 10 and 5 generations for 9.5 s and 4.8 s of preparation CPU. Road
+  generations cost 1.1–3.2 s CPU and 11–41 s wall each. They compiled 252–463
+  owners, of which 184–349 were new and 234–436 carried the
+  physical-dependency flag.
+- **Main-thread anatomy.** Stationary, not drained: 22 % idle, `renderer.render`
+  60 % (shadow pass 23 %, `WebGLGeometries.update` 20 % self). Walking: 2 %
+  idle, `renderer.render` 52 %, the same attribute-check function 11 %. The
+  22 September 60 % share for that function came from a profile with zero idle
+  samples taken during heavy paging. The function is real per-object cost, not
+  upload volume: buffer uploads were 15.4 MB over 30 s of walking.
+- **Frame anatomy, dense walk view.** 528 main + 95 shadow draws, 160 program
+  switches, 803 visible meshes, 1.63 M triangles. Buildings: 474 visible meshes
+  over 180 materials. About 170 are per-tile × page `FacadeAtlas` meshes of
+  30–120 triangles, and 42 are unbatched ~24-triangle entity meshes.
+- **GPU timer queries** (`EXT_disjoint_timer_query_webgl2`): 9.0 ms per frame
+  at DPR 1 (1600 × 946) and 21.5 ms at DPR 1.5 (2400 × 1419), in separate
+  sessions. Freezing shadow-map updates did not reduce GPU time (22.2 ms). With
+  an emulated device scale factor, frame intervals were pinned at 33.3 ms
+  whatever the ablation, so only the GPU timer is usable from that run.
+- **Claims corrected:**
+  - There is no altitude-based aircraft physics suppression; special vehicles
+    skip the Rapier bubble at every altitude.
+  - `otherTrainsFn()` has three callers.
+  - The engine's `tools/perf-trace.mjs` fails at import, because its helper
+    modules exist only in the Zagreb consumer.
+
+**Branch `perf-next` candidate (same day, uncommitted).** Against the same
+consumer and provider, with the candidate vendored into a cloned consumer:
+- The stationary walk drains, where baseline stays at 170–171 held deliveries.
+- The Zagreb car, Split car and Split city-flight starts all reach normal
+  readiness and move.
+- Visible building materials fell 136 → 51 in the census view.
+- Program switches per frame fell 158 → 126.
+- The shadow pass is skipped when nothing it draws changed.
+- A static/dynamic shadow cache was measured and rejected: +3–4 ms GPU per
+  frame on ANGLE/Metal.
+
+Timing comparisons are still owed: every window in this period had paging or
+load above 1.5 per CPU. Details and the remaining work are in
+[next-steps.md](next-steps.md).
+
+Raw captures, CPU profiles and the probe scripts are preserved locally in the
+Zagreb consumer under `performance/station3d/results/audit-2026-09-23/`
+(ignored). The resulting priorities are in [next-steps.md](next-steps.md).
 
 ## Improvements already present
 

@@ -483,7 +483,7 @@ export function setCampaignBakeStatus(status) {
 // the cab drops it for a free-roam world, the campaign director for a chapter.
 // The build state is published on the modal for automation, which polls
 // data-world-build-state ('building' / 'ready') and data-world-build-reason.
-export function setWorldLoading(visible, reason = '', { eyebrow, headline } = {}) {
+export function setWorldLoading(visible, reason = '', { eyebrow, headline, blockers = [] } = {}) {
     ensureDashboard();
     if (visible && !worldBuildHoldActive) {
         worldLoadActivity = createWorldLoadActivity();
@@ -494,9 +494,13 @@ export function setWorldLoading(visible, reason = '', { eyebrow, headline } = {}
         if (visible) {
             modalEl.dataset.worldBuildState = 'building';
             delete modalEl.dataset.worldBuildReason;
+            delete modalEl.dataset.worldBuildBlockers;
         } else if (modalEl.dataset.worldBuildState === 'building') {
             modalEl.dataset.worldBuildState = 'ready';
             if (reason) modalEl.dataset.worldBuildReason = String(reason);
+            // Machine-readable why for a timeout release (automation/diagnostics).
+            const codes = (Array.isArray(blockers) ? blockers : []).map(blocker => blocker?.code).filter(Boolean);
+            if (codes.length) modalEl.dataset.worldBuildBlockers = [...new Set(codes)].join(' ');
         }
     }
     if (!visible) {

@@ -5,6 +5,7 @@ import { ownReadSnapshot, retainReadSnapshot } from '../core/read-snapshot-lifet
 import { captureProposalMaskSnapshot } from './proposals.js';
 import { createGroundGenerationCoordinator } from '../core/ground-generation-coordinator.js';
 import { createGroundSourceAdmission } from '../core/ground-source-admission.js';
+import { createHeldDeliveryWake } from '../core/held-delivery-wake.js';
 import { initialWorldSupportTileKeys } from '../core/initial-world-support.js';
 import { groundGenerationScope } from '../core/ground-generation-scope.js';
 import { createPublishedGroundReadSlot } from '../core/published-ground-read.js';
@@ -14,7 +15,7 @@ import { createFrameChunkQueue, FRAME_CHUNK_REPEAT_ITEM, FRAME_CHUNK_DEFER_ITEM,
 import { GROUND_GENERATION_LIMITS } from '../core/ground-generation-limits.js';
 import { prepareTerrainCutoutTilesSteps } from '../core/terrain-cutout-tiles.js';
 import { registerBackgroundActivityReader } from '../core/background-activity.js';
-import { noteWorldMilestone } from '../core/world-ready.js';
+import { isWorldBuilding, noteWorldMilestone } from '../core/world-ready.js';
 import { createSurfaceOpeningReadSteps } from '../core/surface-opening-read.js';
 import { SURFACE_CLASS, SURFACE_COVERAGE_STATE, SURFACE_VERTICAL_RELATION } from '../core/surface-hierarchy.js';
 import { composeReceiverSupportReadsSteps } from '../core/receiver-support-read.js';
@@ -400,6 +401,9 @@ function* prepareWorldGroundGraphSteps({ ctx, layers, admission, scope, limits,
         // Select receiver ownership after the physical dependency closure is
         // known. Aggregate preparation below adds unchanged bucket neighbours
         // as needed, without recompiling unrelated source owners.
+        // One evidence scope per generation: road admission defers owners past it,
+        // and the terrain cut must skip exactly those owners' profiles.
+        const terrainEvidence = nonEmptyEvidenceScope(layers.terrain.captureEvidenceScope?.());
         if (!admission.roads) {
             const roadKeys = [];
             for (const key of layers.roads.groundSourceKeys()) {
@@ -409,7 +413,8 @@ function* prepareWorldGroundGraphSteps({ ctx, layers, admission, scope, limits,
             }
             admission.roads = yield* layers.roads.admitGroundGenerationSteps(roadKeys, {
                 ...limits.roadAdmission, ground: receiverGround,
-                changedBounds: roadGeometryBounds, full: scope.full, isCurrent });
+                changedBounds: roadGeometryBounds, full: scope.full, isCurrent,
+                terrainEvidence });
             if (!admission.roads) fail('ground-dependency-busy', 'Road source admission is pending');
         }
         const roads = keep(yield* layers.roads.prepareGroundGenerationSteps({ admission: admission.roads,
@@ -432,7 +437,7 @@ function* prepareWorldGroundGraphSteps({ ctx, layers, admission, scope, limits,
         entries.push(...curbs.entries);
         const mask = keep(yield* layers.terrain.prepareOwnershipGroundSteps({ ground: receiverGround,
             roadReceivers: roads, railReceivers: rails, structureReceivers: structures,
-            centerX: scope.centerX, centerZ: scope.centerZ, ...limits.ownership, isCurrent: sourceCurrent }), 'terrain-ownership');
+            centerX: scope.centerX, centerZ: scope.centerZ, ...limits.ownership, terrainEvidence, isCurrent: sourceCurrent }), 'terrain-ownership');
         for (const [index, resource] of openingResources.entries()) if (resource.prepareTerrainReceiversSteps) {
             const receivers = keep(yield* resource.prepareTerrainReceiversSteps({ cutoutLayers: mask.cutoutQuery.layers, openings }), `openings:${index}:terrain-receivers`);
             entries.push(...receivers.entries); finalizers.push(receivers);
@@ -483,6 +488,13 @@ function* prepareWorldGroundGraphSteps({ ctx, layers, admission, scope, limits,
     } finally { if (!handedOff) discard(); }
 }
 
+// The shared road sources one ground admission seals together.
+const GROUND_ROAD_SOURCE_KEYS = Object.freeze(['roads:cab', 'roads:graph', 'roads:vertical-alignments', 'roads:curbs']);
+
+// No requested terrain yet means no scope to judge by, not "defer everything":
+// deferring every road at bootstrap would reveal a world without roads.
+const nonEmptyEvidenceScope = scope => (scope?.tileCount > 0 ? scope : null);
+
 const PHYSICS_FAMILIES = Object.freeze(['terrain', 'road-surfaces', 'formation-dressings',
     'rail-trackbed', 'rail-formation-dressings', 'curb-surfaces', 'authored-surfaces']);
 
@@ -517,7 +529,7 @@ export function createWorldGroundGenerations({ ctx, layers, isCurrent,
         if (changes.length && changes.every(change => windowFamilies.has(change.family))) return windowAdmission;
         if (!drainingSources) {
             const sourceKeys = [...ctx.sharedTileSession.sourceKeys()].filter(key =>
-                ['roads:cab', 'roads:graph', 'roads:vertical-alignments', 'roads:curbs'].includes(key));
+                GROUND_ROAD_SOURCE_KEYS.includes(key));
             // Seal input delivery before waiting for the existing builders.
             // Waiting for every builder first let an initial corridor keep
             // extending their work and delayed the shared engine's first turn.
@@ -644,6 +656,17 @@ export function createWorldGroundGenerations({ ctx, layers, isCurrent,
         // published predecessor while later window requests coalesce behind it.
         isCurrent });
     layers.terrain.connectGroundCoordinator(coordinator);
+    // A published generation leaves later road callbacks behind its delivery
+    // barrier. Moving observers wake the next admission through window/source
+    // changes; a stationary one needs this, or the tiles never arrive. Not
+    // behind the loading curtain: reveal waits for the observer tiles only,
+    // and the corridor is deliberately a successor of the revealed world.
+    const heldDeliveryWake = createHeldDeliveryWake({
+        countHeld: () => ctx.sharedTileSession.heldSourceDeliveries?.(GROUND_ROAD_SOURCE_KEYS) || 0,
+        isIdle: () => managed && !drainingSources && !isWorldBuilding() && coordinator.isSettled(),
+        publishedCount: () => coordinator.snapshot().published,
+        wake: () => coordinator.invalidate('roads', { reason: 'held-source-deliveries' }),
+    });
     coordinator.invalidate('bootstrap');
     const unregister = registerBackgroundActivityReader(() => ({ kind: 'build', label: 'ground-generation-owner',
         ...coordinator.snapshot() }));
@@ -654,10 +677,12 @@ export function createWorldGroundGenerations({ ctx, layers, isCurrent,
         capturePublishedRead: receiverReadSlot.capture,
         snapshot: () => ({ ...coordinator.snapshot(), managed,
         layerBlockers: managed ? [] : layerBlockers(),
-        drainingSources: !!drainingSources, receiverReads: receiverReadSlot.snapshot() }),
+        drainingSources: !!drainingSources, receiverReads: receiverReadSlot.snapshot(),
+        heldDeliveries: heldDeliveryWake.snapshot() }),
         onFrame(local) {
             if (closed) return;
             coordinator.onFrame(local);
+            heldDeliveryWake.onFrame();
         },
         close() { if (closed) return; closed = true;
             try { coordinator.close(); }

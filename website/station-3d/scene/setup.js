@@ -7,6 +7,8 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { registerShared } from '../core/dispose.js';
 import { bindRenderOriginShader } from '../core/render-origin.js';
+import { createCachedShadowMap } from '../core/cached-shadow-map.js';
+import { createProgramGroupedOpaqueSort, rendererProgramLookup } from '../core/opaque-sort.js';
 import { markInspectionLayer } from '../core/scene-inspection.js';
 import { markSurfaceClaim } from '../core/surface-claim.js';
 import { applyStreetLampSurfaceLighting } from '../world/streetlamp-lighting.js';
@@ -185,6 +187,7 @@ export let ringMesh;
 export let northArrowMesh;
 export let stationMarker;
 export let sun;              // DirectionalLight at a fixed east-south-high angle, matching r128 prod
+let shadowCache = null;      // static/dynamic cached sun shadow map (core/cached-shadow-map.js)
 export let fill;             // DirectionalLight from opposite of sun — adds detail to shaded walls; no shadow
 export let ambient;          // AmbientLight, fixed intensity, matching r128 prod
 // Default building material used when a DGU type code has no specific colour.
@@ -209,6 +212,14 @@ function qualityTargetDpr() {
         ? qualityGovernor?.snapshot?.().dpr ?? qualitySelection.profile.dprCap
         : qualitySelection.profile.dprCap;
     return Math.min(browserDevicePixelRatio(), cap);
+}
+
+export function getShadowCacheSnapshot() {
+    return shadowCache?.snapshot() || null;
+}
+
+export function setShadowCacheEnabled(enabled) {
+    shadowCache?.setEnabled(enabled);
 }
 
 export function probeWebGlQualityCapabilities() {
@@ -647,6 +658,8 @@ export function initScene(container) {
         ?? qualitySelection.profile.antialias;
     renderer.setPixelRatio(getRendererPixelRatio());
     renderer.setSize(w, h);
+    // Adjacent draws of one compiled program skip program re-binding.
+    renderer.setOpaqueSort(createProgramGroupedOpaqueSort(rendererProgramLookup(renderer)));
     renderer.shadowMap.enabled = true;
     applyRenderGrade(renderGrade);
     containerEl.appendChild(renderer.domElement);
@@ -693,6 +706,10 @@ export function initScene(container) {
     // DirectionalLight's target must be in the scene graph for its world
     // matrix to update; the light shines from its position toward target.
     scene.add(sun.target);
+    // Reuse the shadow map while the (grid-snapped) light and every caster are
+    // unchanged; otherwise three renders it as usual.
+    shadowCache?.dispose();
+    shadowCache = createCachedShadowMap({ renderer, scene, light: sun });
 
     // Fill light, opposite the sun's azimuth, same elevation. Lights walls
     // facing W/N (which the main sun leaves in shadow) so their protrusions,

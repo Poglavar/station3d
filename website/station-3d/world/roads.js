@@ -3297,7 +3297,7 @@ function* prepareRoadFormationGroundSteps({ terrain, railFormation, verticalAlig
 // resolves physical dependencies. Only changed receivers need source rows;
 // their aggregate publication will retain unchanged bucket neighbours.
 function* admitRoadGroundGenerationSteps(featureKeys, { isCurrent, maxFeatures,
-    ground = null, changedBounds = [], full = true } = {}) {
+    ground = null, changedBounds = [], full = true, terrainEvidence = null } = {}) {
     if (!Array.isArray(featureKeys) || !Number.isSafeInteger(maxFeatures) || maxFeatures <= 0
         || featureKeys.length > maxFeatures
         || !Array.isArray(changedBounds)
@@ -3320,7 +3320,7 @@ function* admitRoadGroundGenerationSteps(featureKeys, { isCurrent, maxFeatures,
     const release = () => { if (roadReceiverGenerationLease === lease) roadReceiverGenerationLease = null; };
     lease.cancel = release;
     roadReceiverGenerationLease = lease;
-    let handedOff = false, retainedOwners = 0;
+    let handedOff = false, retainedOwners = 0, deferredOutsideTerrain = 0;
     try {
         for (const featureKey of featureKeys) {
             if (typeof featureKey !== 'string') throw new TypeError('Road source keys must be strings');
@@ -3353,6 +3353,15 @@ function* admitRoadGroundGenerationSteps(featureKeys, { isCurrent, maxFeatures,
                 yield { phase: 'road-generation-admission-retain' }; if (!current()) return null;
                 continue;
             }
+            // An owner reaching past the loaded/requested base terrain would fail
+            // on evidence nobody fetches. Defer it with its previous receiver
+            // intact; every later generation re-examines all owners, so it is
+            // admitted once terrain streaming covers it.
+            if (terrainEvidence && bounds.some(b => !terrainEvidence.contains(b))) {
+                deferredOutsideTerrain++;
+                yield { phase: 'road-generation-admission-deferred' }; if (!current()) return null;
+                continue;
+            }
             if (rows.length >= maxFeatures) throw Object.assign(new RangeError('Road source closure exceeds capacity'),
                 { code: 'ground-generation-capacity' });
             if (regionTileKey !== undefined) regions.add(roadRegionForTile(regionTileKey));
@@ -3370,7 +3379,8 @@ function* admitRoadGroundGenerationSteps(featureKeys, { isCurrent, maxFeatures,
         if (!validate()) return null;
         handedOff = true;
         return Object.freeze({ rows: Object.freeze(rows.map(Object.freeze)), isCurrent: current, validate, release,
-            usage: Object.freeze({ examinedOwners: featureKeys.length, admittedOwners: rows.length, retainedOwners }),
+            usage: Object.freeze({ examinedOwners: featureKeys.length, admittedOwners: rows.length, retainedOwners,
+                deferredOutsideTerrain }),
             setCancel(callback) { if (typeof callback !== 'function') throw new TypeError('Road generation requires cancellation'); lease.cancel = callback; } });
     } finally { if (!handedOff) release(); }
 }

@@ -393,6 +393,30 @@ function triangleSurfaceYAtPoint(positions, x, z) {
     return supportY;
 }
 
+// Exact plan-view test of one triangle against the collider disc. A support
+// bubble only owes coverage inside its radius, so a long formation profile
+// that merely touches the bubble must not spend the budget on its far end.
+function triangleIntersectsDisc(positions, offset, cx, cz, radiusSquared) {
+    const ax = positions[offset], az = positions[offset + 2];
+    const bx = positions[offset + 3], bz = positions[offset + 5];
+    const px = positions[offset + 6], pz = positions[offset + 8];
+    const pointSegment = (x0, z0, x1, z1) => {
+        const dx = x1 - x0, dz = z1 - z0, lengthSquared = dx * dx + dz * dz;
+        const t = lengthSquared > 0
+            ? Math.max(0, Math.min(1, ((cx - x0) * dx + (cz - z0) * dz) / lengthSquared)) : 0;
+        const ex = x0 + dx * t - cx, ez = z0 + dz * t - cz;
+        return ex * ex + ez * ez;
+    };
+    if (pointSegment(ax, az, bx, bz) <= radiusSquared
+        || pointSegment(bx, bz, px, pz) <= radiusSquared
+        || pointSegment(px, pz, ax, az) <= radiusSquared) return true;
+    // Disc centre inside the triangle (all three edge signs agree).
+    const d1 = (cx - bx) * (az - bz) - (ax - bx) * (cz - bz);
+    const d2 = (cx - px) * (bz - pz) - (bx - px) * (cz - pz);
+    const d3 = (cx - ax) * (pz - az) - (px - ax) * (cz - az);
+    return !((d1 < 0 || d2 < 0 || d3 < 0) && (d1 > 0 || d2 > 0 || d3 > 0));
+}
+
 function formationDressingPositions(profile, surfaceOffsetM) {
     return [
         buildRetainingWallPositions(profile, surfaceOffsetM),
@@ -473,17 +497,21 @@ export function buildRoadFormationDressingTrimeshData({
             ));
     const vertices = [];
     const indices = [];
+    const radiusSquared = radius * radius;
     let profileCount = 0;
-    let processedCandidates = 0;
     let truncated = false;
-    outer: for (const { profile } of candidates) {
-        processedCandidates += 1;
+    // Once over capacity, keep counting (without storing) so the failure
+    // reports how much complete coverage this bubble actually needed.
+    let requiredTriangles = 0;
+    for (const { profile } of candidates) {
         let contributed = false;
         for (const positions of formationDressingPositions(profile, surfaceOffsetM)) {
             for (let offset = 0; offset + 8 < positions.length; offset += 9) {
-                if (indices.length / 3 >= triangleLimit) {
+                if (!triangleIntersectsDisc(positions, offset, x, z, radiusSquared)) continue;
+                if (truncated || indices.length / 3 >= triangleLimit) {
                     truncated = true;
-                    break outer;
+                    requiredTriangles += 1;
+                    continue;
                 }
                 const baseIndex = vertices.length / 3;
                 let valid = true;
@@ -507,21 +535,19 @@ export function buildRoadFormationDressingTrimeshData({
                     continue;
                 }
                 indices.push(baseIndex, baseIndex + 1, baseIndex + 2);
+                requiredTriangles += 1;
                 contributed = true;
             }
         }
         if (contributed) profileCount += 1;
     }
-    // `profileCount` is intentionally not used here: profiles without visible
-    // dressing are valid candidates. Re-generating every wall/collar merely to
-    // distinguish those from an early stop doubled the expensive geometry
-    // work on each streamed road-formation revision.
-    if (!truncated && processedCandidates < candidates.length) truncated = true;
     return {
         vertices: new Float32Array(vertices),
         indices: new Uint32Array(indices),
         profileCount,
         triangleCount: indices.length / 3,
+        requiredTriangles,
+        candidateProfiles: candidates.length,
         truncated,
     };
 }

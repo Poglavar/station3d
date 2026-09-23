@@ -1118,6 +1118,26 @@ function indexRailSurfaceProfiles(profiles) {
     return new Map(Array.from(indexSets, ([key, bucket]) => [key, [...bucket]]));
 }
 
+function indexedRailSurfaceProfilesNear(index, x, z, radius) {
+    const found = new Set();
+    const minCellX = Math.floor((x - radius) / SURFACE_PROFILE_INDEX_CELL_M);
+    const maxCellX = Math.floor((x + radius) / SURFACE_PROFILE_INDEX_CELL_M);
+    const minCellZ = Math.floor((z - radius) / SURFACE_PROFILE_INDEX_CELL_M);
+    const maxCellZ = Math.floor((z + radius) / SURFACE_PROFILE_INDEX_CELL_M);
+    for (let cellZ = minCellZ; cellZ <= maxCellZ; cellZ++) {
+        for (let cellX = minCellX; cellX <= maxCellX; cellX++) {
+            for (const profile of index?.get(`${cellX}_${cellZ}`) || []) {
+                const bounds = railSurfaceProfileBounds(profile);
+                if (!bounds) continue;
+                const dx = x < bounds.minX ? bounds.minX - x : x > bounds.maxX ? x - bounds.maxX : 0;
+                const dz = z < bounds.minZ ? bounds.minZ - z : z > bounds.maxZ ? z - bounds.maxZ : 0;
+                if (dx * dx + dz * dz <= radius * radius) found.add(profile);
+            }
+        }
+    }
+    return [...found];
+}
+
 function indexedRailSurfaceProfilesAt(index, x, z) {
     const cellX = Math.floor(x / SURFACE_PROFILE_INDEX_CELL_M);
     const cellZ = Math.floor(z / SURFACE_PROFILE_INDEX_CELL_M);
@@ -2642,7 +2662,7 @@ export class RailFormationModel {
             for (const name of ['toLocal', '_baseY', '_nearestOnAlignments', '_railYAtStation',
                 'formationAtLocal', 'sceneYAtLocal', 'sceneYForFeatureAtLocal', 'formationAtFeatureStation',
                 'slopeAlongHeadingDegAtLocal', 'gradeAlongHeadingForFormation', 'gradeAlongHeadingAtLocal',
-                'getSurfaceProfiles', 'getSurfaceProfilesAtLocal', 'roadFormationStyleForOsmId', 'getRoadFormationInterfaces',
+                'getSurfaceProfiles', 'getSurfaceProfilesAtLocal', 'dressingProfilesNear', 'roadFormationStyleForOsmId', 'getRoadFormationInterfaces',
                 'retainedBoundaryForRoadInterfaceAtLocal', 'getSurfaceStationAccessPlans', 'surfaceProfileAtLocal',
                 'civilGroundSceneYAtLocal', 'isOpenCutAtLocal', 'coverAtLocal', 'getViaductRuns', 'getTunnelRuns',
                 'getTunnelPortalTerrainOpenings', 'tunnelRoofInfoAt']) {
@@ -2979,6 +2999,17 @@ export class RailFormationModel {
         const localZ = finiteOrNull(z);
         if (localX === null || localZ === null) return [];
         return indexedRailSurfaceProfilesAt(this.surfaceProfileIndex, localX, localZ);
+    }
+
+    // Profiles whose civil dressing (overlap/cut-out/outer ring) can reach a
+    // disc. Collider bubbles use this instead of every profile in the model:
+    // a single long corridor otherwise generated its whole wall and collar.
+    dressingProfilesNear(x, z, radiusM) {
+        const localX = finiteOrNull(x);
+        const localZ = finiteOrNull(z);
+        const radius = finiteOrNull(radiusM);
+        if (localX === null || localZ === null || radius === null || radius < 0) return [];
+        return indexedRailSurfaceProfilesNear(this.surfaceProfileIndex, localX, localZ, radius);
     }
 
     // A reviewed rail/road interface is civil-design evidence, not a render
