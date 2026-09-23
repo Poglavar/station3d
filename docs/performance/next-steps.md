@@ -312,6 +312,35 @@ Road generations are designed to retain unchanged owners
 Any existing owner whose bounds intersect a changed bound, with padding, is
 recompiled.
 
+Measured on 23 September (evening, `v0.1.0-alpha.3` candidate, dense walk out and
+back). A temporary hash of each owner's compiled positions and indices was
+compared with its previous compile. The dependency counter also counts new
+owners, so "compiled − new" is the real recompile set:
+
+| Generation | Compiled | New | Existing recompiled | Identical output | Bounds-only recompiles | …identical |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| gen 8 | 280 | 107 | 173 | 166 | 160 | 156 |
+| gen 10 | 277 | 124 | 153 | 104 of 112 compared | 95 | 90 |
+| gen 31/35/39 (each) | 67–95 | 23–51 | 44 | 40 | 38 | 36 |
+
+About 93–98 % of existing-owner recompiles reproduce identical geometry, i.e.
+40–60 % of each road generation's compile work. Walking back and forth
+recompiled the same 44 owners on every pass. A few bounds-only recompiles do
+change (2–5 per generation), so selection must stay conservative, not be
+switched off.
+
+Code facts (from a read-only trace; file references in `world/roads.js`,
+`core/road-formation.js`, `world/ground-generations.js`):
+- The dependency test is a bounding-box overlap between the owner's
+  `row.bounds` (feature bbox padded by the 32 m formation query radius plus
+  width) and `changedBounds`. No identity input is involved.
+- `changedBounds` includes the whole `profile.bounds` of every road profile
+  whose surface-geometry generation changed. The junction recheck clones
+  overlapping unchanged profiles, and the generation bump compares profiles
+  by object identity, so a cloned neighbour counts as changed even when its
+  geometry is identical. That is two padded bbox hops per real change.
+- Terrain detail arrivals contribute tile-sized bounds.
+
 Make dependency invalidation geometric and exact:
 
 - Recompile a neighbour only when the terrain/formation evidence it actually
