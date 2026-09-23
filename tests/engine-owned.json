@@ -34,6 +34,7 @@
     "__tests__/module-imports-resolve.test.mjs",
     "__tests__/network-request-scheduler.test.mjs",
     "__tests__/opaque-sort.test.mjs",
+    "__tests__/packed-instance-blocks.test.mjs",
     "__tests__/packaged-loader.test.mjs",
     "__tests__/perf-probe-summary.test.mjs",
     "__tests__/quality-profile.test.mjs",

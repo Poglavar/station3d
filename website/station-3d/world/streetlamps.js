@@ -9,8 +9,9 @@
 // visible civil corridor. Ambient traffic intentionally owns a smaller,
 // independent retention window; identical in-flight requests still coalesce.
 // Lamps are owned and evicted per tile, while a bounded 4×4 tile region shares
-// one bounded instance region. A lamp still belongs to the tile containing its
-// base, so a road spanning tiles never double-places lamps.
+// one bounded instance region. Each tile's lamps are packed contiguously in its
+// region, so a region draws only real lamps. A lamp still belongs to the tile
+// containing its base, so a road spanning tiles never double-places lamps.
 
 import * as THREE from 'three';
 import { DEG_TO_RAD, EARTH_RADIUS_M, finiteOrNull } from '../core/math.js';
@@ -29,6 +30,7 @@ import {
 } from './track-corridors.js';
 import { buildPlannerStationClearanceVolumes } from './planner-station-layout.js';
 import { roadFurnitureBlockedByOverpass } from '../core/road-furniture-placement.js';
+import { createPackedInstanceBlocks } from '../core/packed-instance-blocks.js';
 
 // Same public-traffic set the cars layer drives on — lamps line the streets
 // with actual traffic, not service aisles or footpaths.
@@ -59,7 +61,7 @@ let lampsGroup = null;
 let anchorLat = 0, anchorLon = 0;
 let tileSource = null;
 let tileSubscription = null;
-const tileLamps = new Map();     // tileKey → region slot + positions
+const tileLamps = new Map();     // tileKey → region block + positions
 const lampRegions = new Map();   // 4×4 tile region → three fixed-capacity instance meshes
 const tileFeatures = new Map();  // retained source data for terrain-evidence retries
 const terrainDirtyTiles = new Set();
@@ -189,17 +191,9 @@ function lampGroundSceneY({ x, z, osmId }) {
     return terrainY;
 }
 
-function lampRegionSlot(tileKey) {
+function lampRegionKey(tileKey) {
     const [tx, tz] = String(tileKey).split('_').map(Number);
-    const regionX = Math.floor(tx / LAMP_REGION_TILES);
-    const regionZ = Math.floor(tz / LAMP_REGION_TILES);
-    const localX = tx - regionX * LAMP_REGION_TILES;
-    const localZ = tz - regionZ * LAMP_REGION_TILES;
-    const tileSlot = localZ * LAMP_REGION_TILES + localX;
-    return {
-        regionKey: `${regionX}_${regionZ}`,
-        offset: tileSlot * MAX_LAMPS_PER_TILE,
-    };
+    return `${Math.floor(tx / LAMP_REGION_TILES)}_${Math.floor(tz / LAMP_REGION_TILES)}`;
 }
 
 function createLampRegion(regionKey) {
@@ -218,16 +212,16 @@ function createLampRegion(regionKey) {
     poles.castShadow = false;
     heads.castShadow = false;
     caps.castShadow = false;
-    // Instance bounds would otherwise become stale as neighbouring tile slots
+    // Instance bounds would otherwise become stale as neighbouring tile blocks
     // arrive and leave. Regions are already bounded to 4×4 retained tiles, so
     // three unconditional regional draws are cheaper than rescanning hundreds
     // of matrices to rebuild bounds after every delivery.
     poles.frustumCulled = false;
     heads.frustumCulled = false;
     caps.frustumCulled = false;
-    // InstancedMesh initializes every slot to identity. Until a tile claims a
-    // deterministic region slot, collapse it at the origin so unused capacity
-    // cannot render hundreds of phantom lamps.
+    // InstancedMesh initializes every slot to identity. Unused capacity is
+    // outside the drawn count; keep it collapsed anyway so a stale count can
+    // never render phantom lamps.
     poles.instanceMatrix.array.fill(0);
     heads.instanceMatrix.array.fill(0);
     caps.instanceMatrix.array.fill(0);
@@ -236,7 +230,8 @@ function createLampRegion(regionKey) {
     heads.instanceMatrix.needsUpdate = true;
     caps.instanceMatrix.needsUpdate = true;
     lampsGroup.add(poles, heads, caps);
-    const region = { regionKey, poles, heads, caps, tiles: new Map() };
+    const blocks = createPackedInstanceBlocks({ capacity: LAMP_REGION_CAPACITY });
+    const region = { regionKey, poles, heads, caps, blocks, tiles: new Map() };
     lampRegions.set(regionKey, region);
     return region;
 }
@@ -246,25 +241,17 @@ function ensureLampRegion(regionKey) {
 }
 
 function updateLampRegionCount(region) {
-    let count = 0;
-    for (const entry of region.tiles.values()) {
-        count = Math.max(count, entry.offset + entry.positions.length);
-    }
-    region.poles.count = region.heads.count = region.caps.count = count;
+    region.poles.count = region.heads.count = region.caps.count = region.blocks.used;
 }
 
-function collapseLampEntryInstances(entry) {
+// Removes a tile's block and slides later tiles' lamps down over it.
+function releaseLampEntryInstances(entry) {
     if (!entry?.region) return;
-    const zero = new THREE.Matrix4().makeScale(0, 0, 0);
-    for (let index = 0; index < entry.positions.length; index++) {
-        const target = entry.offset + index;
-        entry.region.poles.setMatrixAt(target, zero);
-        entry.region.heads.setMatrixAt(target, zero);
-        entry.region.caps.setMatrixAt(target, zero);
-    }
-    entry.region.poles.instanceMatrix.needsUpdate = true;
-    entry.region.heads.instanceMatrix.needsUpdate = true;
-    entry.region.caps.instanceMatrix.needsUpdate = true;
+    const { poles, heads, caps } = entry.region;
+    entry.region.blocks.remove(entry.tileKey, [poles.instanceMatrix.array, heads.instanceMatrix.array, caps.instanceMatrix.array]);
+    poles.instanceMatrix.needsUpdate = true;
+    heads.instanceMatrix.needsUpdate = true;
+    caps.instanceMatrix.needsUpdate = true;
 }
 
 function disposeEmptyLampRegion(region) {
@@ -280,7 +267,7 @@ function disposeEmptyLampRegion(region) {
 
 function disposeTileEntry(entry, keepRegion = false) {
     if (!entry?.region) return;
-    collapseLampEntryInstances(entry);
+    releaseLampEntryInstances(entry);
     entry.region.tiles.delete(entry.tileKey);
     updateLampRegionCount(entry.region);
     if (!keepRegion) disposeEmptyLampRegion(entry.region);
@@ -288,20 +275,20 @@ function disposeTileEntry(entry, keepRegion = false) {
 
 function publishTileEntry(tileKey, lamps) {
     const previous = tileLamps.get(tileKey);
-    const slot = lamps?.length ? lampRegionSlot(tileKey) : null;
-    if (previous) disposeTileEntry(previous, previous.regionKey === slot?.regionKey);
+    const regionKey = lamps?.length ? lampRegionKey(tileKey) : null;
+    if (previous) disposeTileEntry(previous, previous.regionKey === regionKey);
     if (!lamps?.length) {
         tileLamps.set(tileKey, null);
         lampPositionsRevision += 1;
         return;
     }
-    const { regionKey, offset } = slot;
     const region = ensureLampRegion(regionKey);
-    const entry = { tileKey, regionKey, region, offset, positions: lamps };
+    const block = region.blocks.append(tileKey, lamps.length);
+    const entry = { tileKey, regionKey, region, block, positions: lamps };
 
     for (let index = 0; index < lamps.length; index++) {
         const { x, z, y: groundY, id } = lamps[index];
-        const target = offset + index;
+        const target = block.offset + index;
         if (destroyedLampIds.has(id)) {
             const zero = new THREE.Matrix4().makeScale(0, 0, 0);
             region.poles.setMatrixAt(target, zero);
@@ -388,7 +375,7 @@ function hideLampInstance(entry, index) {
     if (!lamp || !entry.region) return;
     const zero = new THREE.Vector3(0, 0, 0);
     for (const mesh of [entry.region.poles, entry.region.heads, entry.region.caps]) {
-        const target = entry.offset + index;
+        const target = entry.block.offset + index;
         mesh.getMatrixAt(target, _m);
         _m.decompose(_p, _q, _s);
         _m.compose(_p, _q, zero);

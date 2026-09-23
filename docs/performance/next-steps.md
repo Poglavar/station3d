@@ -2,7 +2,7 @@
 
 Updated 23 September 2026. Read [audit.md](audit.md) for measurements, completed
 work, scope and limitations. This is the single active performance backlog.
-All numbered items below are **proposals, not implemented fixes**.
+S1–S3 and R1–R3 are implemented (see the status table); the remaining items are proposals.
 
 The 23 September revision re-measured the 22 September claims against the same
 served bundles (`cdd475cb…` standard, `d6ba6799…` Sloboda) and added frame-anatomy,
@@ -11,9 +11,9 @@ bug that the previous list missed (S1), confirmed the car collider failure, and
 replaced several "instrument first" items with measured, specific levers. See
 "What changed" at the end for corrections to the previous version.
 
-## Implementation status (branch `perf-next`, 23 September, uncommitted)
+## Implementation status (`c98a73c` on `main`, deployed to zagreb.lol 23 September)
 
-Order-of-work items 1–3 were implemented in the `station3d-perf-next` worktree.
+Order-of-work items 1–3 were implemented on `perf-next` and merged to `main`.
 Each has deterministic tests; `npm test` (344+ tests), the build, the release
 asset audit and the packed-tarball consumer check pass. Browser evidence comes
 from the Zagreb consumer cloned with the candidate vendored beside an untouched
@@ -37,6 +37,35 @@ vs 15.4–16.4 ms), and the shadow reuse was GPU-neutral with traffic moving.
 | R1 | Facade atlas pages 512 → 1024 px (re-measured upload: ~1.2 ms per 1024 page on M1 Pro/ANGLE). | Building census 40 s after ready: materials 136 → 51, meshes 370 → 291. Drained candidate builds differing only in page size, same view and geometry (6.9 M indices): 83 fewer draws, 133 fewer materials, 129 fewer meshes. GPU per frame over three alternating pairs: 512 px 12.1/12.6/12.8 ms, 1024 px 11.6/14.3/14.4 ms. No consistent regression, but ~1 ms cannot be excluded on this host. | Per-tile contact AO/roof drainage (~68 draws) into regional batches; the 42-part GDI building (`gdi:building:61897`) as one batch. Both are tile-lifecycle refactors. |
 | R2 | `core/cached-shadow-map.js` reuses the shadow map when the light and every caster signature are unchanged. The sun anchor is snapped to 8 m (height 2 m) and solar direction to 0.25°. | Same-session on/off screenshots are pixel-identical outside a 36×5 px animated patch. With traffic moving the map renders every frame (no regression, equal GPU time). With nothing moving it is skipped. **The static/dynamic split was built and rejected**: restoring cached depth cost +3–4 ms GPU per frame on ANGLE/Metal and halved frame rate from 120 to 60 Hz. | The CPU saving when skipped is unmeasured (host load). In city traffic the pass is almost never skippable. Reducing caster count (greenery) is the remaining lever. |
 | R3 | Opaque draws grouped by compiled program inside each render order (`core/opaque-sort.js`). | Program switches per frame 158/162 → 126/127 in the same view (the candidate draws more content). | Static matrix freezing (0.3–0.4 ms) and batching the tiny greenery/rail/terrain tail not done. |
+| L3a | Street lamps packed per region (`core/packed-instance-blocks.js`). Regions reserved 160 fixed slots per tile and drew up to the highest occupied slot, so empty zero-scaled slots were drawn. | Same view: 24,675 drawn lamp instances for 744 real → 744 for 744; main-pass indices 6.9 M → 5.8 M (−16 %). No new page errors. | Uncommitted in `main`'s working tree. Frame time and GPU change not separable from noise (degenerate instances cost only vertex work). |
+
+### Quiet-host comparison (23 September, evening)
+
+`tools/perf-probe.mjs`, dense Zagreb walk, `high`, DPR 1, 120 Hz display. The
+runs alternated old engine (`cdd475cb…`), shipped `c98a73c` and `c98a73c` plus
+lamp packing. Each run did a 90 s drain wait, a 10 s stationary window and a
+20 s walk. Swap stayed nearly full, so the probe rejected most windows. Only
+host-clean windows are quoted.
+
+| Build | Main-pass indices | Drains in 90 s | Walk frame mean / p50 / p95 (clean) |
+| --- | --- | --- | --- |
+| Old engine | 4.7–4.9 M | never | 12.0–13.1 / 8.4–8.8 / 18–25 ms |
+| `c98a73c` | 6.6–6.9 M | every run | 15.7–17.0 / 16.3–16.5 / 26–33 ms |
+| + lamp packing | 5.4–5.8 M | every run | 13.9 / 10.3 / 25 ms (one clean window) |
+
+- **Walking is slower than the old engine** (~30 % mean frame time; mostly 60 Hz
+  instead of 120 Hz). The old engine is faster only because it never loaded
+  the held road, curb, formation and road-graph lamp tiles (S1). Per-layer
+  census at the same pose: road surface 452 k → 1,149 k indices, lamps
+  700 k → 1,207 k (before packing). This is over the 10 % movement-regression
+  bar. Accept it or pay for the content (lamp packing, road surface density,
+  R4).
+- GPU timer medians (11–13.5 ms) overlap across builds. Under vsync the GPU
+  clock drops when there is slack, so GPU ms does not rank builds here.
+- Greenery props appear later on `c98a73c`: absent 40 s after ready, present
+  at 180 s. They wait for the extra road generations to settle.
+- Stationary windows sit near 120 Hz for all builds. Stationary is no longer
+  the discriminating case.
 
 ## Where the time goes (measured 23 September)
 
