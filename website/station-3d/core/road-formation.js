@@ -11,6 +11,7 @@ import {
     buildFormationExcavationRegions,
     TERRAIN_EXCAVATION_MIN_DEPTH_M,
 } from './formation-excavation.js';
+import { delaunayFlipSteps } from './delaunay-flip.js';
 
 const INDEX_CELL_M = 80;
 // Road surface rings are densified every ~4 m and can contain thousands of
@@ -430,6 +431,11 @@ export function* refineTriangulatedSurfaceSteps(
         1,
         Math.floor(Number(options.trianglesPerYield) || 64),
     );
+    // Midpoint splitting preserves triangle shape, so an earcut needle would
+    // refine into a fan of slivers whose count grows with its squared length.
+    // Flip to the constrained Delaunay triangulation of the same points and
+    // boundary first; refinement then subdivides well-shaped triangles.
+    yield* delaunayFlipSteps(refinedPoints, refinedTriangles, { flipsPerYield: trianglesPerYield });
 
     // One subdivision pass at the given edge threshold. Rolls itself back and
     // returns null when the result would exceed the triangle budget — dropping
