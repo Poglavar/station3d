@@ -77,45 +77,48 @@ test('building quality bounds ordinary atlas texels and optional close owners', 
         STATION3D_QUALITY_PROFILES.medium.buildings);
 });
 
-test('auto DPR ignores compiler/stall frames and uses hysteresis for stable GPU pressure', () => {
-    const governor = createAutoDprGovernor({
-        initialDpr: 1.2,
-        minDpr: 0.8,
-        maxDpr: 1.5,
-        downWindows: 3,
-        upWindows: 3,
-    });
+test('auto DPR acts only on GPU evidence and steps down under sustained GPU pressure', () => {
+    const governor = createAutoDprGovernor({ initialDpr: 1.5, minDpr: 1, maxDpr: 1.5, downWindows: 3 });
+    // The 2026-09-23 walk: render-call CPU time ~3.6 ms, background always pending. Without a GPU
+    // timer result the window says nothing, however slow the frames.
     for (let index = 0; index < 10; index++) {
-        governor.observe({
-            frameAvgMs: 40,
-            renderMs: 4,
-            hooksMs: 2,
-            stallMs: 34,
-            peakFrameMs: 120,
-            compilerPending: true,
-        });
+        assert.equal(governor.observe({ frameAvgMs: 24, renderMs: 3.6, gpuMs: null, backgroundPending: true }).changed, false);
     }
+    assert.equal(governor.snapshot().ignoredWindows, 10);
+    const pressure = { frameAvgMs: 21, gpuMs: 19 };
+    governor.observe(pressure);
+    // A window without evidence between pressure windows neither confirms nor resets the trend.
+    governor.observe({ frameAvgMs: 21, gpuMs: null });
+    governor.observe(pressure);
+    assert.deepEqual(governor.observe(pressure), { changed: true, dpr: 1.4, reason: 'gpu-pressure' });
+    // GPU busy but frames still meeting 60 fps is not pressure.
+    for (let index = 0; index < 5; index++) governor.observe({ frameAvgMs: 16.7, gpuMs: 15 });
+    assert.equal(governor.snapshot().dpr, 1.4);
+    for (let index = 0; index < 20; index++) governor.observe(pressure);
+    assert.equal(governor.snapshot().dpr, 1, 'never below the profile minimum');
+});
+
+test('auto DPR steps up on predicted headroom and probes past DVFS-inflated GPU time', () => {
+    const governor = createAutoDprGovernor({
+        initialDpr: 1, minDpr: 1, maxDpr: 1.5, downWindows: 3, upWindows: 4, probeWindows: 6, maxProbeWindows: 24,
+    });
+    // 6 ms at DPR 1 predicts 7.3 ms at 1.1: comfortably inside 60 fps.
+    for (let index = 0; index < 3; index++) governor.observe({ frameAvgMs: 8.3, gpuMs: 6 });
+    assert.deepEqual(governor.observe({ frameAvgMs: 8.3, gpuMs: 6 }), { changed: true, dpr: 1.1, reason: 'gpu-headroom' });
+
+    // Frames on time but the downclocked GPU reports 13 ms: no predicted headroom, so after the
+    // quiet stretch it probes one step up.
+    const quiet = { frameAvgMs: 16.7, gpuMs: 13 };
+    for (let index = 0; index < 5; index++) assert.equal(governor.observe(quiet).changed, false);
+    assert.deepEqual(governor.observe(quiet), { changed: true, dpr: 1.2, reason: 'probe-up' });
+    // The probe brings GPU pressure back: return, and wait twice as long before the next probe.
+    assert.deepEqual(governor.observe({ frameAvgMs: 22, gpuMs: 18 }), { changed: true, dpr: 1.1, reason: 'probe-rejected' });
+    assert.equal(governor.snapshot().probeWait, 12);
+    for (let index = 0; index < 11; index++) assert.equal(governor.observe(quiet).changed, false);
+    assert.equal(governor.observe(quiet).reason, 'probe-up');
+    // A probe that survives its trial windows is kept, and the probe wait resets.
+    for (let index = 0; index < 3; index++) governor.observe(quiet);
     assert.equal(governor.snapshot().dpr, 1.2);
-    const slow = {
-        frameAvgMs: 22,
-        renderMs: 16,
-        hooksMs: 2,
-        stallMs: 3,
-        peakFrameMs: 24,
-    };
-    governor.observe(slow);
-    governor.observe(slow);
-    assert.equal(governor.observe(slow).changed, true);
-    assert.equal(governor.snapshot().dpr, 1.1);
-    const fast = {
-        frameAvgMs: 12,
-        renderMs: 7.5,
-        hooksMs: 2,
-        stallMs: 2,
-        peakFrameMs: 14,
-    };
-    governor.observe(fast);
-    governor.observe(fast);
-    assert.equal(governor.observe(fast).changed, true);
-    assert.equal(governor.snapshot().dpr, 1.2);
+    assert.equal(governor.snapshot().probing, false);
+    assert.equal(governor.snapshot().probeWait, 6);
 });

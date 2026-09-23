@@ -19,6 +19,7 @@
     "__tests__/frame-chunk-queue.test.mjs",
     "__tests__/geometry-batch.test.mjs",
     "__tests__/geometry-memory-budget.test.mjs",
+    "__tests__/gpu-frame-timer.test.mjs",
     "__tests__/ground-composite-plan.test.mjs",
     "__tests__/ground-generation-coordinator.test.mjs",
     "__tests__/ground-source-admission.test.mjs",

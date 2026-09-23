@@ -32,8 +32,12 @@ production entry.
 at 1.5 with MSAA and 2048 px shadows, medium caps DPR at 1 with 1024 px shadows
 and shorter caster/thin-feature ranges, and low disables MSAA with 512 px
 shadows and the shortest detail range. Auto begins from a WebGL capability
-probe and changes only DPR, with hysteresis, during settled GPU-bound windows;
-compiler, upload, long-task, and event-loop stalls are excluded. The resolved
+probe and then changes only DPR, within the profile's range, from measured GPU
+time (`EXT_disjoint_timer_query_webgl2`): it steps down after sustained windows
+where the GPU needs more than 85 % of a 60 fps frame and frames miss 60 fps, and
+steps up on predicted headroom or a periodic one-step probe that backs off when
+rejected. Without the timer extension (Safari, Firefox by default) DPR stays at
+the profile cap. The resolved
 profile, DPR, drawing buffer, active Worker state, and source policy are exposed
 by `Station3D.getPerformanceContext()`.
 

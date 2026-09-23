@@ -316,6 +316,10 @@ export function configureRenderQuality(modeValue, capabilities = null) {
     return getRenderQualityContext();
 }
 
+export function isAutoRenderQualityActive() {
+    return !!(qualitySelection.auto && qualityGovernor && renderer);
+}
+
 export function observeRenderQualitySample(sample) {
     if (!qualitySelection.auto || !qualityGovernor || !renderer) {
         return { changed: false, dpr: qualityTargetDpr(), reason: 'fixed-profile' };

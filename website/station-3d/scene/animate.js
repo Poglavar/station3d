@@ -14,6 +14,7 @@ import {
     camera,
     renderer,
     observeRenderQualitySample,
+    isAutoRenderQualityActive,
 } from './setup.js';
 import { updateSky } from './sky.js';
 import { updateRain } from './rain.js';
@@ -40,6 +41,7 @@ import { setOutOfLoopWorkSink } from '../core/out-of-loop-work.js';
 import { getSessionHost } from '../core/session-host.js';
 import { createRenderCallAttributor } from '../core/render-call-attribution.js';
 import { createRenderQualityWindow } from '../core/quality-profile.js';
+import { createGpuFrameTimer } from '../core/gpu-frame-timer.js';
 import { shouldRenderWorldFrame } from '../core/loading-render-policy.js';
 import { restoreAbsoluteRenderCoordinates } from '../core/render-origin.js';
 import { isWorldBuilding } from '../core/world-ready.js';
@@ -95,6 +97,15 @@ let perfWindowStartMs = 0;
 // Only timing totals are collected; diagnostic strings/DOM stay gated below.
 const qualityWindow = createRenderQualityWindow();
 let lastQualitySample = null;
+// GPU time of the main render, the auto-DPR governor's evidence. Created only
+// while auto quality is active; profilers pause it (one timer query per context).
+let gpuFrameTimer = null;
+let gpuFrameTimerEnabled = true;
+
+export function setGpuFrameTimerEnabled(enabled) {
+    gpuFrameTimerEnabled = enabled !== false;
+    gpuFrameTimer?.setEnabled(gpuFrameTimerEnabled);
+}
 // Worst frame of the current window, kept whole rather than averaged away.
 const EMPTY_WORST_FRAME = Object.freeze({
     frameMs: 0, skyMs: 0, hooksMs: 0, renderMs: 0, atMs: 0, background: '', layers: '',
@@ -313,6 +324,9 @@ function observeQualityIfDue(nowMs) {
         compilerPending,
         uploadPending,
     };
+    const gpu = gpuFrameTimer?.takeWindow() || null;
+    sample.gpuMs = gpu?.medianMs ?? null;
+    sample.gpuFrames = gpu?.frames ?? 0;
     const result = observeRenderQualitySample(sample);
     lastQualitySample = { ...sample, result };
     return lastQualitySample;
@@ -949,7 +963,14 @@ export function startLoop() {
         const tHooks1 = performance.now();
         if (renderFrame && perfOverlay && renderCallAttribution) renderCallAttribution.beginFrame();
         if (renderFrame) {
+            const timeGpu = isAutoRenderQualityActive();
+            if (timeGpu && !gpuFrameTimer) {
+                gpuFrameTimer = createGpuFrameTimer(renderer.getContext());
+                gpuFrameTimer.setEnabled(gpuFrameTimerEnabled);
+            }
+            if (timeGpu) gpuFrameTimer.begin();
             renderer.render(scene, camera);
+            if (timeGpu) gpuFrameTimer.end();
             for (const fn of afterRenderHooks) fn();
         } else {
             // cabStep prepares floating-origin coordinates as its final CPU
@@ -1045,6 +1066,8 @@ export function stopLoop() {
     lastLoopStartMs = 0;
     pendingFrame = null;
     lastQualitySample = null;
+    gpuFrameTimer?.dispose();
+    gpuFrameTimer = null;
     qualityWindow.reset();
     perfWorstFrame = EMPTY_WORST_FRAME;
     perfLayerAccum.clear();

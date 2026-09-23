@@ -40,6 +40,7 @@ import {
     onBeforeRender,
     onAfterRender,
     recordLayerFrameMs,
+    setGpuFrameTimerEnabled,
 } from '../scene/animate.js';
 import {
     resetTerrainInspection,
@@ -7612,6 +7613,8 @@ if (typeof window !== 'undefined'
         get renderer() { return renderer; },
         get shadowCache() { return getShadowCacheSnapshot(); },
         setShadowCacheEnabled,
+        // Profilers that open their own GPU timer query pause the auto-DPR one.
+        setGpuFrameTimerEnabled,
         getWalkGroundY,
         THREE,
     };

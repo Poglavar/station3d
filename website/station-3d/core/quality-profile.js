@@ -144,69 +144,92 @@ export function createRenderQualityWindow(windowMs = 1000) {
     };
 }
 
+// Auto DPR from measured GPU time. The main-thread render call only submits
+// commands, so its duration is not GPU evidence: on ANGLE/Metal the GPU backlog
+// surfaces as waiting outside the loop. Gating on it, and on "background work
+// pending" (true in 51 of 54 windows of a streaming walk), meant the previous
+// governor ignored every window and never adjusted (2026-09-23). Decisions now
+// use the median GPU time of the window's frames (EXT_disjoint_timer_query) and
+// target 60 fps. Without GPU evidence a window neither confirms nor resets a
+// trend. Under vsync the GPU clocks down when it has slack, which inflates its
+// time, so predicted headroom alone could keep DPR low forever; after a quiet
+// stretch below the cap the governor probes one step up and, if that brings back
+// GPU pressure, returns and waits twice as long before probing again.
+export const AUTO_DPR_TARGET_FRAME_MS = 1000 / 60;
+
 export function createAutoDprGovernor({
     initialDpr,
     minDpr,
     maxDpr,
-    downWindows = 6,
-    upWindows = 20,
+    downWindows = 3,
+    upWindows = 10,
+    probeWindows = 30,
+    maxProbeWindows = 480,
     step = 0.1,
+    targetFrameMs = AUTO_DPR_TARGET_FRAME_MS,
 } = {}) {
     const minimum = Math.max(0.5, finite(minDpr) || 0.7);
     const maximum = Math.max(minimum, finite(maxDpr) || 1);
+    const round = value => Math.round(value * 100) / 100;
     let dpr = Math.max(minimum, Math.min(maximum, finite(initialDpr) || maximum));
     let slowGpuWindows = 0;
     let fastGpuWindows = 0;
+    let quietWindows = 0;
     let ignoredWindows = 0;
     let adjustments = 0;
+    let probeWait = Math.max(1, probeWindows);
+    let probing = null; // { fromDpr, windowsLeft } while a probe step is on trial
+    let lastGpuMs = null;
+
+    function setDpr(next, reason) {
+        dpr = round(Math.max(minimum, Math.min(maximum, next)));
+        slowGpuWindows = fastGpuWindows = quietWindows = 0;
+        adjustments += 1;
+        return { changed: true, dpr, reason };
+    }
 
     function observe(sample = {}) {
+        const gpuMs = Number(sample.gpuMs);
         const frameMs = finite(sample.frameAvgMs);
-        const renderMs = finite(sample.renderMs);
-        const hooksMs = finite(sample.hooksMs);
-        const stallMs = finite(sample.stallMs);
-        const peakFrameMs = finite(sample.peakFrameMs);
-        const stable = sample.backgroundPending !== true
-            && sample.compilerPending !== true
-            && sample.uploadPending !== true
-            && sample.stuttered !== true
-            && finite(sample.longTaskMs) <= 0
-            && peakFrameMs < 33
-            && hooksMs < 6
-            // A compiler/GC/event-loop stall is not GPU evidence. Auto quality
-            // must never punish a one-off gap it cannot fix.
-            && stallMs <= Math.max(6, renderMs * 0.75);
-        const gpuBound = stable && renderMs >= 7 && renderMs >= hooksMs * 1.5;
-        if (!gpuBound) {
-            slowGpuWindows = 0;
-            fastGpuWindows = 0;
+        if (!(gpuMs > 0) || !(frameMs > 0)) {
             ignoredWindows += 1;
-            return { changed: false, dpr, reason: 'ignored-non-gpu-window' };
+            return { changed: false, dpr, reason: 'no-gpu-evidence' };
         }
-        if (frameMs > 18 || renderMs > 13) {
+        lastGpuMs = gpuMs;
+        const pressure = gpuMs > targetFrameMs * 0.85 && frameMs > targetFrameMs * 1.05;
+        if (probing) {
+            if (pressure) {
+                const back = probing.fromDpr;
+                probing = null;
+                probeWait = Math.min(Math.max(1, maxProbeWindows), probeWait * 2);
+                return setDpr(back, 'probe-rejected');
+            }
+            probing.windowsLeft -= 1;
+            if (probing.windowsLeft <= 0) {
+                probing = null;
+                probeWait = Math.max(1, probeWindows);
+            }
+            return { changed: false, dpr, reason: 'probe-trial' };
+        }
+        if (pressure) {
+            fastGpuWindows = quietWindows = 0;
             slowGpuWindows += 1;
-            fastGpuWindows = 0;
             if (slowGpuWindows >= Math.max(1, downWindows) && dpr > minimum) {
-                dpr = Math.max(minimum, Math.round((dpr - step) * 100) / 100);
-                slowGpuWindows = 0;
-                adjustments += 1;
-                return { changed: true, dpr, reason: 'stable-gpu-pressure' };
+                return setDpr(dpr - step, 'gpu-pressure');
             }
             return { changed: false, dpr, reason: 'gpu-pressure-hysteresis' };
         }
-        if (frameMs < 15 && renderMs < 8) {
-            fastGpuWindows += 1;
-            slowGpuWindows = 0;
-            if (fastGpuWindows >= Math.max(1, upWindows) && dpr < maximum) {
-                dpr = Math.min(maximum, Math.round((dpr + step) * 100) / 100);
-                fastGpuWindows = 0;
-                adjustments += 1;
-                return { changed: true, dpr, reason: 'stable-gpu-headroom' };
-            }
-            return { changed: false, dpr, reason: 'gpu-headroom-hysteresis' };
-        }
         slowGpuWindows = 0;
-        fastGpuWindows = 0;
+        if (dpr >= maximum) return { changed: false, dpr, reason: 'at-cap' };
+        const next = Math.min(maximum, dpr + step);
+        const predictedGpuMs = gpuMs * (next / dpr) ** 2;
+        fastGpuWindows = predictedGpuMs < targetFrameMs * 0.7 ? fastGpuWindows + 1 : 0;
+        quietWindows += 1;
+        if (fastGpuWindows >= Math.max(1, upWindows)) return setDpr(next, 'gpu-headroom');
+        if (quietWindows >= probeWait) {
+            probing = { fromDpr: dpr, windowsLeft: Math.max(1, downWindows) };
+            return setDpr(next, 'probe-up');
+        }
         return { changed: false, dpr, reason: 'gpu-neutral' };
     }
 
@@ -216,8 +239,12 @@ export function createAutoDprGovernor({
             dpr,
             minDpr: minimum,
             maxDpr: maximum,
+            lastGpuMs,
             slowGpuWindows,
             fastGpuWindows,
+            quietWindows,
+            probeWait,
+            probing: !!probing,
             ignoredWindows,
             adjustments,
         }),

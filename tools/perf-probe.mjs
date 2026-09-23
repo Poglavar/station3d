@@ -117,6 +117,8 @@ async function measureWindow(page, name, seconds, cdp) {
         const ctx = renderer?.getContext?.();
         const ext = ctx?.getExtension?.('EXT_disjoint_timer_query_webgl2') || null;
         const queries = []; let rafs = 0;
+        // Only one timer query may be open per context: pause the engine's auto-DPR timer.
+        if (ext) window.__st3dDebug?.setGpuFrameTimerEnabled?.(false);
         gl.on = true;
         const started = performance.now();
         await new Promise(resolveWindow => {
@@ -134,6 +136,7 @@ async function measureWindow(page, name, seconds, cdp) {
             requestAnimationFrame(frame);
         });
         gl.on = false;
+        window.__st3dDebug?.setGpuFrameTimerEnabled?.(true);
         const intervals = probe.frames.slice();
         await new Promise(r => setTimeout(r, 250));
         const gpuMs = [];
@@ -160,7 +163,10 @@ async function measureWindow(page, name, seconds, cdp) {
                 shadows: renderer.shadowMap.enabled, programs: renderer.info.programs?.length ?? null } : null,
             heapMB: performance.memory ? performance.memory.usedJSHeapSize / 2 ** 20 : null,
             // Localhost-only engine debug handle; null on hosts without it.
-            shadowCache: window.__st3dDebug?.shadowCache ?? null };
+            shadowCache: window.__st3dDebug?.shadowCache ?? null,
+            // Resolved quality profile and the auto-DPR governor's state, when the host exposes them.
+            quality: (({ profileId, requestedMode, dpr, autoGovernor } = {}) => ({ profileId, requestedMode, dpr, autoGovernor }))(
+                window.Station3D?.getPerformanceContext?.()?.quality) };
     }, seconds * 1000);
     if (config.cpuProfile) {
         const { profile } = await cdp.send('Profiler.stop');
@@ -168,7 +174,7 @@ async function measureWindow(page, name, seconds, cdp) {
     }
     const host = hostWindowVerdict({ before, after: readPaging(), seconds, loadAvg: Math.max(loadBefore, os.loadavg()[0]), cpus: os.cpus().length });
     const summary = { frames: summarizeIntervals(data.intervals), gpu: summarizeGpuMs(data.gpuMs), gl: data.gl,
-        scene: data.scene, renderer: data.renderer, heapMB: data.heapMB, shadowCache: data.shadowCache, host };
+        scene: data.scene, renderer: data.renderer, heapMB: data.heapMB, shadowCache: data.shadowCache, quality: data.quality, host };
     if (config.screenshot) await page.screenshot({ path: resolve(outDir, `${config.label}-${name}.png`) });
     result.windows[name] = summary;
     log(name, JSON.stringify({ p50: summary.frames.p50Ms, p95: summary.frames.p95Ms, gpu: summary.gpu?.meanMs ?? null, host: host.clean }));
