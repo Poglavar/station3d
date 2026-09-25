@@ -124,7 +124,7 @@ gain is promised without paired evidence.
 | R1 / next | Collapse building draw calls: facade atlas as one material per region (texture array/atlas), batch per-entity and per-tile building meshes — engine | M | Medium: facade appearance, picking/entity ranges, passage discard | **High, measured.** ~170 facade meshes plus 42 entity meshes carry under 5 % of building triangles but ~45 % of building draws (≈40 % of main-pass draws). Expect fewer draws and program switches, and fewer geometries checked each frame. |
 | R2 / next | Cache the directional shadow map while the sun, the snapped shadow frustum and the caster set are unchanged — engine | S–M | Medium: stale shadows on moving vehicles/actors | **Medium–high CPU payoff when stationary or slow:** the shadow pass is 23 % of stationary main-thread time. No GPU win expected (measured). Implemented as reuse-when-unchanged; the dynamic-caster split was measured and rejected (see status). |
 | R3 / next | Per-draw CPU hygiene: program/material sort, static matrix freezing, fewer tiny meshes outside buildings — engine | M | Low–medium | **Medium.** 160 program switches for 83 programs; `WebGLGeometries.update` is 11–20 % of main-thread time and scales with visible geometries × attributes. |
-| G1 / next | Make road ground generations incremental in practice: recompile an owner only when something it read changed — engine | M–L | High: stale support, missed seams | **Implemented, not released.** Existing-owner recompiles −60 % walking, −45–60 % on the tram; walk ground CPU −40 %. Runtime verification finds 0 misses. Curbs and rail/opening changes remain box-based. |
+| G1 / next | Make road ground generations incremental in practice: recompile an owner only when something it read changed — engine | M–L | High: stale support, missed seams | **Released in `v0.1.0-alpha.5`.** Existing-owner recompiles −60 % walking, −45–60 % on the tram; walk ground CPU −40 %. Runtime verification finds 0 misses. Curbs and rail/opening changes remain box-based. |
 | G2 / then | Move road/curb/formation/terrain-cut compilation to workers; keep only publication on the main thread — engine | L–XL | High: snapshot transfer, cancellation, atomic publication | **Very high potential:** ground generation is the largest streaming CPU consumer in every mode and 6–11 % of main-thread time while walking. Wall latency (11–41 s per road generation) would approach real CPU time. |
 | R4 / then | High-DPI fragment cost: default adaptive render scale on `high`, shader and overdraw budget per layer — engine | M–L | Medium: sharpness, appearance parity | **Very high on Retina laptops:** 21.5 ms GPU at DPR 1.5 means dense views cannot hold 60 fps there regardless of CPU work. Per-layer GPU attribution still needed. |
 | L1 / later | Reopen cancellation error and retained-memory bounds (was P8) — engine + provider caches | S–M; M–L if a leak is confirmed | Medium–high | **High correctness value.** Not re-measured on 23 September. |
@@ -312,7 +312,7 @@ surface polygon, and terrain changing under terrain-draped service roads.
 The box rule refreshed those only when an unrelated profile happened to
 change nearby.
 
-**Design (implemented, not yet released).** A receiver is stale exactly when
+**Design (released in Station3D `v0.1.0-alpha.5`, planner `v0.1.0-alpha.6`, 25 September).** A receiver is stale exactly when
 something it read changed, so both sides are made explicit:
 
 - *Read evidence* (`core/ground-read-evidence.js`). Every road feature compile
