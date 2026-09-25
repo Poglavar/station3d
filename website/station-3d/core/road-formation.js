@@ -973,14 +973,19 @@ function formationValuesEquivalent(a, b, depth) {
     return true;
 }
 
-// Profile → points/rings → point records → their scalar fields. Underscored
-// members are derived query caches (ring indexes), not geometry.
+// Profile member → records → rings → point records → their scalar fields:
+// excavation regions nest rings of points inside region records, and a
+// rebuilt profile recreates them with identical content. Underscored members
+// are derived query caches (ring indexes), not geometry.
+const FORMATION_PROFILE_MEMBER_DEPTH = 4;
+
 export function formationProfilesEquivalent(a, b) {
     if (Object.is(a, b)) return true;
     if (!a || !b || typeof a !== 'object' || typeof b !== 'object') return false;
     const keys = Object.keys(a).filter(key => !key.startsWith('_'));
     if (keys.length !== Object.keys(b).filter(key => !key.startsWith('_')).length) return false;
-    return keys.every(key => Object.hasOwn(b, key) && formationValuesEquivalent(a[key], b[key], 2));
+    return keys.every(key => Object.hasOwn(b, key)
+        && formationValuesEquivalent(a[key], b[key], FORMATION_PROFILE_MEMBER_DEPTH));
 }
 
 // Everything a surface profile can answer for: the paved ring registers the
@@ -1044,11 +1049,16 @@ export function* roadFormationReadChangesSteps(previous, next, { budgetMs = FORM
         return byId;
     };
     const before = yield* group(previous.getSurfaceProfiles()), after = yield* group(next.getSurfaceProfiles());
-    const ids = new Set(), boxes = [];
+    const ids = new Set(), boxes = [], detail = {};
     for (const id of new Set([...before.keys(), ...after.keys()])) {
         const a = before.get(id) || [], b = after.get(id) || [];
         if (a.length !== b.length || !a.every((profile, index) => formationProfilesEquivalent(profile, b[index]))) {
             ids.add(id);
+            if (a.length !== b.length) detail['profile:count'] = (detail['profile:count'] || 0) + 1;
+            else for (const [index, profile] of a.entries()) for (const key of Object.keys(profile)) {
+                if (key.startsWith('_') || formationValuesEquivalent(profile[key], b[index][key], FORMATION_PROFILE_MEMBER_DEPTH)) continue;
+                detail[`profile:${key}`] = (detail[`profile:${key}`] || 0) + 1;
+            }
             for (const profile of [...a, ...b]) {
                 const box = formationInfluenceBounds(profile);
                 if (box) boxes.push(box);
@@ -1060,6 +1070,11 @@ export function* roadFormationReadChangesSteps(previous, next, { budgetMs = FORM
         const a = previous.getCenterlineSegmentsForOsmId(id), b = next.getCenterlineSegmentsForOsmId(id);
         if (!segmentsEquivalent(a, b)) {
             ids.add(id);
+            detail['segments'] = (detail['segments'] || 0) + 1;
+            if (a.length !== b.length) detail['segments:count'] = (detail['segments:count'] || 0) + 1;
+            else for (const [index, segment] of a.entries()) for (const key of Object.keys(segment)) {
+                if (!Object.is(segment[key], b[index][key])) detail[`segments:${key}`] = (detail[`segments:${key}`] || 0) + 1;
+            }
             for (const segments of [a, b]) {
                 const box = segments.length ? segmentsBounds(segments) : null;
                 if (box) boxes.push(box);
@@ -1067,7 +1082,7 @@ export function* roadFormationReadChangesSteps(previous, next, { budgetMs = FORM
         }
         yield* pause();
     }
-    return createGroundChangeSet({ ids, boxes });
+    return createGroundChangeSet({ ids, boxes, detail });
 }
 
 // Full source variants choose the same revision as roads.js. Explicit polygon

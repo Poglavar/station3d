@@ -364,12 +364,15 @@ out and back and tram 6: 0 misses in every generation. The tram run verified
 2,551 retained owners identical in one run; before terrain became evidence it
 found 6 real misses (terrain revision advanced under service roads and steps),
 which is how the terrain source was added. The recompiles the rules still ask
-for are mostly real but not uniformly: in 7 of 8 tram generations 0–30
-reproduce identical geometry against 190–530 that change, while one
-generation recompiled 309 identical owners (187 id hits and 122 own-grade
-bumps whose output did not move). On the walk's first loads 56–72 terrain
-region hits were identical. Both are conservative, not misses; tightening
-them (terrain reach, grade versioning) is the next precision step.
+for are mostly real. One tram generation first recompiled 309 identical
+owners: rebuilt profiles recreate their excavation regions (region records
+holding rings of points), deeper than the profile comparison looked, so
+identical profiles advanced their geometry generation and every reader of
+their id. Comparing four levels deep fixed it: identical own-grade
+recompiles fell from up to 135 to at most 8 per generation, still with 0
+misses. What remains conservative is id-keyed reads of a road whose grade
+really changed elsewhere along it (up to 78 identical in one generation), and
+56–72 terrain region hits on the walk's first loads.
 
 Alternating main (`9e09514`) and candidate, 180 s each, same URLs:
 

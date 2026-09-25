@@ -100,7 +100,7 @@ function validBox(box) {
 }
 
 // `boxes` are the old and new influence regions of changed entities.
-export function createGroundChangeSet({ full = false, reason = null, ids = [], keys = [], boxes = [] } = {}) {
+export function createGroundChangeSet({ full = false, reason = null, ids = [], keys = [], boxes = [], detail = null } = {}) {
     const index = new Map();
     const kept = [];
     let unindexable = null;
@@ -123,13 +123,18 @@ export function createGroundChangeSet({ full = false, reason = null, ids = [], k
     const isFull = full === true || !!unindexable;
     return Object.freeze({
         full: isFull, fullReason: isFull ? (full === true ? reason || 'unspecified' : unindexable) : null,
+        // Diagnostic counts from the source diff (which fields differed).
+        detail: detail ? Object.freeze({ ...detail }) : null,
         ids: changedIds, keys: changedKeys, boxes: Object.freeze(kept), index,
         empty: !isFull && kept.length === 0 && changedIds.size === 0 && changedKeys.size === 0,
     });
 }
 
 export function mergeGroundChangeSets(sets) {
+    const detail = {};
+    for (const set of sets) for (const [key, count] of Object.entries(set.detail || {})) detail[key] = (detail[key] || 0) + count;
     return createGroundChangeSet({
+        detail: Object.keys(detail).length ? detail : null,
         full: sets.some(set => set.full),
         reason: sets.filter(set => set.full).map(set => set.fullReason).join(',') || null,
         ids: sets.flatMap(set => [...set.ids]),
@@ -178,7 +183,7 @@ export function groundReadEvidenceDependsOn(evidence, changes) {
 // Counts for generation usage reports.
 export function summarizeGroundChangeSet(changes) {
     return Object.freeze({ full: !!changes?.full, fullReason: changes?.fullReason || null, ids: changes?.ids.size || 0, keys: [...(changes?.keys || [])].slice(0, 8),
-        regions: changes?.boxes.length || 0 });
+        regions: changes?.boxes.length || 0, detail: changes?.detail || null });
 }
 
 // Conservative test for a receiver without evidence (compiled before this

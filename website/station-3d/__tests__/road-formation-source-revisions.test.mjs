@@ -234,6 +234,13 @@ test('profile equivalence compares content and treats an unknown object as a cha
     assert.equal(formationProfilesEquivalent(profile, { ...clone, points: [{ x: 1, z: 2, y: 0 }] }), false);
     assert.equal(formationProfilesEquivalent(profile, { ...clone, index: new Map() }), false);
     assert.equal(formationProfilesEquivalent(profile, { ...clone, extra: undefined }), false);
+    // A rebuilt profile recreates its excavation regions: region records
+    // holding rings of point records. Equal content is not a change.
+    const region = () => [{ ring: [{ x: 0, z: 0 }, { x: 4, z: 0 }, { x: 4, z: 3 }], bounds: { minX: 0, maxX: 4 } }];
+    const excavated = { ...profile, terrainExcavationRegions: region() };
+    assert.equal(formationProfilesEquivalent(excavated, { ...excavated, terrainExcavationRegions: region() }), true);
+    const moved = region(); moved[0].ring[2].z = 3.5;
+    assert.equal(formationProfilesEquivalent(excavated, { ...excavated, terrainExcavationRegions: moved }), false);
 });
 
 test('equivalent reordered MultiPolygons return matching per-ring profiles without rebuilding geometry', () => {
