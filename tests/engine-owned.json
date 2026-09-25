@@ -50,6 +50,7 @@
     "__tests__/strip-geometry-cache.test.mjs",
     "__tests__/surface-hierarchy.test.mjs",
     "__tests__/terrain-evidence-scope.test.mjs",
+    "__tests__/terrain-request.test.mjs",
     "__tests__/world-coverage.test.mjs",
     "__tests__/world-provider.test.mjs",
     "__tests__/world-ready.test.mjs"

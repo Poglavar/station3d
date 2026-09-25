@@ -7,9 +7,9 @@
 // resolution of the DGU height grid this session asks the API for, once terrain
 // has been requested at all.
 //
-// Zagreb still has a temporary opt-in rollout while its elevation path is being
-// finished, but elevation-on is the target world and the only performance path
-// we optimize. A saved PROJECT already requires it: its grade, viaducts, tunnels,
+// Elevation-on is the default world and the only performance path we optimize;
+// Zagreb's temporary opt-in rollout ended on 2026-09-25 (?elevation=0 still opens
+// the flat world). A saved PROJECT always requires it: its grade, viaducts, tunnels,
 // cuts and estimate are answers to the real ground, so opening it on a flat plane
 // would disagree with its own numbers.
 //
@@ -40,9 +40,8 @@ function flagRefused(params, key) {
 
 // Resolve policy from session intent, not merely from whichever national source
 // profile happens to be active. GTA, campaign and project worlds depend on the
-// real vertical datum. An ordinary Zagreb tram/walk retains the temporary
-// rollout opt-in until the default flips; other prepared locations retain their
-// historical default.
+// real vertical datum. Ordinary tram/walk/road sessions show the terrain their
+// location has, unless the location itself declares terrainOptIn.
 export function resolveTerrainSessionPolicy(params, {
     sessionPresetId = '',
     campaignSession = false,
@@ -57,15 +56,7 @@ export function resolveTerrainSessionPolicy(params, {
         return TERRAIN_SESSION_POLICY.REQUIRED;
     }
 
-    const requestedLocationId = String(params?.get?.('loc') || '').trim().toLowerCase();
-    const locationId = String(
-        location?.regionalLocationId
-        || requestedLocationId
-        || (location?.id && location.id !== 'croatia' ? location.id : 'zagreb'),
-    ).trim().toLowerCase();
-    if (location?.terrainOptIn === true || locationId === 'zagreb') {
-        return TERRAIN_SESSION_POLICY.OPT_IN;
-    }
+    if (location?.terrainOptIn === true) return TERRAIN_SESSION_POLICY.OPT_IN;
     return TERRAIN_SESSION_POLICY.LOCATION_DEFAULT;
 }
 

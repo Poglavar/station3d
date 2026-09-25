@@ -45,9 +45,9 @@ export const LOCATIONS = {
             // path has movement/streaming performance preprocessing and proof.
             source: 'dgu-dtm-20m',
         },
-        // Zagreb terrain remains opt-in while the 1 m simulation path is tuned.
-        // Use ?elevation=1 (or ?terrain=1) for explicit 20 m terrain testing.
-        terrainOptIn: true,
+        // Zagreb shows its terrain by default (the rollout opt-in ended 2026-09-25):
+        // authored landmarks carry an absolute datum and only sit right on it.
+        // ?elevation=0 still opens the flat world.
         // Velika Gorica / airport band: buildings that are not tall but HUGE by volume are halls,
         // terminals and logistics sheds, and procedural house windows read wrong on them, so they
         // get large glass panels and a flat membrane roof instead. Thresholds are the p99 of the
