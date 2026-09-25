@@ -9,6 +9,8 @@ import {
     TerrainReference,
 } from './terrain-grid.js';
 
+import { createGroundChangeSet } from './ground-read-evidence.js';
+
 export const TERRAIN_SNAPSHOT_SCHEMA_VERSION = 2;
 export const TERRAIN_SNAPSHOT_VALUES_PER_STEP = 16384;
 
@@ -249,4 +251,121 @@ export function terrainSnapshotTransferables(snapshot) {
     const buffers = [];
     collectBuffers(snapshot, buffers, new Set());
     return buffers;
+}
+
+// Geographic extent of any grid in the hierarchy, or null for an unknown kind.
+function terrainGridExtent(grid) {
+    if (grid instanceof TerrainGrid) return { west: grid.west, east: grid.east, south: grid.south, north: grid.north };
+    const parts = grid instanceof MosaicTerrainGrid ? grid.grids
+        : grid instanceof CompositeTerrainGrid ? [grid.base, ...grid.details] : null;
+    if (!parts) return null;
+    let extent = null;
+    for (const part of parts) {
+        const next = terrainGridExtent(part);
+        if (!next) return null;
+        extent = extent ? { west: Math.min(extent.west, next.west), east: Math.max(extent.east, next.east),
+            south: Math.min(extent.south, next.south), north: Math.max(extent.north, next.north) } : next;
+    }
+    return extent;
+}
+
+const sameBounds = (a, b) => a === b || (!!a && !!b
+    && ['west', 'east', 'south', 'north'].every(key => Number(a[key]) === Number(b[key])));
+const sameRect = (a, b) => a === b || (!!a && !!b
+    && ['minX', 'minZ', 'maxX', 'maxZ'].every(key => Number(a[key]) === Number(b[key])));
+
+// Collects the extents of every grid whose samples can differ between two
+// hierarchies, each with the margin by which its change reaches neighbours.
+// Returns false when the structures cannot be compared.
+function collectTerrainGridChanges(before, after, changed, marginM) {
+    if (before === after) return true;
+    // Outside its details a composite samples exactly like its base, so a
+    // detail layer appearing over (or leaving) an unchanged base changes only
+    // the details' extents.
+    if ((before instanceof CompositeTerrainGrid) !== (after instanceof CompositeTerrainGrid)) {
+        const composite = before instanceof CompositeTerrainGrid ? before : after;
+        const plain = composite === before ? after : before;
+        const baseMargin = Math.max(marginM, composite.sourceBlendMarginM + 8);
+        if (!collectTerrainGridChanges(composite === before ? composite.base : plain,
+            composite === before ? plain : composite.base, changed, baseMargin)) return false;
+        for (const detail of composite.details) changed.push([detail, marginM]);
+        return true;
+    }
+    if (before instanceof CompositeTerrainGrid && after instanceof CompositeTerrainGrid
+        && before.blendMarginM === after.blendMarginM && before.sourceBlendMarginM === after.sourceBlendMarginM) {
+        // Detail source-boundary corrections sample the base up to the source
+        // blend band (plus the correction radius) inside a detail.
+        const baseMargin = Math.max(marginM, before.sourceBlendMarginM + 8);
+        if (!collectTerrainGridChanges(before.base, after.base, changed, baseMargin)) return false;
+        const start = changed.length;
+        const kept = new Set(after.details);
+        for (const detail of before.details) if (!kept.has(detail)) changed.push([detail, marginM]);
+        const old = new Set(before.details);
+        for (const detail of after.details) if (!old.has(detail)) changed.push([detail, marginM]);
+        // Among overlapping details the order decides nothing but ties; any
+        // reorder of the same set is treated as a change of every member.
+        if (changed.length === start && before.details.some((detail, index) => after.details[index] !== detail)) {
+            for (const detail of after.details) changed.push([detail, marginM]);
+        }
+        return true;
+    }
+    if (before instanceof MosaicTerrainGrid && after instanceof MosaicTerrainGrid) {
+        const byKey = items => new Map(items.map(item => [item.key, item]));
+        const a = byKey(before.items), b = byKey(after.items);
+        for (const key of new Set([...a.keys(), ...b.keys()])) {
+            const left = a.get(key), right = b.get(key);
+            if (left && right && left.grid === right.grid && sameBounds(left.coreBounds, right.coreBounds)) continue;
+            if (left) changed.push([left.grid, marginM]);
+            if (right) changed.push([right.grid, marginM]);
+        }
+        return true;
+    }
+    changed.push([before, marginM], [after, marginM]);
+    return true;
+}
+
+// Complete change set between two captured terrain read snapshots, in local
+// metres: every grid whose samples can differ, detail-rect and pending-window
+// changes, and full for datum or lattice changes. Receivers record the points
+// they sampled (see TerrainReference) and are compared with it.
+export function terrainReadChanges(previous, next) {
+    if (previous === next) return createGroundChangeSet();
+    const a = previous?.source, b = next?.source;
+    if (!a || !b) return createGroundChangeSet({ full: true, reason: 'terrain-provider' });
+    if (a.anchorLon !== b.anchorLon || a.anchorLat !== b.anchorLat || a.anchorHeightM !== b.anchorHeightM
+        || a.fallbackHeightM !== b.fallbackHeightM || a.surfaceStepM !== b.surfaceStepM
+        // A fine lattice appearing or disappearing is bounded by its rects
+        // (compared below); only a different lattice on both sides is global.
+        || (previous.detail && next.detail
+            && (previous.detail.stepM !== next.detail.stepM || previous.detail.tileM !== next.detail.tileM))) {
+        return createGroundChangeSet({ full: true, reason: 'terrain-datum' });
+    }
+    const toLocal = ({ west, east, south, north }, marginM) => ({
+        minX: (west - a.anchorLon) * previous.metresPerDegreeLon - marginM,
+        maxX: (east - a.anchorLon) * previous.metresPerDegreeLon + marginM,
+        minZ: -(north - a.anchorLat) * previous.metresPerDegreeLat - marginM,
+        maxZ: -(south - a.anchorLat) * previous.metresPerDegreeLat + marginM,
+    });
+    const boxes = [];
+    const changed = [];
+    // One coarse step covers the planar corner a sample interpolates from.
+    const margin = (Number(a.surfaceStepM) || 0) + 1;
+    if (!collectTerrainGridChanges(a.grid, b.grid, changed, margin)) {
+        return createGroundChangeSet({ full: true, reason: 'terrain-structure' });
+    }
+    for (const [grid, marginM] of changed) {
+        const extent = terrainGridExtent(grid);
+        if (!extent) return createGroundChangeSet({ full: true, reason: 'terrain-structure' });
+        boxes.push(toLocal(extent, marginM));
+    }
+    const rectsBefore = previous.detail?.rects || [], rectsAfter = next.detail?.rects || [];
+    for (const [rects, others] of [[rectsBefore, rectsAfter], [rectsAfter, rectsBefore]]) {
+        for (const rect of rects) if (!others.some(other => sameRect(rect, other))) {
+            boxes.push({ minX: rect.minX - margin, minZ: rect.minZ - margin, maxX: rect.maxX + margin, maxZ: rect.maxZ + margin });
+        }
+    }
+    if (!sameRect(previous.pendingDetailWindow, next.pendingDetailWindow)) {
+        for (const rect of [previous.pendingDetailWindow, next.pendingDetailWindow]) if (rect) boxes.push({ ...rect });
+    }
+    return createGroundChangeSet({ boxes });
 }

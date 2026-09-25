@@ -124,7 +124,7 @@ gain is promised without paired evidence.
 | R1 / next | Collapse building draw calls: facade atlas as one material per region (texture array/atlas), batch per-entity and per-tile building meshes — engine | M | Medium: facade appearance, picking/entity ranges, passage discard | **High, measured.** ~170 facade meshes plus 42 entity meshes carry under 5 % of building triangles but ~45 % of building draws (≈40 % of main-pass draws). Expect fewer draws and program switches, and fewer geometries checked each frame. |
 | R2 / next | Cache the directional shadow map while the sun, the snapped shadow frustum and the caster set are unchanged — engine | S–M | Medium: stale shadows on moving vehicles/actors | **Medium–high CPU payoff when stationary or slow:** the shadow pass is 23 % of stationary main-thread time. No GPU win expected (measured). Implemented as reuse-when-unchanged; the dynamic-caster split was measured and rejected (see status). |
 | R3 / next | Per-draw CPU hygiene: program/material sort, static matrix freezing, fewer tiny meshes outside buildings — engine | M | Low–medium | **Medium.** 160 program switches for 83 programs; `WebGLGeometries.update` is 11–20 % of main-thread time and scales with visible geometries × attributes. |
-| G1 / next | Make road ground generations incremental in practice: narrow `physicalDependencies`, cache per-owner results by complete identity — engine | M–L | High: stale support, missed seams | **High streaming payoff.** 234–436 of 252–463 compiled owners per generation carry a dependency flag (overlapping with 184–349 new owners). Exact invalidation removes the recompiles that change nothing; the achievable share needs measuring. |
+| G1 / next | Make road ground generations incremental in practice: recompile an owner only when something it read changed — engine | M–L | High: stale support, missed seams | **Implemented, not released.** Existing-owner recompiles −60 % walking, −45–60 % on the tram; walk ground CPU −40 %. Runtime verification finds 0 misses. Curbs and rail/opening changes remain box-based. |
 | G2 / then | Move road/curb/formation/terrain-cut compilation to workers; keep only publication on the main thread — engine | L–XL | High: snapshot transfer, cancellation, atomic publication | **Very high potential:** ground generation is the largest streaming CPU consumer in every mode and 6–11 % of main-thread time while walking. Wall latency (11–41 s per road generation) would approach real CPU time. |
 | R4 / then | High-DPI fragment cost: default adaptive render scale on `high`, shader and overdraw budget per layer — engine | M–L | Medium: sharpness, appearance parity | **Very high on Retina laptops:** 21.5 ms GPU at DPR 1.5 means dense views cannot hold 60 fps there regardless of CPU work. Per-layer GPU attribution still needed. |
 | L1 / later | Reopen cancellation error and retained-memory bounds (was P8) — engine + provider caches | S–M; M–L if a leak is confirmed | Medium–high | **High correctness value.** Not re-measured on 23 September. |
@@ -300,60 +300,100 @@ R1 removes most of the geometry-check cost; R3 is the remainder.
 
 ### G1 — recompile only what actually changed
 
-Road generations are designed to retain unchanged owners
-(`prepareRoadGroundGenerationSteps` in `world/roads.js`). The publication
-`usage` shows why so much still recompiles:
+**Problem (measured 23 September).** Road generations recompiled every
+existing owner whose padded source box (feature bbox + 32 m + width)
+overlapped any changed bound. A temporary hash of each recompile's positions
+and indices showed that 93–98 % of those recompiles reproduced identical
+geometry, 40–60 % of each road generation's compile work. Walking back and
+forth recompiled the same 44 owners on every pass. The same probe also found
+the opposite fault. Footways and steps moved 0.46–1.37 m in height without
+being selected by any change: a centreline grade change on a road without a
+surface polygon, and terrain changing under terrain-draped service roads.
+The box rule refreshed those only when an unrelated profile happened to
+change nearby.
 
-| Generation | Owners compiled | New owners | Physical-dependency recompiles | Changed grades |
+**Design (implemented, not yet released).** A receiver is stale exactly when
+something it read changed, so both sides are made explicit:
+
+- *Read evidence* (`core/ground-read-evidence.js`). Every road feature compile
+  runs inside an evidence scope (`createRoadFeatureTask`). Sources record what
+  they answer as it happens: a query point with its reach (on an 8 m grid, the
+  largest reach per cell), reads keyed by OSM id, and named whole-source reads.
+  Sources: `TerrainReference` (every source sample, corner-cache hits and fine
+  lattice lookups), the road formation query primitives, the vertical
+  alignment queries (including a join evaluator reused across steps) and
+  structure publication readiness. Published entries keep the frozen
+  evidence (`readEvidence`).
+- *Change sets*, computed by diffing the read snapshots the previous road
+  generation compiled against with the current ones:
+  `roadFormationReadChangesSteps` (surface profiles by content, including
+  readiness captured with the snapshot; centreline segments and grade by
+  content and grade-profile identity), `roadAlignmentReadChangesSteps`
+  (compiled alignments and their profile owners, which are reused by identity
+  while unchanged; cut-out and clear-corridor regions),
+  `roadStructurePublicationChanges`, and `terrainReadChanges` (the grid
+  hierarchy by identity: mosaic items, composite base and details with their
+  blend margins, detail rects and the pending detail window). The previous
+  basis is the published receiver read (`previousReceivers`); terrain uses
+  `roadReadTerrain`, which terrain-window republications carry forward
+  unchanged. Every changed id and key carries a region, and anything that
+  cannot be localised makes the set `full` with a reason.
+- *Decision* (`roadOwnerGeometryDependency`). Source and own-grade changes
+  still recompile. Rail, opening and other region changes keep the padded-box
+  rule. Terrain, formation, alignment and structure changes are tested
+  against the owner's evidence; owners without evidence fall back to the box
+  test against the change regions. Owners deferred past the terrain window
+  stay marked until a successor entry is published.
+
+Completeness is tested as a property: for each source, any query whose
+recorded evidence misses the change set between two real snapshots must give
+the same answer from both (`road-formation-read-changes`,
+`road-alignment-read-changes`, `terrain-read-changes`). Each test fails when
+its diff or a recording site is removed.
+
+**Runtime verification.** `?roadReadVerify=1` recompiles every owner the
+evidence retains but the region rule would have rebuilt, compares geometry
+hashes, and logs `read evidence missed a change` with the owner's evidence
+and a terrain probe. It also counts identical versus changed output for the
+recompiles the rules asked for (`usage.roads.sourceOwners.verifyRecompiled`).
+Generation usage reports `readDependencies` by reason, `readChanges` (ids,
+regions, full reason) and `readRetainedOwners`.
+
+**Evidence (25 September, host load 3–14).** Verification, dense Zagreb walk
+out and back and tram 6: 0 misses in every generation. The tram run verified
+2,551 retained owners identical in one run; before terrain became evidence it
+found 6 real misses (terrain revision advanced under service roads and steps),
+which is how the terrain source was added. The recompiles the rules still ask
+for are mostly real but not uniformly: in 7 of 8 tram generations 0–30
+reproduce identical geometry against 190–530 that change, while one
+generation recompiled 309 identical owners (187 id hits and 122 own-grade
+bumps whose output did not move). On the walk's first loads 56–72 terrain
+region hits were identical. Both are conservative, not misses; tightening
+them (terrain reach, grade versioning) is the next precision step.
+
+Alternating main (`9e09514`) and candidate, 180 s each, same URLs:
+
+| Run | Existing owners recompiled | Road generations | Ground CPU | Frame p95, 90th percentile |
 | --- | ---: | ---: | ---: | ---: |
-| gen 3 | 463 | 349 | 436 | 16 |
-| gen 5 | 252 | 184 | 234 | 8 |
+| walk base a / b | 440 / 502 | 4 / 5 | 9.6 / 7.1 s | 158 / 197 ms |
+| walk candidate a / b | 175 / 175 | 3 / 3 | 5.7 / 5.5 s | 50 / 25 ms |
+| tram base a / b / c | 4,729 / 4,338 / 4,186 | 7 / 6 / 6 | 46.0 / 41.9 / 48.7 s | 47 / 58 / 40 ms |
+| tram candidate a / b / c | 1,980 / 2,595 / 1,851 | 5 / 7 / 5 | 36.1 / 46.1 / 35.1 s | 50 / 35 / 59 ms |
 
-Any existing owner whose bounds intersect a changed bound, with padding, is
-recompiled.
+On the tram the dominant costs are new owners, curb terrain draping and
+paint; per generation the cleanest pair (c) spent 8.1 s (base) against 7.0 s
+(candidate), with every road-related phase lower. The snapshot diffs cost
+50 ms in total over five generations. Frame pacing on the tram is unchanged
+within noise. Receipts: `zagreb-isochrone-main/performance/station3d/results/audit-2026-09-25/g1/`.
 
-Measured on 23 September (evening, `v0.1.0-alpha.3` candidate, dense walk out and
-back). A temporary hash of each owner's compiled positions and indices was
-compared with its previous compile. The dependency counter also counts new
-owners, so "compiled − new" is the real recompile set:
+Still open:
 
-| Generation | Compiled | New | Existing recompiled | Identical output | Bounds-only recompiles | …identical |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| gen 8 | 280 | 107 | 173 | 166 | 160 | 156 |
-| gen 10 | 277 | 124 | 153 | 104 of 112 compared | 95 | 90 |
-| gen 31/35/39 (each) | 67–95 | 23–51 | 44 | 40 | 38 | 36 |
-
-About 93–98 % of existing-owner recompiles reproduce identical geometry, i.e.
-40–60 % of each road generation's compile work. Walking back and forth
-recompiled the same 44 owners on every pass. A few bounds-only recompiles do
-change (2–5 per generation), so selection must stay conservative, not be
-switched off.
-
-Code facts (from a read-only trace; file references in `world/roads.js`,
-`core/road-formation.js`, `world/ground-generations.js`):
-- The dependency test is a bounding-box overlap between the owner's
-  `row.bounds` (feature bbox padded by the 32 m formation query radius plus
-  width) and `changedBounds`. No identity input is involved.
-- `changedBounds` includes the whole `profile.bounds` of every road profile
-  whose surface-geometry generation changed. The junction recheck clones
-  overlapping unchanged profiles, and the generation bump compares profiles
-  by object identity, so a cloned neighbour counts as changed even when its
-  geometry is identical. That is two padded bbox hops per real change.
-- Terrain detail arrivals contribute tile-sized bounds.
-
-Make dependency invalidation geometric and exact:
-
-- Recompile a neighbour only when the terrain/formation evidence it actually
-  sampled changed. Record per-owner evidence identities (terrain cell revisions,
-  formation generation, receiver cut revision) and compare them.
-- Cache per-owner compiled parts by complete identity.
-- Coalesce arrivals (S1's scheduled admission is the natural batching point).
-
-Each road generation currently also spends ~0.5 s in
-`curb-generation:terrain-drape` over the whole curb set; apply the same
-treatment there. Acceptance: in the out/back walk, compiled owners per
-generation track new/changed owners, and total `ground-generation` CPU drops
-proportionally with unchanged support/seam tests.
+- Curb generation re-drapes whole curb tiles on any receiver change
+  (`curb-generation:terrain-drape`, ~1.5 s per tram generation); the same
+  evidence scheme applies.
+- Rail and opening changes still use the padded-box rule.
+- Receivers built by the ordinary per-tile path carry no evidence and use the
+  box fallback.
 
 ### G2 — compile ground off the main thread
 

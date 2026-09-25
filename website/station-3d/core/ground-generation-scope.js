@@ -12,7 +12,10 @@ export function groundGenerationScope(changes, terrainTileM) {
     // tile arriving does not change the height of every existing road in it.
     // Explicit physical changes still invalidate intersecting receivers;
     // formation and opening changes extend this set after their preparation.
-    const roadGeometryBounds = changes.filter(change => !['curbs', 'terrain-window', 'ground-window'].includes(change.family))
+    // Terrain is not here: road receivers record the terrain points they
+    // sample and compare them with the exact terrain snapshot change set.
+    const roadGeometryBounds = changes
+        .filter(change => !['curbs', 'terrain-window', 'ground-window', 'terrain'].includes(change.family))
         .flatMap(change => change.bounds);
     const receiverBounds = [], curbBounds = [], curbSourceKeys = new Set();
     for (const change of changes) {
@@ -26,10 +29,7 @@ export function groundGenerationScope(changes, terrainTileM) {
             const bounds = { minX: x * tileM - 32, minZ: z * tileM - 32,
                 maxX: (x + 1) * tileM + 32, maxZ: (z + 1) * tileM + 32 };
             receiverBounds.push(bounds);
-            if (change.family === 'terrain' && !change.bounds.length) {
-                roadGeometryBounds.push(bounds);
-                terrainBounds?.push(bounds);
-            }
+            if (change.family === 'terrain' && !change.bounds.length) terrainBounds?.push(bounds);
         }
     }
     return { full, curbFull, terrainBounds, roadGeometryBounds, receiverBounds, curbBounds,

@@ -4,6 +4,7 @@
 
 import { DEG_TO_RAD, EARTH_RADIUS_M, finiteOrNull } from './math.js';
 import { terrainLatticeStepForBounds } from './terrain-lattice.js';
+import { recordGroundReadDisc } from './ground-read-evidence.js';
 
 function finiteNumber(value, label) {
     const number = Number(value);
@@ -894,6 +895,7 @@ export class TerrainReference {
     }
 
     evidenceWithheldAtLocal(localX, localZ) {
+        recordGroundReadDisc(localX, localZ, 0);
         const pending = this.pendingDetailWindow;
         if (!pending) return false;
         const x = Number(localX);
@@ -907,7 +909,15 @@ export class TerrainReference {
         return true;
     }
 
+    // Every source sample goes through here, evidenceSceneYAt or the corner
+    // caches; each records its point for receiver read evidence.
+    _recordGeographicRead(lon, lat) {
+        recordGroundReadDisc((Number(lon) - this.anchorLon) * this.metresPerDegreeLon,
+            -(Number(lat) - this.anchorLat) * this.metresPerDegreeLat, 0);
+    }
+
     heightAt(lon, lat) {
+        this._recordGeographicRead(lon, lat);
         return this.grid.sampleHeight(Number(lon), Number(lat));
     }
 
@@ -940,6 +950,7 @@ export class TerrainReference {
     evidenceSceneYAt(lon, lat) {
         const numericLon = Number(lon);
         const numericLat = Number(lat);
+        this._recordGeographicRead(numericLon, numericLat);
         const height = this.grid.sampleHeight(numericLon, numericLat);
         if (!Number.isFinite(height)) return null;
         const localX = (numericLon - this.anchorLon) * this.metresPerDegreeLon;
@@ -956,6 +967,7 @@ export class TerrainReference {
     hasLoadedCoreCoverageAt(lon, lat) {
         const numericLon = Number(lon);
         const numericLat = Number(lat);
+        this._recordGeographicRead(numericLon, numericLat);
         if (![numericLon, numericLat].every(Number.isFinite)) return false;
         if (typeof this.grid.hasCoreCoverage === 'function') {
             return this.grid.hasCoreCoverage(numericLon, numericLat) === true;
@@ -1014,6 +1026,8 @@ export class TerrainReference {
     sceneYAtLocal(localX, localZ) {
         const x = Number(localX);
         const z = Number(localZ);
+        // Which lattice applies depends on the detail rects at this point.
+        recordGroundReadDisc(x, z, 0);
         const step = this.surfaceStepM;
         if (!step) return this.sourceSceneYAtLocal(x, z);
         const detail = this.detail;
@@ -1045,6 +1059,7 @@ export class TerrainReference {
     sampleStepMAtLocal(localX, localZ) {
         const x = Number(localX);
         const z = Number(localZ);
+        recordGroundReadDisc(x, z, 0);
         if (!this.surfaceStepM) return null;
         if (this.detail && Number.isFinite(x) && Number.isFinite(z) && this._pointIsFine(x, z)) {
             return this.detail.stepM;
@@ -1054,6 +1069,9 @@ export class TerrainReference {
 
     sampleStepMForBounds(bounds) {
         if (!this.surfaceStepM) return null;
+        if (bounds) recordGroundReadDisc((Number(bounds.minX) + Number(bounds.maxX)) / 2,
+            (Number(bounds.minZ) + Number(bounds.maxZ)) / 2,
+            Math.hypot(Number(bounds.maxX) - Number(bounds.minX), Number(bounds.maxZ) - Number(bounds.minZ)) / 2);
         if (!this.detail) return this.surfaceStepM;
         return terrainLatticeStepForBounds(bounds, this.detail.tileM, (x, z) => (
             this.isFineTile(x, z) ? this.detail.stepM : this.surfaceStepM
@@ -1129,6 +1147,9 @@ export class TerrainReference {
         const cache = new Map();
         const tileAt = (value) => Math.floor(value / tileM);
         return (i, j) => {
+            // The memo is shared by every reader of this snapshot; a hit must
+            // still record the corner it stands for.
+            recordGroundReadDisc(i * step, j * step, 0);
             const key = ((i & 0xffff) << 16) | (j & 0xffff);
             const hit = cache.get(key);
             if (hit !== undefined) return hit;
@@ -1159,6 +1180,7 @@ export class TerrainReference {
     // TerrainReference and thus a fresh cache. Key is a 32-bit pack of the two
     // signed 16-bit grid indices (grid never spans > 32k cells = 655 km).
     _cornerSceneY(i, j) {
+        recordGroundReadDisc(i * this.surfaceStepM, j * this.surfaceStepM, 0);
         let cache = this._cornerCache;
         if (!cache) cache = this._cornerCache = new Map();
         const key = ((i & 0xffff) << 16) | (j & 0xffff);

@@ -27,6 +27,8 @@ import { decodeRoadTile } from '../core/road-tile-binary.js';
 import { startupTrace } from '../core/startup-trace.js';
 import { captureGroundReadSnapshot } from '../core/terrain-snapshot.js';
 import { createRoadRenderGroundCapture, roadRenderQueryBounds, roadRenderQueryBoundsSteps } from '../core/road-render-ground.js';
+import { createGroundReadEvidence, freezeGroundReadEvidence, groundBoundsDependOn, groundReadEvidenceDependency,
+    summarizeGroundChangeSet, withGroundReadEvidence } from '../core/ground-read-evidence.js';
 import { ownReadSnapshot, retainReadSnapshot } from '../core/read-snapshot-lifetime.js';
 import { createReceiverFootprintSteps } from '../core/receiver-footprint.js';
 import { clipReceiverOpeningsSteps } from '../core/receiver-opening-geometry.js';
@@ -3293,11 +3295,60 @@ function* prepareRoadFormationGroundSteps({ terrain, railFormation, verticalAlig
     } finally { if (!handedOff) release(); }
 }
 
+// An entry skipped by a generation (deferred past the terrain window) missed
+// that generation's read changes, which the next generation no longer
+// reports. It stays marked until a successor entry is published.
+const roadEntriesNeedingRecheck = new WeakSet();
+
+// Debug verification (?roadReadVerify=1): recompile the owners that read
+// evidence retains but the conservative region rule would rebuild, and report
+// any whose geometry changed. A miss means a source's change set or a read
+// record is incomplete.
+const roadReadVerification = typeof window !== 'undefined'
+    && new URLSearchParams(window.location?.search || '').get('roadReadVerify') === '1';
+
+// Why an existing owner's geometry must be recompiled, or null. Region changes
+// (rail, openings, other sources) keep the padded-box rule; terrain, formation,
+// alignment and structure changes are tested against what the owner read.
+function roadOwnerGeometryDependency(previousEntry, bounds, changedBounds, readChanges) {
+    if (bounds.some(b => changedBounds.some(change => boundsIntersectWithPadding(b, change, 0)))) return 'region';
+    if (roadEntriesNeedingRecheck.has(previousEntry)) return 'deferred';
+    if (!previousEntry.readEvidence) return groundBoundsDependOn(bounds, readChanges) ? 'reads:no-evidence' : null;
+    const reason = groundReadEvidenceDependency(previousEntry.readEvidence, readChanges);
+    return reason ? `reads:${reason}` : null;
+}
+
+// What the terrain looked like under an owner when it compiled, so a
+// verification miss can say whether terrain (rather than a road or alignment
+// read) moved underneath it.
+function roadTerrainProbe(ground, bounds) {
+    const box = bounds?.[0];
+    const terrain = ground?.terrain;
+    if (!box || !terrain) return null;
+    const x = (box.minX + box.maxX) / 2, z = (box.minZ + box.maxZ) / 2;
+    return { revision: terrain.revision ?? null, stepM: terrain.sampleStepMAtLocal?.(x, z) ?? null,
+        y: terrain.evidenceSceneYAtLocal?.(x, z) ?? null };
+}
+
+// FNV-1a over the compiled parts, for verification only.
+function roadGeometryHash(collected) {
+    let hash = 2166136261;
+    for (const { bucketKey, part } of collected.geometryParts) {
+        for (let index = 0; index < bucketKey.length; index++) hash = Math.imul(hash ^ bucketKey.charCodeAt(index), 16777619);
+        for (const array of [part.attributes?.position, part.index]) {
+            if (!array) continue;
+            const words = new Uint32Array(array.buffer, array.byteOffset, array.byteLength >> 2);
+            for (let index = 0; index < words.length; index++) hash = Math.imul(hash ^ words[index], 16777619);
+        }
+    }
+    return hash >>> 0;
+}
+
 // Source holds keep the ordinary publishers drained while the coordinator
 // resolves physical dependencies. Only changed receivers need source rows;
 // their aggregate publication will retain unchanged bucket neighbours.
 function* admitRoadGroundGenerationSteps(featureKeys, { isCurrent, maxFeatures,
-    ground = null, changedBounds = [], full = true, terrainEvidence = null } = {}) {
+    ground = null, changedBounds = [], readChanges = null, full = true, terrainEvidence = null } = {}) {
     if (!Array.isArray(featureKeys) || !Number.isSafeInteger(maxFeatures) || maxFeatures <= 0
         || featureKeys.length > maxFeatures
         || !Array.isArray(changedBounds)
@@ -3320,7 +3371,7 @@ function* admitRoadGroundGenerationSteps(featureKeys, { isCurrent, maxFeatures,
     const release = () => { if (roadReceiverGenerationLease === lease) roadReceiverGenerationLease = null; };
     lease.cancel = release;
     roadReceiverGenerationLease = lease;
-    let handedOff = false, retainedOwners = 0, deferredOutsideTerrain = 0;
+    let handedOff = false, retainedOwners = 0, deferredOutsideTerrain = 0, readRetainedOwners = 0;
     try {
         for (const featureKey of featureKeys) {
             if (typeof featureKey !== 'string') throw new TypeError('Road source keys must be strings');
@@ -3348,8 +3399,10 @@ function* admitRoadGroundGenerationSteps(featureKeys, { isCurrent, maxFeatures,
                     ? ground.roadFormation.getSurfaceGeometryGeneration(source.selected.feature.properties?.osm_id) : 0)
                 && previousTileRefs.length === source.tileKeys.length
                 && source.tileKeys.every(key => previousEntry.tileRefs.has(key))
-                && !bounds.some(b => changedBounds.some(change => boundsIntersectWithPadding(b, change, 0)))) {
+                && !roadOwnerGeometryDependency(previousEntry, bounds, changedBounds, readChanges)
+                && !(roadReadVerification && groundBoundsDependOn(bounds, readChanges))) {
                 retainedOwners++;
+                if (groundBoundsDependOn(bounds, readChanges)) readRetainedOwners++;
                 yield { phase: 'road-generation-admission-retain' }; if (!current()) return null;
                 continue;
             }
@@ -3359,6 +3412,7 @@ function* admitRoadGroundGenerationSteps(featureKeys, { isCurrent, maxFeatures,
             // admitted once terrain streaming covers it.
             if (terrainEvidence && bounds.some(b => !terrainEvidence.contains(b))) {
                 deferredOutsideTerrain++;
+                if (previousEntry) roadEntriesNeedingRecheck.add(previousEntry);
                 yield { phase: 'road-generation-admission-deferred' }; if (!current()) return null;
                 continue;
             }
@@ -3380,7 +3434,7 @@ function* admitRoadGroundGenerationSteps(featureKeys, { isCurrent, maxFeatures,
         handedOff = true;
         return Object.freeze({ rows: Object.freeze(rows.map(Object.freeze)), isCurrent: current, validate, release,
             usage: Object.freeze({ examinedOwners: featureKeys.length, admittedOwners: rows.length, retainedOwners,
-                deferredOutsideTerrain }),
+                readRetainedOwners, deferredOutsideTerrain }),
             setCancel(callback) { if (typeof callback !== 'function') throw new TypeError('Road generation requires cancellation'); lease.cancel = callback; } });
     } finally { if (!handedOff) release(); }
 }
@@ -3388,7 +3442,7 @@ function* admitRoadGroundGenerationSteps(featureKeys, { isCurrent, maxFeatures,
 // Source polygons, real ring geometry, aggregate receivers, query ownership,
 // and tile membership are prepared through the ordinary production compilers.
 function* prepareRoadGroundGenerationSteps({ admission, ground, generation, isCurrent, queryBounds = null,
-    changedBounds = [], full = true, maxBuckets, maxSourceTiles, maxOwners = ROAD_SUPPORT_PUBLICATION_LIMITS.maxOwners,
+    changedBounds = [], readChanges = null, full = true, maxBuckets, maxSourceTiles, maxOwners = ROAD_SUPPORT_PUBLICATION_LIMITS.maxOwners,
     maxGeometryBytes = ROAD_PUBLICATION_MAX_OUTPUT_BYTES, checkRead = check => check() }) {
     if (!admission?.isCurrent || !Object.isFrozen(ground) || typeof ground?.isCurrent !== 'function'
         || !Object.hasOwn(ground, 'structurePublications') || !ground.structurePublications?.getActive
@@ -3405,7 +3459,10 @@ function* prepareRoadGroundGenerationSteps({ admission, ground, generation, isCu
     // source recompilation separately so closure fan-out remains measurable.
     const sourceOwners = { ...admission.usage, compiledOwners: 0, omittedOwners: 0,
         removedOwners: 0, membershipOnlyOwners: 0, retainedOwners: admission.usage?.retainedOwners || 0,
-        newOwners: 0, changedSources: 0, changedGrades: 0, physicalDependencies: 0, fullOwners: 0 };
+        newOwners: 0, changedSources: 0, changedGrades: 0, physicalDependencies: 0, fullOwners: 0,
+        regionDependencies: 0, readDependencies: 0, readReasons: {}, readChanges: summarizeGroundChangeSet(readChanges),
+        deferredRechecks: 0, readRetainedOwners: admission.usage?.readRetainedOwners || 0,
+        ...(roadReadVerification ? { verifyMatched: 0, verifyMisses: 0, verifyUnhashed: 0, verifyRecompiled: {} } : {}) };
     const backstopsCurrent = () => roadReceiverMutationEpoch === backstopEpoch;
     const current = () => !settled && admission.isCurrent() && ground.isCurrent() && isCurrent() && backstopsCurrent();
     const release = () => {
@@ -3445,9 +3502,14 @@ function* prepareRoadGroundGenerationSteps({ admission, ground, generation, isCu
                 ? ground.roadFormation.getSurfaceGeometryGeneration(feature.properties?.osm_id) : 0;
             const changedSource = previous && feature && previous.identity?.revisionKey !== row.source.selected.identity.revisionKey;
             const changedGrade = previous && feature && previous.formationGeneration !== expectedFormation;
-            const changedDependency = (row.bounds || []).some(b => changedBounds.some(change => boundsIntersectWithPadding(b, change, 0)));
-            const geometryUnchanged = !full && previous && feature && !changedSource && !changedGrade && !changedDependency;
+            const dependency = previous && !full ? roadOwnerGeometryDependency(previous, row.bounds || [], changedBounds, readChanges) : null;
+            const changedDependency = !!dependency;
+            // Verification recompiles what the region rule alone would have.
+            const regionRuleDependency = !!previous && !full && groundBoundsDependOn(row.bounds || [], readChanges);
+            const verifyOnly = roadReadVerification && !changedSource && !changedGrade && !changedDependency && regionRuleDependency;
+            const geometryUnchanged = !full && previous && feature && !changedSource && !changedGrade && !changedDependency && !verifyOnly;
             if (geometryUnchanged) {
+                if (regionRuleDependency) sourceOwners.readRetainedOwners++;
                 if (previous.tileRefs.size !== row.source.tileKeys.length
                     || row.source.tileKeys.some(key => !previous.tileRefs.has(key))) {
                     sourceOwners.membershipOnlyOwners++;
@@ -3465,6 +3527,12 @@ function* prepareRoadGroundGenerationSteps({ admission, ground, generation, isCu
                 if (changedSource) sourceOwners.changedSources++;
                 if (changedGrade) sourceOwners.changedGrades++;
                 if (changedDependency) sourceOwners.physicalDependencies++;
+                if (dependency === 'region') sourceOwners.regionDependencies++;
+                if (dependency?.startsWith('reads:')) {
+                    sourceOwners.readDependencies++;
+                    sourceOwners.readReasons[dependency.slice(6)] = (sourceOwners.readReasons[dependency.slice(6)] || 0) + 1;
+                }
+                if (dependency === 'deferred') sourceOwners.deferredRechecks++;
                 if (full) sourceOwners.fullOwners++;
                 task = createRoadFeatureTask(feature, row.regionTileKey, buildGround, {
                     abortOnMissingTerrain: true,
@@ -3496,7 +3564,29 @@ function* prepareRoadGroundGenerationSteps({ admission, ground, generation, isCu
                         sourceFeature: feature,
                         formationGeneration: roadSurfaceUsesEngineeredFormation(feature)
                             ? (ground.roadFormation?.getSurfaceGeometryGeneration(feature.properties?.osm_id) || 0) : 0,
+                        readEvidence: task.readEvidence(),
+                        ...(roadReadVerification ? { geometryHash: roadGeometryHash(collected),
+                            terrainProbe: roadTerrainProbe(buildGround, row.bounds) } : {}),
                         tileRefs: new Set(row.source.tileKeys), pendingRefs: 0 };
+                    if (roadReadVerification && previous?.geometryHash !== undefined && !verifyOnly) {
+                        // Precision: did the recompiles the rules asked for change anything?
+                        const cause = changedSource ? 'source' : changedGrade ? 'grade' : dependency || 'full';
+                        const outcome = previous.geometryHash === nextEntry.geometryHash ? 'identical' : 'changed';
+                        sourceOwners.verifyRecompiled[`${cause}:${outcome}`] = (sourceOwners.verifyRecompiled[`${cause}:${outcome}`] || 0) + 1;
+                    }
+                    if (verifyOnly) {
+                        if (previous.geometryHash === undefined) sourceOwners.verifyUnhashed++;
+                        else if (previous.geometryHash === nextEntry.geometryHash) sourceOwners.verifyMatched++;
+                        else {
+                            sourceOwners.verifyMisses++;
+                            const evidence = previous.readEvidence;
+                            console.error(`[${new Date().toISOString()}] [roads] read evidence missed a change: ${row.featureKey} `
+                                + `(${feature.properties?.highway_type || feature.properties?.railway_type || 'road'}); `
+                                + `evidence ids [${evidence?.ids.join(',') || ''}] keys [${evidence?.keys.join(',') || ''}] `
+                                + `cells ${evidence ? evidence.cells.length / 3 : 'none'}; terrain then ${JSON.stringify(previous.terrainProbe)} `
+                                + `now ${JSON.stringify(nextEntry.terrainProbe)}; changed ids [${[...(readChanges?.ids || [])].slice(0, 12).join(',')}]`);
+                        }
+                    }
                 }
                 if (!collected) sourceOwners.omittedOwners++;
                 task.dispose(); task = null;
@@ -3582,9 +3672,10 @@ function createRoadFeatureTask(feature, tileKey, suppliedGround = null, {
     let omission = null;
     const osmId = feature?.properties?.osm_id;
     const featureLabel = osmId == null ? 'road' : `road ${osmId}`;
+    const evidence = createGroundReadEvidence();
     const releaseGround = () => { ground?.release?.(); ground = null; };
 
-    return {
+    const task = {
         isCurrent: () => groundCurrent(),
         step() {
             if (phase === 'inputs') {
@@ -3712,7 +3803,13 @@ function createRoadFeatureTask(feature, tileKey, suppliedGround = null, {
             const ringLabel = `${featureLabel} ring ${Math.min(ringIndex + 1, ringCount)}/${ringCount}`;
             return ringTask ? `${ringLabel} ${ringTask.phaseLabel()}` : ringLabel;
         },
+        // Everything this compile read from terrain, the road formation,
+        // alignments and structure publications, for exact invalidation.
+        readEvidence: () => freezeGroundReadEvidence(evidence),
     };
+    const stepTask = task.step;
+    task.step = () => withGroundReadEvidence(evidence, stepTask);
+    return task;
 }
 
 // Synchronous drain, for the publish-now path: a proposal edit republishes a

@@ -12,6 +12,8 @@ import {
     TERRAIN_EXCAVATION_MIN_DEPTH_M,
 } from './formation-excavation.js';
 import { delaunayFlipSteps } from './delaunay-flip.js';
+import { createGroundChangeSet, GROUND_READ_UNBOUNDED, recordGroundReadDisc, recordGroundReadId, recordGroundReadKey,
+    ROAD_ALIGNMENT_CUTOUTS_READ_KEY } from './ground-read-evidence.js';
 
 const INDEX_CELL_M = 80;
 // Road surface rings are densified every ~4 m and can contain thousands of
@@ -942,6 +944,130 @@ function surfaceCenterlineFeature(surface) {
 
 function formationDependencyBounds(profile) {
     return profile.overlapBounds || profile.terrainCutoutBounds || profile.outerBounds || profile.bounds;
+}
+
+// A junction recheck clones every profile near a change and recomputes its
+// collar and cutout. Most clones come back identical (93–98 % of road owners
+// recompiled in the dense Zagreb walk reproduced identical geometry, 2026-09-23),
+// and a clone counted as a change pulls every receiver within its padded
+// bounds into the next road generation. Compare content instead: equal
+// scalars, or arrays and plain records that are equal field by field. Any
+// other object must be the same reference, so an unknown shape stays a change.
+function formationValuesEquivalent(a, b, depth) {
+    if (Object.is(a, b)) return true;
+    if (depth <= 0 || !a || !b || typeof a !== 'object' || typeof b !== 'object') return false;
+    if (Array.isArray(a)) {
+        if (!Array.isArray(b) || a.length !== b.length) return false;
+        for (let index = 0; index < a.length; index++) {
+            if (!formationValuesEquivalent(a[index], b[index], depth - 1)) return false;
+        }
+        return true;
+    }
+    if (Array.isArray(b) || Object.getPrototypeOf(a) !== Object.prototype
+        || Object.getPrototypeOf(b) !== Object.prototype) return false;
+    const keys = Object.keys(a);
+    if (keys.length !== Object.keys(b).length) return false;
+    for (const key of keys) {
+        if (!Object.hasOwn(b, key) || !formationValuesEquivalent(a[key], b[key], depth - 1)) return false;
+    }
+    return true;
+}
+
+// Profile → points/rings → point records → their scalar fields. Underscored
+// members are derived query caches (ring indexes), not geometry.
+export function formationProfilesEquivalent(a, b) {
+    if (Object.is(a, b)) return true;
+    if (!a || !b || typeof a !== 'object' || typeof b !== 'object') return false;
+    const keys = Object.keys(a).filter(key => !key.startsWith('_'));
+    if (keys.length !== Object.keys(b).filter(key => !key.startsWith('_')).length) return false;
+    return keys.every(key => Object.hasOwn(b, key) && formationValuesEquivalent(a[key], b[key], 2));
+}
+
+// Everything a surface profile can answer for: the paved ring registers the
+// surface index, the collar/cut-out/outer rings the civil and dressing ones.
+function formationInfluenceBounds(profile) {
+    let box = null;
+    for (const bounds of [profile?.bounds, profile?.outerBounds, profile?.terrainCutoutBounds, profile?.overlapBounds]) {
+        if (!bounds) continue;
+        box = box ? { minX: Math.min(box.minX, bounds.minX), minZ: Math.min(box.minZ, bounds.minZ),
+            maxX: Math.max(box.maxX, bounds.maxX), maxZ: Math.max(box.maxZ, bounds.maxZ) } : { ...bounds };
+    }
+    return box;
+}
+
+function segmentsBounds(segments) {
+    let box = null;
+    for (const s of segments) {
+        const minX = Math.min(s.x1, s.x2), maxX = Math.max(s.x1, s.x2);
+        const minZ = Math.min(s.z1, s.z2), maxZ = Math.max(s.z1, s.z2);
+        box = box ? { minX: Math.min(box.minX, minX), minZ: Math.min(box.minZ, minZ),
+            maxX: Math.max(box.maxX, maxX), maxZ: Math.max(box.maxZ, maxZ) } : { minX, minZ, maxX, maxZ };
+    }
+    return box;
+}
+
+// Segments are rebuilt each generation from cached templates and the per-road
+// grade profile, which is reused by identity while its anchors are unchanged.
+function segmentsEquivalent(a, b) {
+    if (a === b) return true;
+    if (!a || !b || a.length !== b.length) return false;
+    for (let index = 0; index < a.length; index++) {
+        const left = a[index], right = b[index];
+        if (left === right) continue;
+        const keys = Object.keys(left);
+        if (keys.length !== Object.keys(right).length) return false;
+        for (const key of keys) if (!Object.is(left[key], right[key])) return false;
+    }
+    return true;
+}
+
+// Complete change set between two formation read snapshots: every OSM id
+// whose surface profiles (including publication readiness captured with the
+// snapshot) or centreline segments/grade differ, with the old and new
+// influence boxes of each. Road receivers compare their read evidence with it.
+export function* roadFormationReadChangesSteps(previous, next, { budgetMs = FORMATION_JUNCTION_STEP_BUDGET_MS } = {}) {
+    if (!previous || !next) return createGroundChangeSet({ full: true, reason: 'formation-basis' });
+    if (previous === next) return createGroundChangeSet();
+    let deadline = formationBuildNowMs() + budgetMs;
+    const pause = function* () {
+        if (formationBuildNowMs() < deadline) return;
+        yield { phase: 'formation-read-changes' };
+        deadline = formationBuildNowMs() + budgetMs;
+    };
+    const group = function* (profiles) {
+        const byId = new Map();
+        for (const profile of profiles) {
+            const list = byId.get(profile.osmId);
+            if (list) list.push(profile); else byId.set(profile.osmId, [profile]);
+            yield* pause();
+        }
+        return byId;
+    };
+    const before = yield* group(previous.getSurfaceProfiles()), after = yield* group(next.getSurfaceProfiles());
+    const ids = new Set(), boxes = [];
+    for (const id of new Set([...before.keys(), ...after.keys()])) {
+        const a = before.get(id) || [], b = after.get(id) || [];
+        if (a.length !== b.length || !a.every((profile, index) => formationProfilesEquivalent(profile, b[index]))) {
+            ids.add(id);
+            for (const profile of [...a, ...b]) {
+                const box = formationInfluenceBounds(profile);
+                if (box) boxes.push(box);
+            }
+        }
+        yield* pause();
+    }
+    for (const id of new Set([...previous.getCenterlineOsmIds(), ...next.getCenterlineOsmIds()])) {
+        const a = previous.getCenterlineSegmentsForOsmId(id), b = next.getCenterlineSegmentsForOsmId(id);
+        if (!segmentsEquivalent(a, b)) {
+            ids.add(id);
+            for (const segments of [a, b]) {
+                const box = segments.length ? segmentsBounds(segments) : null;
+                if (box) boxes.push(box);
+            }
+        }
+        yield* pause();
+    }
+    return createGroundChangeSet({ ids, boxes });
 }
 
 // Full source variants choose the same revision as roads.js. Explicit polygon
@@ -3116,7 +3242,8 @@ export class RoadFormationModel {
         const osmIds = [], bounds = [];
         for (const osmId of ids) {
             const before = previous.get(osmId) || [], after = next.get(osmId) || [];
-            if (before.length !== after.length || !before.every((profile, index) => profile === after[index])) {
+            if (before.length !== after.length
+                || !before.every((profile, index) => formationProfilesEquivalent(profile, after[index]))) {
                 osmIds.push(osmId);
                 for (const profiles of [before, after]) for (const profile of profiles) {
                     bounds.push({ ...formationDependencyBounds(profile) });
@@ -3303,6 +3430,9 @@ export class RoadFormationModel {
 
     _genericSegmentsNear(x, z, maxDistanceM) {
         const radius = Math.max(0, Number(maxDistanceM) || DEFAULT_QUERY_RADIUS_M);
+        // Callers keep only segments within `radius`; nearbyCenterlineSegments
+        // records its wider unfiltered reach itself.
+        recordGroundReadDisc(x, z, radius);
         const minCellX = Math.floor((x - radius) / INDEX_CELL_M);
         const maxCellX = Math.floor((x + radius) / INDEX_CELL_M);
         const minCellZ = Math.floor((z - radius) / INDEX_CELL_M);
@@ -3412,6 +3542,7 @@ export class RoadFormationModel {
     // far from its own road falls through to the old behaviour, which is what
     // preserves the infinite-radius contract.
     _nearestOnOwnSegments(x, z, requestedId) {
+        recordGroundReadId(requestedId);
         const cellX = Math.floor(x / INDEX_CELL_M);
         const cellZ = Math.floor(z / INDEX_CELL_M);
 
@@ -3530,6 +3661,8 @@ export class RoadFormationModel {
         const localX = finiteOrNull(x);
         const localZ = finiteOrNull(z);
         if (localX == null || localZ == null) return null;
+        // Candidates must contain the point in their dependency bounds.
+        recordGroundReadDisc(localX, localZ, 0);
         let bestY = null;
         for (const profile of this._civilGroundProfileIndex.get(cellKey(localX, localZ)) || []) {
             if (profile.surfacePublicationReady === false) continue;
@@ -3595,6 +3728,8 @@ export class RoadFormationModel {
     // Ensures the spatial index is built first.
     nearbyCenterlineSegments(x, z, maxDistanceM = DEFAULT_QUERY_RADIUS_M) {
         this._ensureBuilt();
+        // Returns whole index cells, unfiltered by distance.
+        recordGroundReadDisc(x, z, (Math.max(0, Number(maxDistanceM) || 0)) + INDEX_CELL_M);
         return this._genericSegmentsNear(Number(x), Number(z), Number(maxDistanceM))
             .map((seg) => [seg.x1, seg.z1, seg.x2, seg.z2]);
     }
@@ -3621,6 +3756,7 @@ export class RoadFormationModel {
             )
             : null;
         const excludedId = excludedIds ? null : numericId(excludeOsmId);
+        recordGroundReadDisc(x, z, 0);
         for (const profile of this._surfaceIndex.get(cellKey(x, z)) || []) {
             if (profile.osmId === excludedId || excludedIds?.has(profile.osmId)) {
                 continue;
@@ -3638,6 +3774,7 @@ export class RoadFormationModel {
     // whole OSM id leaves internal member seams free to grow their own wall and
     // terrain collar across sibling asphalt (Split's Riva portal road).
     _surfaceAtLocalExcludingProfile(x, z, excludedProfile) {
+        recordGroundReadDisc(x, z, 0);
         for (const profile of this._surfaceIndex.get(cellKey(x, z)) || []) {
             if (profile === excludedProfile) continue;
             const bounds = profile.bounds;
@@ -3649,6 +3786,10 @@ export class RoadFormationModel {
 
     _hasAtGradeSurfaceAtLocal(x, z, ownProfile) {
         const ownOsmId = numericId(ownProfile?.osmId);
+        // Other roads' centrelines are read only for profiles containing the
+        // point, whose change regions therefore contain it too.
+        recordGroundReadDisc(x, z, 0);
+        recordGroundReadId(ownOsmId);
         let own = null;
         for (const profile of this._surfaceIndex.get(cellKey(x, z)) || []) {
             if (profile === ownProfile) continue;
@@ -3678,6 +3819,7 @@ export class RoadFormationModel {
 
     getSurfaceProfiles() {
         this._ensureBuilt();
+        recordGroundReadKey(GROUND_READ_UNBOUNDED);
         return this._profiles;
     }
 
@@ -3696,6 +3838,7 @@ export class RoadFormationModel {
         const localZ = finiteOrNull(z);
         const radius = finiteOrNull(radiusM);
         if (localX === null || localZ === null || radius === null || radius < 0) return [];
+        recordGroundReadDisc(localX, localZ, radius);
         const minCellX = Math.floor((localX - radius) / INDEX_CELL_M);
         const maxCellX = Math.floor((localX + radius) / INDEX_CELL_M);
         const minCellZ = Math.floor((localZ - radius) / INDEX_CELL_M);
@@ -3725,6 +3868,7 @@ export class RoadFormationModel {
         const localZ = finiteOrNull(z);
         const radius = finiteOrNull(radiusM);
         if (localX === null || localZ === null || radius === null || radius < 0) return [];
+        recordGroundReadDisc(localX, localZ, radius);
         const profiles = new Set();
         for (let cellZ = Math.floor((localZ - radius) / INDEX_CELL_M); cellZ <= Math.floor((localZ + radius) / INDEX_CELL_M); cellZ += 1) {
             for (let cellX = Math.floor((localX - radius) / INDEX_CELL_M); cellX <= Math.floor((localX + radius) / INDEX_CELL_M); cellX += 1) {
@@ -3745,19 +3889,33 @@ export class RoadFormationModel {
     getSurfaceProfilesForOsmId(osmId, { allowStale = false } = {}) {
         if (!allowStale) this._ensureBuilt();
         const requestedId = numericId(osmId);
+        recordGroundReadId(requestedId);
         return this._profiles.filter((profile) => profile.osmId === requestedId);
     }
 
     getSurfaceProfilesForFeature(feature, { allowStale = false } = {}) {
         if (!allowStale) this._ensureBuilt();
         const identity = this._featureIdentities.identityFor(feature);
+        recordGroundReadId(numericId(feature?.properties?.osm_id));
         const profiles = this._profiles.filter(profile => profile.sourceOwnerKey === identity.key
             && profile.sourceRevisionKey === identity.revisionKey);
         const byPolygon = new Map(profiles.map(profile => [profile.sourcePolygonKey, profile]));
         return identity.polygonKeys.map(key => byPolygon.get(key)).filter(Boolean);
     }
 
+    getCenterlineOsmIds() {
+        recordGroundReadKey(GROUND_READ_UNBOUNDED);
+        return [...this._segmentsByOsmId.keys()];
+    }
+
+    getCenterlineSegmentsForOsmId(osmId) {
+        const requestedId = numericId(osmId);
+        recordGroundReadId(requestedId);
+        return this._segmentsByOsmId.get(requestedId) || [];
+    }
+
     getReplacementTerrainCutoutRegions() {
+        recordGroundReadKey(ROAD_ALIGNMENT_CUTOUTS_READ_KEY);
         const regions = this.replacementTerrainCutoutRegions?.();
         return Array.isArray(regions) ? regions : [];
     }
@@ -4983,7 +5141,7 @@ export class RoadFormationModel {
                 'hasDressedSurfaceBoundaryAtLocal', 'nearbyCenterlineSegments', 'surfaceAtLocal',
                 'publishedSurfaceAtLocal', '_surfaceAtLocalBuilt', 'surfaceProfilesNear', 'dressingProfilesNear',
                 'getSurfaceProfiles', 'getSurfaceProfilesForOsmId', 'getSurfaceProfilesForFeature',
-                'getReplacementTerrainCutoutRegions',
+                'getCenterlineOsmIds', 'getCenterlineSegmentsForOsmId', 'getReplacementTerrainCutoutRegions',
             ];
             const result = {
                 contract: 'station3d-road-formation-read-snapshot-v1',

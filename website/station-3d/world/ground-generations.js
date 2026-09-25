@@ -19,6 +19,11 @@ import { isWorldBuilding, noteWorldMilestone } from '../core/world-ready.js';
 import { createSurfaceOpeningReadSteps } from '../core/surface-opening-read.js';
 import { SURFACE_CLASS, SURFACE_COVERAGE_STATE, SURFACE_VERTICAL_RELATION } from '../core/surface-hierarchy.js';
 import { composeReceiverSupportReadsSteps } from '../core/receiver-support-read.js';
+import { createGroundChangeSet, mergeGroundChangeSets } from '../core/ground-read-evidence.js';
+import { roadFormationReadChangesSteps } from '../core/road-formation.js';
+import { roadAlignmentReadChangesSteps } from '../core/road-vertical-alignment.js';
+import { roadStructurePublicationChanges } from '../core/road-replacement-publication.js';
+import { terrainReadChanges } from '../core/terrain-snapshot.js';
 import {
     buildFormationTerrainCutoutQuerySteps,
     replaceTerrainCutoutLayerSources,
@@ -343,11 +348,13 @@ function* prepareWorldGroundGraphSteps({ ctx, layers, admission, scope, limits,
         const roadGeometryBounds = [...(scope.roadGeometryBounds || []),
             ...[...openingResources, ...openingReceivers].flatMap(resource => resource.changedBounds || [])];
         // Include both old and new collars, even when a neighbour's paved
-        // footprint does not intersect the triggering source tile.
+        // footprint does not intersect the triggering source tile. Road
+        // receivers test formation changes against their read evidence
+        // instead (readChanges below); these bounds select curb tiles.
         for (const model of [ctx.roadFormation, road.read]) for (const profile of model.getSurfaceProfiles()) {
             if (profile.bounds && ctx.roadFormation.getSurfaceGeometryGeneration(profile.osmId)
                 !== road.read.getSurfaceGeometryGeneration(profile.osmId)) {
-                receiverBounds.push(profile.bounds); roadGeometryBounds.push(profile.bounds);
+                receiverBounds.push(profile.bounds);
             }
             yield { phase: 'ground-road-profile-closure' }; check();
         }
@@ -398,6 +405,29 @@ function* prepareWorldGroundGraphSteps({ ctx, layers, admission, scope, limits,
             isCurrent: () => ground.isCurrent() && structures.isCurrent() && rails.isCurrent() },
         [retainReadSnapshot(ground, 'ground-road-curb-receivers')]);
         reads.push(receiverGround);
+        // Everything road receivers can read from the formation, alignments
+        // and structure publications that differs from the reads the previous
+        // road generation compiled against. Owners whose evidence misses it
+        // keep their geometry.
+        const readChanges = scope.full || !previousReceivers
+            ? createGroundChangeSet({ full: true, reason: scope.full ? 'scope' : 'no-basis' })
+            : mergeGroundChangeSets([
+                yield* roadFormationReadChangesSteps(previousReceivers.roadFormation, receiverGround.roadFormation),
+                yield* roadAlignmentReadChangesSteps(previousReceivers.verticalAlignments, receiverGround.verticalAlignments,
+                    { isCurrent: sourceCurrent }),
+                roadStructurePublicationChanges({
+                    previousPublications: previousReceivers.structurePublications,
+                    nextPublications: receiverGround.structurePublications,
+                    previousAlignments: previousReceivers.verticalAlignments,
+                    nextAlignments: receiverGround.verticalAlignments,
+                }),
+                // Terrain-window generations republish receivers with newer
+                // terrain but keep road receivers; roadReadTerrain stays the
+                // terrain those receivers actually sampled.
+                terrainReadChanges(previousReceivers.roadReadTerrain, receiverGround.terrain),
+            ]);
+        check();
+        for (const box of readChanges.boxes) receiverBounds.push(box);
         // Select receiver ownership after the physical dependency closure is
         // known. Aggregate preparation below adds unchanged bucket neighbours
         // as needed, without recompiling unrelated source owners.
@@ -413,13 +443,13 @@ function* prepareWorldGroundGraphSteps({ ctx, layers, admission, scope, limits,
             }
             admission.roads = yield* layers.roads.admitGroundGenerationSteps(roadKeys, {
                 ...limits.roadAdmission, ground: receiverGround,
-                changedBounds: roadGeometryBounds, full: scope.full, isCurrent,
+                changedBounds: roadGeometryBounds, readChanges, full: scope.full, isCurrent,
                 terrainEvidence });
             if (!admission.roads) fail('ground-dependency-busy', 'Road source admission is pending');
         }
         const roads = keep(yield* layers.roads.prepareGroundGenerationSteps({ admission: admission.roads,
             ground: receiverGround, generation,
-            changedBounds: roadGeometryBounds, full: scope.full, ...limits.roadReceivers, isCurrent: sourceCurrent, checkRead }), 'road-receivers');
+            changedBounds: roadGeometryBounds, readChanges, full: scope.full, ...limits.roadReceivers, isCurrent: sourceCurrent, checkRead }), 'road-receivers');
         entries.push(...roads.entries);
         // Urban coast classification consumes actual prepared road faces.
         // Its support joins this same generation's authored collider table.
@@ -478,7 +508,8 @@ function* prepareWorldGroundGraphSteps({ ctx, layers, admission, scope, limits,
                 } };
         });
         if (readPublication) {
-            readPublication.bindRead(Object.freeze({ ...receiverGround, terrainCutoutLayers }));
+            readPublication.bindRead(Object.freeze({ ...receiverGround, terrainCutoutLayers,
+                roadReadTerrain: receiverGround.terrain }));
             metadata('ground:receiver-queries', readPublication);
         }
         return complete([physics, ...finalizers, rails, ownership, structures, roads, curbs, mask, nextTerrain, readPublication],

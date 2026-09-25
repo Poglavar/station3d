@@ -6,6 +6,9 @@
 // a planned replacement as already published creates a hole while its civil
 // root is still being built.
 
+import { createGroundChangeSet, recordGroundReadKey, roadStructurePublicationReadKey } from './ground-read-evidence.js';
+import { alignmentInfluenceBounds } from './road-vertical-alignment.js';
+
 const ROAD_STRUCTURE_PUBLICATION_PREFIX = 'roads:structure:';
 const compiledSources = new WeakMap();
 
@@ -66,9 +69,31 @@ export function roadReplacementPublicationReadyForOsmId({
     // A compiled alignment alone cannot authorize removal. Detached candidates
     // supply an explicit prepared-root view; active callers use the registry.
     if (typeof surfacePublications?.getActive !== 'function') return false;
+    recordGroundReadKey(roadStructurePublicationReadKey(alignment.id));
     const active = surfacePublications.getActive(
         roadStructurePublicationKey(alignment.id),
     );
     return roadStructureMatchesAlignment(active?.root, alignment)
         && roadReplacementOsmIdsFromRoot(active?.root).includes(requestedId);
+}
+
+// Replacement readiness changes when a structure root publishes or retires.
+// Compare the active roots both receiver bases saw for every replacing
+// alignment; each changed one is a read key with that alignment's region.
+export function roadStructurePublicationChanges({ previousPublications, nextPublications,
+    previousAlignments, nextAlignments }) {
+    if (typeof previousPublications?.getActive !== 'function' || typeof nextPublications?.getActive !== 'function'
+        || !previousAlignments || !nextAlignments) return createGroundChangeSet({ full: true, reason: 'structure-basis' });
+    const keys = [], boxes = [];
+    const seen = new Set();
+    for (const alignment of [...previousAlignments.getAlignments(), ...nextAlignments.getAlignments()]) {
+        if (!alignment?.definition?.replaceRoadSurface) continue;
+        const key = roadStructurePublicationKey(alignment.id);
+        if (previousPublications.getActive(key)?.root === nextPublications.getActive(key)?.root) continue;
+        if (!seen.has(key)) { seen.add(key); keys.push(roadStructurePublicationReadKey(alignment.id)); }
+        const box = alignmentInfluenceBounds(alignment);
+        if (!box) return createGroundChangeSet({ full: true, reason: 'structure-without-region' });
+        boxes.push(box);
+    }
+    return createGroundChangeSet({ keys, boxes });
 }

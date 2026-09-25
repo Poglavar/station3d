@@ -6,6 +6,8 @@ import { ownReadSnapshot, retainReadSnapshot } from './read-snapshot-lifetime.js
 import { createBoundsGridSteps } from './bounds-grid.js';
 import { pointInRing } from './mask-query.js';
 import { permanentTerrainGapTest } from './terrain-evidence-gap.js';
+import { createGroundChangeSet, GROUND_READ_UNBOUNDED, recordGroundReadDisc, recordGroundReadId, recordGroundReadKey,
+    ROAD_ALIGNMENT_CUTOUTS_READ_KEY } from './ground-read-evidence.js';
 import { roadStructureHalfWidths, roadStructureFormationHalfWidthM, roadStructureSampleFrame } from './road-structure-cross-section.js';
 import {
     getCarriagewayWidthM,
@@ -5002,16 +5004,19 @@ export class RoadVerticalAlignmentModel {
 
     getAlignments() {
         this._ensureBuilt();
+        recordGroundReadKey(GROUND_READ_UNBOUNDED);
         return this._compiled;
     }
 
     getAlignmentForOsmId(osmId) {
         this._ensureBuilt();
+        recordGroundReadId(numericId(osmId));
         return this._byOsmId.get(numericId(osmId)) || null;
     }
 
     getProfileOwnerForOsmId(osmId) {
         this._ensureBuilt();
+        recordGroundReadId(numericId(osmId));
         const alignment = this._byOsmId.get(numericId(osmId)) || null;
         return alignment
             ? this._profileOwnerByAlignment.get(alignment) || alignment
@@ -5083,6 +5088,7 @@ export class RoadVerticalAlignmentModel {
     roadYAtLocal(x, z, osmId = null) {
         this._ensureBuilt();
         const requested = numericId(osmId);
+        if (requested != null) recordGroundReadId(requested); else recordGroundReadDisc(x, z, 0);
         const candidates = requested != null
             ? [this._byOsmId.get(requested)].filter(Boolean)
             : this._compiled;
@@ -5091,6 +5097,7 @@ export class RoadVerticalAlignmentModel {
 
     roadYForOsmIdsAtLocal(x, z, osmIds = []) {
         this._ensureBuilt();
+        for (const osmId of Array.isArray(osmIds) ? osmIds : [osmIds]) recordGroundReadId(numericId(osmId));
         const candidates = Array.from(new Set(
             (Array.isArray(osmIds) ? osmIds : [osmIds])
                 .map(osmId => this._byOsmId.get(numericId(osmId)))
@@ -5108,6 +5115,8 @@ export class RoadVerticalAlignmentModel {
         const requestedIds = Array.isArray(osmIds)
             ? Array.from(new Set(osmIds.map(numericId).filter(Boolean)))
             : [numericId(osmIds)].filter(Boolean);
+        if (requestedIds.length) for (const id of requestedIds) recordGroundReadId(id);
+        else recordGroundReadDisc(x, z, 0);
         const candidates = requestedIds.length > 0
             ? requestedIds.map(osmId => this._byOsmId.get(osmId)).filter(Boolean)
             : this._compiled;
@@ -5137,6 +5146,7 @@ export class RoadVerticalAlignmentModel {
             ? Array.from(new Set(osmIds.map(numericId).filter(Boolean)))
             : [numericId(osmIds)].filter(Boolean);
         if (requestedIds.length === 0) return () => false;
+        for (const id of requestedIds) recordGroundReadId(id);
 
         const ownedAlignments = Array.from(new Set(
             requestedIds.map(osmId => this._byOsmId.get(osmId)).filter(Boolean),
@@ -5226,10 +5236,14 @@ export class RoadVerticalAlignmentModel {
             addBoundary(endStationM, false);
         }
 
+        // Without an owned alignment every compiled one was a candidate; the
+        // evaluator may be called in a later compile step, so record there.
+        const spatial = ownedAlignments.length === 0;
         return (x, z) => {
             const px = finiteOrNull(x);
             const pz = finiteOrNull(z);
             if (px == null || pz == null) return false;
+            if (spatial) recordGroundReadDisc(px, pz, adjoiningLimitM);
             for (const boundary of boundaries) {
                 const dx = px - boundary.x;
                 const dz = pz - boundary.z;
@@ -5259,6 +5273,7 @@ export class RoadVerticalAlignmentModel {
     structureAtLocal(x, z, osmId = null) {
         this._ensureBuilt();
         const requested = numericId(osmId);
+        if (requested != null) recordGroundReadId(requested); else recordGroundReadDisc(x, z, 0);
         const candidates = requested != null
             ? [this._byOsmId.get(requested)].filter(Boolean)
             : this._compiled;
@@ -5330,6 +5345,7 @@ export class RoadVerticalAlignmentModel {
 
     getReplacementTerrainCutoutRegions() {
         this._ensureBuilt();
+        recordGroundReadKey(ROAD_ALIGNMENT_CUTOUTS_READ_KEY);
         return filterReplacementTerrainCutoutsForAuthoredPortals(
             this._replacementTerrainCutoutRegions,
             this.authoredPortalReplacements(),
@@ -5357,6 +5373,7 @@ export class RoadVerticalAlignmentModel {
 
     containsReplacementCorridor(x, z, halfWidthM = null) {
         this._ensureBuilt();
+        recordGroundReadDisc(x, z, Number(halfWidthM) || 0);
         for (const alignment of this._compiled) {
             if (!alignment.definition.replaceRoadSurface) continue;
             const nearest = alignment.nearest(x, z);
@@ -5372,4 +5389,92 @@ export class RoadVerticalAlignmentModel {
         }
         return false;
     }
+}
+
+function shallowEqualRecords(a, b) {
+    if (a === b) return true;
+    if (!a || !b) return false;
+    const keys = Object.keys(a);
+    if (keys.length !== Object.keys(b).length) return false;
+    return keys.every(key => Object.is(a[key], b[key]));
+}
+
+// Any alignment query that can consult this alignment lies within its widest
+// half-width of the axis; callers that pass a wider reach record it themselves.
+export function alignmentInfluenceBounds(alignment) {
+    const points = alignment?.points;
+    if (!Array.isArray(points) || points.length === 0) return null;
+    const definition = alignment.definition || {};
+    const reach = Math.max(DEFAULT_CORRIDOR_HALF_WIDTH_M,
+        Number(roadStructureFormationHalfWidthM(definition)) || 0,
+        Number(definition.corridorHalfWidthM) || 0,
+        Number(definition.crossSection?.formationHalfWidthM) || 0,
+        Number(definition.crossSection?.terrainClearHalfWidthM) || 0) + 2;
+    let minX = Infinity, minZ = Infinity, maxX = -Infinity, maxZ = -Infinity;
+    for (const { x, z } of points) {
+        if (x < minX) minX = x; if (x > maxX) maxX = x;
+        if (z < minZ) minZ = z; if (z > maxZ) maxZ = z;
+    }
+    return { minX: minX - reach, minZ: minZ - reach, maxX: maxX + reach, maxZ: maxZ + reach };
+}
+
+// Complete change set between two alignment read snapshots. Compiled
+// alignments are reused by identity while their definition signature and
+// terrain are unchanged, so snapshot copies compare field by field. A member
+// id changes when its alignment or that alignment's profile owner changes.
+export function* roadAlignmentReadChangesSteps(previous, next, { now, isCurrent = () => true } = {}) {
+    if (!previous || !next) return createGroundChangeSet({ full: true, reason: 'alignment-basis' });
+    if (previous === next) return createGroundChangeSet();
+    const clock = alignmentPreparationClock({ now, isCurrent });
+    const ids = new Set(), keys = new Set(), boxes = [];
+    const members = new Set();
+    const byId = [new Map(), new Map()];
+    for (const [side, read] of [previous, next].entries()) for (const alignment of read.getAlignments()) {
+        for (const id of alignment.memberOsmIds || []) members.add(id);
+        byId[side].set(alignment.id, alignment);
+        if (clock.expired()) { yield { phase: 'alignment-read-changes' }; clock.restart(); }
+    }
+    // Spatial queries scan every compiled alignment, including authored ones
+    // without OSM members.
+    for (const id of new Set([...byId[0].keys(), ...byId[1].keys()])) {
+        const before = byId[0].get(id), after = byId[1].get(id);
+        if (shallowEqualRecords(before, after)) continue;
+        for (const alignment of [before, after]) {
+            const box = alignmentInfluenceBounds(alignment);
+            if (box) boxes.push(box);
+            for (const member of alignment?.memberOsmIds || []) ids.add(String(member));
+        }
+        if (clock.expired()) { yield { phase: 'alignment-read-changes' }; clock.restart(); }
+    }
+    for (const id of members) {
+        const before = previous.getAlignmentForOsmId(id), after = next.getAlignmentForOsmId(id);
+        const ownerBefore = previous.getProfileOwnerForOsmId(id), ownerAfter = next.getProfileOwnerForOsmId(id);
+        if (!shallowEqualRecords(before, after) || !shallowEqualRecords(ownerBefore, ownerAfter)) {
+            ids.add(String(id));
+            for (const alignment of [before, after, ownerBefore, ownerAfter]) {
+                const box = alignmentInfluenceBounds(alignment);
+                if (box) boxes.push(box);
+            }
+        }
+        if (clock.expired()) { yield { phase: 'alignment-read-changes' }; clock.restart(); }
+    }
+    const regionsBefore = previous.getReplacementTerrainCutoutRegions();
+    const regionsAfter = next.getReplacementTerrainCutoutRegions();
+    const count = Math.max(regionsBefore.length, regionsAfter.length);
+    for (let index = 0; index < count; index++) {
+        const a = regionsBefore[index], b = regionsAfter[index];
+        if (shallowEqualRecords(a, b)) continue;
+        keys.add(ROAD_ALIGNMENT_CUTOUTS_READ_KEY);
+        for (const region of [a, b]) {
+            if (!region) continue;
+            // Replacement regions are either terrain cut-outs or restored
+            // clear corridors; each carries the bounds of its own ring.
+            const bounds = region.cutoutBounds || region.clearBounds;
+            // Every changed key needs a region for receivers without evidence.
+            if (!bounds) return createGroundChangeSet({ full: true, reason: 'cutout-without-region' });
+            boxes.push({ ...bounds });
+        }
+        if (clock.expired()) { yield { phase: 'alignment-read-changes' }; clock.restart(); }
+    }
+    return createGroundChangeSet({ ids, keys, boxes });
 }

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { RoadFormationModel } from '../core/road-formation.js';
+import { RoadFormationModel, formationProfilesEquivalent } from '../core/road-formation.js';
 import { DEG_TO_RAD, EARTH_RADIUS_M } from '../core/math.js';
 import { createRoadFeatureIdentityIndex } from '../core/road-feature-identity.js';
 import { createRoadFeatureSourceIndex } from '../core/road-feature-sources.js';
@@ -197,6 +197,43 @@ test('a completed neighbour change advances affected geometry generations after 
     build(subject);
     assert.equal(subject.getSurfaceGeometryGeneration(2), 0);
     assert.ok(subject.getSurfaceGeometryChangesSince(changes.revision).osmIds.includes('2'));
+});
+
+test('a rechecked neighbour advances its generation only when its geometry actually changed', () => {
+    const arrive = gap => {
+        const subject = singleton(line(1), polygon(1));
+        build(subject);
+        const profile = subject.getSurfaceProfilesForOsmId(1)[0], generation = subject.getSurfaceGeometryGeneration(1);
+        const frozen = structuredClone(profile), before = subject.surfaceGeometryRevision;
+        subject.setCenterlineTile('near', [line(2, gap)]);
+        subject.setSurfaceTile('near', [polygon(2, gap)]);
+        let rechecked = false, steps = 0;
+        while (subject.hasPendingBuild()) {
+            rechecked ||= !!subject._pendingBuildPreparation?.profilesToRecheck?.some(entry => entry.osmId === profile.osmId);
+            subject.stepPendingBuildPreparation();
+            assert.ok(++steps < 10000);
+        }
+        const after = subject.getSurfaceProfilesForOsmId(1)[0];
+        return { rechecked, identical: JSON.stringify(after) === JSON.stringify(frozen),
+            advanced: subject.getSurfaceGeometryGeneration(1) > generation,
+            osmIds: subject.getSurfaceGeometryChangesSince(before).osmIds.sort() };
+    };
+    // 10 m apart: road 1 falls inside the new road's dependency bounds and is
+    // recomputed, but its collar is untouched. Its renderers must not rebuild.
+    assert.deepEqual(arrive(10), { rechecked: true, identical: true, advanced: false, osmIds: ['2'] });
+    // 8 m apart the collars meet, so road 1 really changes and must advance.
+    assert.deepEqual(arrive(8), { rechecked: true, identical: false, advanced: true, osmIds: ['1', '2'] });
+});
+
+test('profile equivalence compares content and treats an unknown object as a change', () => {
+    const profile = { osmId: 1, points: [{ x: 1, z: 2 }], flags: [false, true], index: new Map() };
+    const clone = { ...profile, points: profile.points.map(point => ({ ...point })), flags: [...profile.flags] };
+    assert.equal(formationProfilesEquivalent(profile, clone), true);
+    assert.equal(formationProfilesEquivalent(profile, { ...clone, flags: [false, false] }), false);
+    assert.equal(formationProfilesEquivalent(profile, { ...clone, points: [{ x: 1, z: 2.0001 }] }), false);
+    assert.equal(formationProfilesEquivalent(profile, { ...clone, points: [{ x: 1, z: 2, y: 0 }] }), false);
+    assert.equal(formationProfilesEquivalent(profile, { ...clone, index: new Map() }), false);
+    assert.equal(formationProfilesEquivalent(profile, { ...clone, extra: undefined }), false);
 });
 
 test('equivalent reordered MultiPolygons return matching per-ring profiles without rebuilding geometry', () => {
