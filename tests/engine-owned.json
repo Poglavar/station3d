@@ -30,6 +30,7 @@
     "__tests__/host-checkpoint-links.test.mjs",
     "__tests__/i18n-language-override.test.mjs",
     "__tests__/inspection-entry.test.mjs",
+    "__tests__/landmark-walk-surfaces.test.mjs",
     "__tests__/loading-curtain-policy.test.mjs",
     "__tests__/loading-render-policy.test.mjs",
     "__tests__/model-viewer-catalog.test.mjs",

@@ -63,7 +63,7 @@ import { createLayerStartupCoordinator } from '../core/layer-startup.js';
 import { evidencePlacementBaseSceneY } from '../core/terrain-placement.js';
 import { scene, camera, renderer } from '../scene/setup.js';
 import { recordLayerFrameMs } from '../scene/animate.js';
-import { getBuildingEntrancesNear, getBuildingFootprintsNear } from './buildings.js';
+import { getBuildingEntrancesNear, getBuildingFootprintsNear, getLandmarkSupportYNear } from './buildings.js';
 import { isPointInDecorWater } from './decor.js';
 import { animateLeashedDog, createLeashedDog, prepareDogMeshAssets, setDogHappyPose } from './dog-mesh.js';
 import {
@@ -118,6 +118,10 @@ const DOOR_CROSSING_HOLD_S = 1.15;
 const DOOR_EXIT_LEAD_S = 0.7;
 const DOOR_IDLE_REMOVE_S = 0.8;
 const ROUTE_FOOTPRINT_MARGIN_M = 14;
+// A modelled landmark's floors (a stadium forecourt and its ramps, up to ~3 m
+// over the street) are ground to a pedestrian as they are to the player: the
+// highest within this reach of the street, so nobody walks half-buried.
+const LANDMARK_FLOOR_REACH_M = 3.5;
 const ROUTE_RECHECK_MIN_S = 0.35;
 const ROUTE_RECHECK_JITTER_S = 0.25;
 const BENCH_CHANCE_PER_WAYPOINT = 0.16;
@@ -374,12 +378,16 @@ function fallbackWaypoint(walker) {
     };
 }
 
-function footprintsForLeg(start, end) {
+// startFeetY is the walker's feet height: modelled landmarks answer with their
+// faces cut through the body above it (core/landmark-walk-surfaces.js), the
+// same band the player walks with. Without it they offer no walls.
+function footprintsForLeg(start, end, startFeetY = null) {
     const distance = Math.hypot(end.x - start.x, end.z - start.z);
     return getBuildingFootprintsNear(
         (start.x + end.x) * 0.5,
         (start.z + end.z) * 0.5,
         distance * 0.5 + ROUTE_FOOTPRINT_MARGIN_M,
+        Number.isFinite(startFeetY) ? { minY: startFeetY - 1, maxY: startFeetY + 3 } : null,
     );
 }
 
@@ -405,7 +413,7 @@ function setWalkerDestination(walker, destination, destinationKind) {
         walker.routeCheckSeconds = ROUTE_RECHECK_MIN_S + Math.random() * ROUTE_RECHECK_JITTER_S;
         return true;
     }
-    const footprints = footprintsForLeg(start, destination);
+    const footprints = footprintsForLeg(start, destination, walkerSupportY(walker, walker.x, walker.z));
     const route = planFootprintAwareRoute(
         start,
         destination,
@@ -675,6 +683,8 @@ function feetY(x, z) {
         const renderedY = typeof renderedGroundYAt === 'function'
             ? finiteOrNull(renderedGroundYAt(x, z, placementY))
             : null;
+        const landmarkY = getLandmarkSupportYNear(x, z, (renderedY ?? placementY) + LANDMARK_FLOOR_REACH_M);
+        if (landmarkY !== null && landmarkY > (renderedY ?? placementY)) return landmarkY + FEET_OFFSET_M;
         return (renderedY ?? placementY) + FEET_OFFSET_M;
     });
 }
@@ -1115,7 +1125,7 @@ function updateWalker(walker, dt) {
     if (!walker.roofSurfaceId && walker.routeCheckSeconds <= 0 && walker.destination) {
         walker.routeCheckSeconds = ROUTE_RECHECK_MIN_S + Math.random() * ROUTE_RECHECK_JITTER_S;
         if (pointInsideRenderedBuilding(walker.x, walker.z)) return false;
-        const footprints = footprintsForLeg(walker, walker.destination);
+        const footprints = footprintsForLeg(walker, walker.destination, currentY);
         const remainingRoute = [walker.target, ...(walker.route || [])];
         if (routeCrossesBuildingFootprints(walker, remainingRoute, footprints)) {
             if (!setWalkerDestination(walker, walker.destination, walker.destinationKind)) return false;

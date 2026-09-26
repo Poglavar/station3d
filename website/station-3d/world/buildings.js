@@ -201,6 +201,12 @@ import { recordLayerFrameMs } from '../scene/animate.js';
 import { createDalmatianStoneRaster } from '../core/dalmatian-stone-texture.js';
 import { createFoundationWeatheringRaster } from '../core/foundation-weathering-texture.js';
 import { footprintMatchesRenderedBounds } from '../core/pedestrian-routing.js';
+import {
+    buildLandmarkWalkIndex,
+    farOutlineIsWalkerWall,
+    landmarkSupportY,
+    landmarkWallFootprint,
+} from '../core/landmark-walk-surfaces.js';
 import { planRegionalTileRebuild, takeNextTileRebuild } from '../core/regional-tile-rebuild.js';
 import { createBuildingGroundDependencyCache } from '../core/building-ground-dependencies.js';
 import { createOwnedResourceCache, createMeshResourceBindings } from '../core/owned-resource-cache.js';
@@ -3470,11 +3476,19 @@ export function getBuildingEntrancesNear(localX, localZ, radiusM = 60) {
 // Pedestrian routing uses the footprint belonging to the same GDI survey as
 // the rendered mesh. This avoids crossing a cadastral outline that may not
 // describe the building the player actually sees.
-export function getBuildingFootprintsNear(localX, localZ, radiusM = 60) {
+// verticalRange `{ minY, maxY }` is the caller's body band in scene Y. Modelled
+// landmarks answer only with it: their walls are their faces cut at that height
+// (core/landmark-walk-surfaces.js), so a caller without a height gets none.
+export function getBuildingFootprintsNear(localX, localZ, radiusM = 60, verticalRange = null) {
     const footprints = [];
     const radius = Math.max(0, Number(radiusM) || 0);
     const radiusSq = radius * radius;
     const appendNearby = (footprint) => {
+        if (footprint.landmarkWalk) {
+            const cut = landmarkWallFootprint(footprint, localX, localZ, radius, verticalRange);
+            if (cut) footprints.push(cut);
+            return;
+        }
         const dx = localX < footprint.minX ? footprint.minX - localX
             : localX > footprint.maxX ? localX - footprint.maxX
             : 0;
@@ -3537,6 +3551,10 @@ export function registerAuthoritativeBuildingFootprints(features, tileKey, aLat,
     for (const feature of features || []) {
         const objectId = feature && feature.properties && feature.properties.object_id;
         if (objectId == null) continue;
+        // A landmark part's render outline is the hull of one material bucket
+        // (every seat, every roof plate), not a ground outline; its walls come
+        // from the near model's faces instead.
+        if (!farOutlineIsWalkerWall(feature.properties)) continue;
         const footprint = localizeFootprintGeometry(objectId, feature.geometry, tileKey, aLat, aLon);
         if (!footprint) continue;
         // The render payload knows the prism's ground and height, so its
@@ -8458,13 +8476,17 @@ function statedMaterialFamily(stated) {
             emissiveIntensity: statedNightIntensity(stated.kind, isNightMode),
         } : {}),
     });
+    // Survives batching and passage variants (Material.clone copies userData):
+    // the walker's roof ray must not lift anyone onto a landmark, whose floors
+    // support through getLandmarkSupportYNear instead.
+    material.userData.landmarkSurface = true;
     registerShared(material);
     family = { material, kind: stated.kind, lightsUp: !!stated.emissive };
     statedMaterialFamilies.set(key, family);
     return { material, color };
 }
 
-function addBuildingFeatureStatedMaterial(feature, aLat, aLon, tileKey) {
+function addBuildingFeatureStatedMaterial(feature, aLat, aLon, tileKey, statedKey = null) {
     const geometry = feature?.geometry;
     if (!geometry || geometry.type !== 'MultiPolygon' || !buildingsGroup) return 0;
     const stated = feature.properties.material;
@@ -8510,7 +8532,45 @@ function addBuildingFeatureStatedMaterial(feature, aLat, aLon, tileKey) {
         ? terrainReference.absoluteToSceneY(zMin) : 0;
     setPassageAwareMaterial(mesh, material);
     buildingsGroup.add(mesh);
+    registerLandmarkWalkSurfaces(statedKey, positions, mesh.position.y, tileKey);
     return 1;
+}
+
+// The part's own faces, lifted like the mesh, become its walker walls and
+// floors. Keyed like the part in the tile's building records, so tile release
+// drops them with it.
+function registerLandmarkWalkSurfaces(statedKey, positions, liftY, tileKey) {
+    if (statedKey == null) return;
+    const lifted = Float32Array.from(positions);
+    for (let i = 1; i < lifted.length; i += 3) lifted[i] += liftY;
+    const index = buildLandmarkWalkIndex(lifted);
+    if (index.walls.count + index.floors.count === 0) return;
+    const footprint = {
+        objectId: statedKey,
+        tileKey,
+        source: 'landmark-faces',
+        closed: false,
+        minX: index.minX,
+        maxX: index.maxX,
+        minZ: index.minZ,
+        maxZ: index.maxZ,
+        segments: [],
+        landmarkWalk: index,
+    };
+    buildingFootprints.set(statedKey, footprint);
+    buildingFootprintIndex.set(statedKey, footprint);
+}
+
+// Highest modelled-landmark floor under a point, no higher than maxY (the
+// walker's step-up), or null. Landmarks are not roofs to be lifted onto.
+export function getLandmarkSupportYNear(localX, localZ, maxY) {
+    let best = null;
+    for (const footprint of buildingFootprintIndex.candidatesInBox(localX, localZ, localX, localZ)) {
+        if (!footprint.landmarkWalk) continue;
+        const y = landmarkSupportY(footprint.landmarkWalk, localX, localZ, maxY);
+        if (y !== null && (best === null || y > best)) best = y;
+    }
+    return best;
 }
 
 function addBuildingFeature(feature, tileKey, buildContext = null) {
@@ -8533,7 +8593,7 @@ function addBuildingFeature(feature, tileKey, buildContext = null) {
             : `${feature.properties.source || 'stated'}:${statedId}`;
         if (statedKey != null && loadedBuildingIds.has(statedKey)) return 0;
         const before = buildingsGroup ? buildingsGroup.children.length : 0;
-        const added = addBuildingFeatureStatedMaterial(feature, anchorLat, anchorLon, tileKey);
+        const added = addBuildingFeatureStatedMaterial(feature, anchorLat, anchorLon, tileKey, statedKey);
         if (added > 0) {
             if (statedKey != null) {
                 loadedBuildingIds.add(statedKey);

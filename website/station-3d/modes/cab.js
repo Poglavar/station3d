@@ -265,6 +265,7 @@ import {
 import {
     buildingsLayer,
     getBuildingFootprintsNear,
+    getLandmarkSupportYNear,
     getBuildingsGroup,
     isPointInsideBuildingPassageVolume,
 } from '../world/buildings.js';
@@ -3563,6 +3564,12 @@ export function getWalkGroundY(localX, localZ, walkerY = 999) {
             if (h.point.y <= rayTopY + 0.01 && h.point.y > bestY) bestY = h.point.y;
         }
     }
+    // Modelled landmarks have floors at every level (a stadium's forecourt,
+    // concourses and tiers): like the named floors above, the highest one within
+    // a step of the walker carries them. The roof ray below skips landmarks, so
+    // a roof overhead is never taken for the ground under it.
+    const landmarkFloorY = getLandmarkSupportYNear(localX, localZ, rayTopY);
+    if (landmarkFloorY !== null && landmarkFloorY > bestY) bestY = landmarkFloorY;
     // Photo mode: the fixed track deck / trench floor is firm ground. Inside a
     // cut the carve rejects the Google terrain as ghost (isPhotorealGhostGround),
     // the rails trackbed is not a raycast target, and the dressing floor-slab
@@ -3728,13 +3735,12 @@ function walkBuildingFootprintsNear(cabState, x, z, walkerY) {
     // An authored room owns its floor and walls; the city's facades around it
     // must not seal the player inside the hideout.
     if (resolveCampaignRoom(cabState.campaignScene?.authored?.environment)) return [];
+    // The walker's body band; modelled landmarks cut their faces at its middle.
+    const band = { minY: walkerY - 1, maxY: walkerY + 3 };
     if (cabState.campaignWorldPack) {
-        return campaignWorldPackBuildingFootprintsNear(x, z, WALK_BUILDING_WALL_QUERY_RADIUS_M, {
-            minY: walkerY - 1,
-            maxY: walkerY + 3,
-        });
+        return campaignWorldPackBuildingFootprintsNear(x, z, WALK_BUILDING_WALL_QUERY_RADIUS_M, band);
     }
-    return getBuildingFootprintsNear(x, z, WALK_BUILDING_WALL_QUERY_RADIUS_M);
+    return getBuildingFootprintsNear(x, z, WALK_BUILDING_WALL_QUERY_RADIUS_M, band);
 }
 
 // Slides a walk step along whatever it runs into, in lat/lon terms: first the
@@ -3810,6 +3816,9 @@ function getBuildingRoofY(localX, localZ) {
             const hitMaterial = hit.object?.material;
             if (!Array.isArray(hitMaterial)
                 && hitMaterial?.userData?.walkSupport === false) continue;
+            // Landmark floors support through getLandmarkSupportYNear, capped at a
+            // step; the highest landmark surface is usually a roof far overhead.
+            if (!Array.isArray(hitMaterial) && hitMaterial?.userData?.landmarkSurface) continue;
             // Raycaster does not honour visibility, so a HIDDEN proposal
             // building (display state ghost/off) would still lift the walker
             // onto an invisible roof. Effective visibility = the whole chain:
