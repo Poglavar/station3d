@@ -313,13 +313,21 @@ work, confirmed failures, experiments and rejected directions. Update them in
 place rather than creating another dated audit or ground-delivery tracker.
 
 ```sh
+nvm install
+nvm use
 npm ci
-npm test
-npm run build:station3d
+npm run ci
 npm run assets:audit:release
-npm run test:package
+git config core.hooksPath .githooks
 ```
 
+Development and CI use Node.js `22.23.2` (pinned in `.nvmrc`) and npm `10.9.8`
+(pinned in `packageManager`). `npm run ci` checks both versions before starting
+validation. Run `nvm use` in each new shell.
+The pre-push hook runs `npm run ci`; enable it once per clone with the command
+above. GitHub Actions runs `npm ci && npm run ci` on Ubuntu 24.04.
+
+- `npm run ci` runs the tests, production build, asset audit and package check.
 - `npm test` runs the engine-owned Node test manifest.
 - `npm run build:station3d` generates the ignored browser distribution.
 - `npm run assets:audit:release` rejects unlicensed media and regional/authored

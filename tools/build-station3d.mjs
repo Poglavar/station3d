@@ -124,7 +124,7 @@ writeFileSync(resolve(outdir, 'build-manifest.json'), `${JSON.stringify({
 
 const jsOutputs = outputs.filter(output => output.file.endsWith('.js'));
 const totalBytes = jsOutputs.reduce((sum, output) => sum + output.bytes, 0);
-console.log(`Station3D bundle: ${jsOutputs.length} JS files, ${totalBytes} bytes`);
-console.log(`Stable entry: ${resolve(outdir, 'index.js')}`);
-console.log(`Runtime assets: ${runtimeAssets.length} files from ${copiedAssetRoots.length} audited roots`);
-console.log(`Review-required bundle inputs: ${reviewRequiredInputs.length}`);
+console.error(`Station3D bundle: ${jsOutputs.length} JS files, ${totalBytes} bytes`);
+console.error(`Stable entry: ${resolve(outdir, 'index.js')}`);
+console.error(`Runtime assets: ${runtimeAssets.length} files from ${copiedAssetRoots.length} audited roots`);
+console.error(`Review-required bundle inputs: ${reviewRequiredInputs.length}`);

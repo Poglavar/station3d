@@ -167,5 +167,5 @@ writeFileSync(resolve(outdir, 'build-manifest.json'), `${JSON.stringify({
     runtimeAssets: packageBuild.runtimeAssets || [],
 }, null, 2)}\n`);
 
-console.log(`[station3d-build] ${outputs.length} JS outputs with ${overlays.size} explicit content overlays`);
-console.log(`[station3d-build] wrote ${outdir}`);
+console.error(`[station3d-build] ${outputs.length} JS outputs with ${overlays.size} explicit content overlays`);
+console.error(`[station3d-build] wrote ${outdir}`);

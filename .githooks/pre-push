@@ -1,0 +1,3 @@
+#!/bin/sh
+# Block pushes unless the same validation used by GitHub Actions passes.
+exec npm run ci </dev/null

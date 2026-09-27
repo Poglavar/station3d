@@ -4,6 +4,7 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'no
 import { tmpdir } from 'node:os';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { parseNpmPackReport } from './lib/npm-pack-report.mjs';
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const packageJson = JSON.parse(readFileSync(resolve(repoRoot, 'package.json'), 'utf8'));
@@ -18,9 +19,10 @@ try {
     ], {
         cwd: repoRoot,
         encoding: 'utf8',
-        env: { ...process.env, npm_config_cache: npmCache },
+        stdio: ['ignore', 'pipe', 'inherit'],
+        env: { ...process.env, npm_config_cache: npmCache, npm_config_ignore_scripts: 'true' },
     });
-    const report = JSON.parse(output)[0];
+    const report = parseNpmPackReport(output);
     const files = report.files.map(entry => entry.path);
     const required = [
         'README.md',
@@ -113,8 +115,8 @@ try {
     if (/BebasNeue|vagabond-croatia/u.test(publicCss)) {
         throw new Error('Public stylesheet still references downstream campaign assets');
     }
-    console.log(`[package] ${report.filename}: ${files.length} files, ${report.size} packed bytes, ${report.unpackedSize} unpacked bytes`);
-    console.log('[package] tarball install and station3d-vendor consumer fixture passed');
+    console.error(`[package] ${report.filename}: ${files.length} files, ${report.size} packed bytes, ${report.unpackedSize} unpacked bytes`);
+    console.error('[package] tarball install and station3d-vendor consumer fixture passed');
 } finally {
     rmSync(fixtureRoot, { recursive: true, force: true });
     rmSync(npmCache, { recursive: true, force: true });

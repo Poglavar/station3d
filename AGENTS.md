@@ -63,15 +63,14 @@ or a second implementation of a world rule in product code.
 - Keep meaningful logic in plain modules that can run under Node; keep DOM and
   WebGL wiring thin.
 - Add deterministic tests for changed logic and contracts.
+- Tool scripts reserve stdout for data; write diagnostic and progress logs to stderr.
 - Preserve generic behavior across static, walk, road and rail sessions unless
   a capability is explicitly mode-specific.
 - Before handing off a change, run:
 
 ```sh
-npm test
-npm run build:station3d
+npm run ci
 npm run assets:audit:release
-npm run test:package
 git diff --check
 ```
 

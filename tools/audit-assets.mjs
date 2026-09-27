@@ -61,12 +61,12 @@ if (errors.length) {
     for (const error of errors) console.error(`[asset-audit] ERROR ${error}`);
     process.exitCode = 1;
 } else {
-    console.log(`[asset-audit] candidate manifest valid: ${manifest.groups.length} groups, ${candidateFiles} files`);
+    console.error(`[asset-audit] candidate manifest valid: ${manifest.groups.length} groups, ${candidateFiles} files`);
 }
 if (blockers.length) {
-    console.log(`[asset-audit] public release blocked by ${blockers.length} item(s):`);
-    for (const blocker of blockers) console.log(`  - ${blocker}`);
+    console.error(`[asset-audit] public release blocked by ${blockers.length} item(s):`);
+    for (const blocker of blockers) console.error(`  - ${blocker}`);
     if (releaseMode) process.exitCode = 1;
 } else {
-    console.log('[asset-audit] public release asset gate passed');
+    console.error('[asset-audit] public release asset gate passed');
 }

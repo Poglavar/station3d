@@ -56,5 +56,5 @@ const server = createServer((request, response) => {
     createReadStream(path).pipe(response);
 });
 server.listen(port, '127.0.0.1', () => {
-    console.log(`[demo] http://localhost:${port}/demo/`);
+    console.error(`[demo] http://localhost:${port}/demo/`);
 });

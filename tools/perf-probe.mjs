@@ -70,7 +70,7 @@ function readPaging() {
     return { pageins: null, swapins: null, swapouts: null };
 }
 
-const log = (...parts) => console.log(new Date().toISOString(), config.label, ...parts);
+const log = (...parts) => console.error(new Date().toISOString(), config.label, ...parts);
 const result = { schemaVersion: 1, config, startedAt: new Date().toISOString(),
     host: { platform: os.platform(), arch: os.arch(), cpus: os.cpus().length, cpu: os.cpus()[0]?.model,
         memoryBytes: os.totalmem() }, windows: {}, errors: [], validity: { valid: false, reasons: [] } };

@@ -12,8 +12,10 @@
     "url": "https://github.com/Poglavar/station3d/issues"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=22",
+    "npm": ">=10.9.8"
   },
+  "packageManager": "npm@10.9.8",
   "exports": {
     ".": "./website/station-3d/dist/index.js",
     "./debug": "./website/station-3d/dist/debug.js",
@@ -55,6 +57,8 @@
     "test": "tests"
   },
   "scripts": {
+    "preci": "node tools/verify-ci-toolchain.mjs",
+    "ci": "npm test && npm run build:station3d && npm run assets:audit && npm run test:package",
     "build:station3d": "node tools/build-station3d.mjs",
     "test": "node tools/run-engine-tests.mjs",
     "test:unit": "node tools/run-engine-tests.mjs",

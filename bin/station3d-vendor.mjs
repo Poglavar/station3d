@@ -27,4 +27,4 @@ if (existsSync(target) && readdirSync(target).length) {
     rmSync(target, { recursive: true, force: true });
 }
 cpSync(source, target, { recursive: true });
-console.log(`[station3d-vendor] copied ${source} -> ${target}`);
+console.error(`[station3d-vendor] copied ${source} -> ${target}`);
