@@ -20,14 +20,14 @@ a before/after speedup, or mobile readiness. The small relative CPU probe often
 reported 100% clean coverage while native paging was active. That is insufficient
 evidence of an uncontended machine.
 
-## Ground-paint and curb-query candidate, 28 September
+## Ground-paint and curb-query release, 28 September
 
 The `paint-perf` worktree implements CPU read slices, unchanged owner/plan reuse,
 disjoint dirty blocks and a bounded shared triangulation cache. The source
-revision and atomic publication contracts are unchanged. The branch now also
-prunes distant owners from large curb-union height queries. It is based on
-`fc1e89b` (the current main package/CI fixes); it is not released or accepted as
-a measured frame-time improvement.
+revision and atomic publication contracts are unchanged. The release also
+prunes distant owners from large curb-union height queries. It is included in
+Station3D `v0.1.0-alpha.6`, but is not accepted as a measured frame-time
+improvement.
 See [next-steps.md](next-steps.md) for the implementation and remaining gate.
 
 The compact [receipt](../../performance/station3d/paint-2026-09-28.summary.json)

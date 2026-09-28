@@ -447,7 +447,7 @@ Still open:
   terrain revisions. This explains the limited measured gains. It does not
   establish that every loaded curb always rebuilds or an 11% CPU ceiling:
   owner counts alone do not measure the cost of existing versus new roads.
-- Ground paint rework (28 September, branch `paint-perf`, not released):
+- Ground paint rework (28 September, included in Station3D `v0.1.0-alpha.6`):
   - The original 18 `dt11` publications averaged 1.254 s paint within 6.009 s
     generation CPU, 23.6 coarse blocks repainted and 4,438 polygon visits. This
     is excess repeated work, but 24 of 64 blocks does not prove a near-full
@@ -510,7 +510,7 @@ Still open:
   - Next: supply a complete frozen provider/request envelope and a quiet host
     before the acceptance comparison. Fail on missing sources before interpreting
     timing. Keep the cross-mode support, appearance and interaction gates open.
-- Curb owner queries (28 September, same unreleased `paint-perf` branch):
+- Curb owner queries (28 September, included in Station3D `v0.1.0-alpha.6`):
   - Code reading identified a separate avoidable cost: every unique curb vertex
     searched every owner in its union, and distant owners fell back to scanning
     their whole centreline. The archived unions average 29.6 owner IDs per
@@ -529,8 +529,8 @@ Still open:
     another test prevents duplicate work in the fallback.
   - Final branch includes main's package fixes through `fc1e89b`. Pinned-toolchain
     CI, 471 tests, release asset audit and packed install/vendor checks pass.
-    The candidate is committed but not released. Broad curb/terrain preparation
-    and genuine
+    The implementation is included in `v0.1.0-alpha.6`, but the performance
+    gate remains open. Broad curb/terrain preparation and genuine
     new-road compilation remain potential improvements; no engine limit has
     been demonstrated. Keep this candidate fixed for the release comparison
     before adding another optimization.
