@@ -497,9 +497,19 @@ Still open:
     publications without JavaScript errors but lacked seven building-mesh
     responses. These are preserved failures/limited checks, not acceptance.
     See `performance/station3d/paint-curb-2026-09-28.summary.json`.
-  - Next: fix the comparison's initial anchor and complete the same-source
-    moving/stationary comparison on a quiet host before accepting performance.
-    Keep the cross-mode support, appearance and interaction gates open.
+  - Committed as `a8be0eb`, with main's foreign performance notes retained in
+    `18dc78b` and integrated into candidate `85121b9`. Deterministic paint and
+    curb replays were repeated against the committed tree and current main's
+    runtime (`fc1e89b`), reproducing the work counts and exact query results.
+  - The comparison harness now pins the first engine pose to the archived
+    origin; native tram movement continues afterward. A sealed 1,659-response
+    set still misses movement-dependent building and road tiles: a warmup route is not
+    a complete request envelope. Native paging also continues. These diagnostic
+    attempts cannot establish a speedup, appearance parity or post-stop liveness.
+    Receipt: `performance/station3d/committed-2026-09-28.summary.json`.
+  - Next: supply a complete frozen provider/request envelope and a quiet host
+    before the acceptance comparison. Fail on missing sources before interpreting
+    timing. Keep the cross-mode support, appearance and interaction gates open.
 - Curb owner queries (28 September, same unreleased `paint-perf` branch):
   - Code reading identified a separate avoidable cost: every unique curb vertex
     searched every owner in its union, and distant owners fell back to scanning
@@ -519,7 +529,8 @@ Still open:
     another test prevents duplicate work in the fallback.
   - Final branch includes main's package fixes through `fc1e89b`. Pinned-toolchain
     CI, 471 tests, release asset audit and packed install/vendor checks pass.
-    The candidate is committed but not released. Broad curb/terrain preparation and genuine
+    The candidate is committed but not released. Broad curb/terrain preparation
+    and genuine
     new-road compilation remain potential improvements; no engine limit has
     been demonstrated. Keep this candidate fixed for the release comparison
     before adding another optimization.

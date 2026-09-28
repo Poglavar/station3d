@@ -97,6 +97,36 @@ closed and further timings stopped. Quiet-host moving/stationary comparisons,
 support and interaction parity, the remaining road/rail/water/flight modes and
 memory-limited hardware remain unverified. No frame-rate improvement is claimed.
 
+The candidate is now committed as `85121b9` (implementation `a8be0eb` plus
+main's separately committed performance notes `18dc78b`). A fresh replay against
+the committed candidate and main's `fc1e89b` runtime reproduces the deterministic
+paint counts and all 28,117 exact curb-query results. The initial engine origin
+is now fixed by the measurement harness while subsequent tram motion remains
+native. Its native/fixed pose correction and route identity are retained.
+
+The subsequent sealed replay still fails acceptance: movement admits building and road
+tiles outside those requested during warmup, and the host continues paging.
+The final pair observes a settled stationary minute, two minutes of movement,
+and post-stop work, but is diagnostic only. Another active 3D browser was closed
+with user approval during the candidate stationary phase, so the host conditions
+also differ between builds. A frozen warmup recording alone is
+not a complete source envelope. No source response was added during the final
+pair; missing requests and the resulting pending work remain visible in the
+[committed measurement receipt](../../performance/station3d/committed-2026-09-28.summary.json).
+It retains every failed preflight, source/build fingerprints, frame extremes,
+publication phases, native swap counters and screenshots. Quiet-host ABBA and
+cross-mode appearance/support/interaction acceptance remain open.
+
+The moving p95 frame interval is 25.1 ms on baseline and 25.6 ms on the
+candidate; both publish four generations during that window. There are zero
+JavaScript observer errors, but 92/131 missing-source request attempts across
+the runs (33/61 unique URLs), and both remain pending after stopping. Combined
+swap-in/out traffic during movement averages approximately 29.1/25.7 MiB/s.
+These figures do not establish an FPS gain, regression or recovery failure in
+a complete world. Both screenshots show road/rail/curb coverage and a delayed-data
+toast. The observation browsers were closed, including the other session with
+explicit user approval; the ordinary candidate preview remains available.
+
 ## What was measured
 
 - Headed Chrome 153, Apple M1 Pro/Metal WebGL2, 8 logical CPUs, 16 GB RAM.

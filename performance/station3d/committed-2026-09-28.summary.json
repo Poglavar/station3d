@@ -1,0 +1,984 @@
+{
+  "schema": "station3d-committed-performance-receipt-v1",
+  "date": "2026-09-28",
+  "disposition": "committed-work-reduction-verified-browser-acceptance-failed",
+  "branch": "paint-perf",
+  "candidateCommit": "85121b9e36e9d4b85f3a002891fbca3b3d6b7871",
+  "implementationCommit": "a8be0eb5333aafd12d97f9463f3f93e61e46f107",
+  "mainNotesCommit": "18dc78bf29e6f06ecd72dd8d6d452271f6e86a46",
+  "runtimeBaselineCommit": "fc1e89b8b5e2af7a4105f154bebeb87fdf511475",
+  "lastReleaseTag": "v0.1.0-alpha.5",
+  "buildIdentities": [
+    {
+      "label": "baseline",
+      "root": "/private/tmp/station3d-measure-base",
+      "commit": "fc1e89b8b5e2af7a4105f154bebeb87fdf511475",
+      "sha256": "72e8b51bca14af22551e43619683d91c0c3ea81bf9904b2f768ee76e8ee6c936",
+      "fileCount": 123
+    },
+    {
+      "label": "candidate",
+      "root": "/private/tmp/station3d-paint-perf",
+      "commit": "85121b9e36e9d4b85f3a002891fbca3b3d6b7871",
+      "sha256": "0c2100323c54bf5062d3e2100fc1e9389e5d8d7bdc644af92394d5b07031870d",
+      "fileCount": 123
+    }
+  ],
+  "validation": {
+    "priorCIReceipt": "paint-curb-2026-09-28.summary.json",
+    "engineTestsPassed": 471,
+    "buildAssetsPackedInstallVendor": "passed-before-commit-same-runtime-source",
+    "committedDeterministicReplays": "passed",
+    "frameTimeAcceptance": false,
+    "crossModeAppearanceSupportInteraction": "open",
+    "published": false
+  },
+  "curbReplay": {
+    "status": "complete",
+    "exitCode": 0,
+    "queryCount": 28117,
+    "exactMismatches": 0,
+    "baselineNulls": 0,
+    "candidateNulls": 0,
+    "absentReferencedOwnerIds": 70,
+    "segmentProjections": {
+      "baseline": 4382434,
+      "candidate": 3557589
+    },
+    "ownerSearches": {
+      "baseline": 833145,
+      "candidate": 556890
+    },
+    "scope": "Recorded centrelines and curb ring positions; deterministic terrain sampler; not full production draping."
+  },
+  "paintReplay": {
+    "correctness": {
+      "result": "semantic samples, candidate-subset triangle provenance, and copied/repainted probe coverage matched",
+      "semanticSamples": 484,
+      "paintedSamples": 240
+    },
+    "unchangedVertexCopies": {
+      "baseline": 388,
+      "candidate": 0
+    },
+    "separatedEditsRepaintPixels": {
+      "baseline": 4992,
+      "candidate": 1920
+    },
+    "separatedEditsTriangulations": {
+      "baseline": 4,
+      "candidate": 1
+    },
+    "scope": "Four translated copies of existing fixture; not world FPS."
+  },
+  "browserProtocol": {
+    "sealedResponses": 1659,
+    "sealedResponseEntriesHash": "cd020eb3a196c15a3573c0ded3f52d7f68148bbc6d9f8ab97e52acd9442c8ca0",
+    "initialAnchor": "First engine pose is pinned to archived warmup anchor; subsequent movement uses native tram controller. Native/fixed poses and correction distances retained.",
+    "phases": [
+      "60 seconds after settled stationary state",
+      "120 seconds native route movement",
+      "pause and bounded recovery observation"
+    ],
+    "limitations": [
+      "Host load and native swap activity invalidate clean timing attribution.",
+      "With user approval, zagreb-radnicka-ride was closed during the candidate stationary phase; baseline and candidate contention therefore differ. Timestamp and native counters are retained.",
+      "Frozen capture is not a complete request envelope: movement asks for additional building and road tiles. No responses added during final pair.",
+      "Two-minute diagnostic pair, not three-minute ABBA or cross-mode acceptance.",
+      "Earlier source and harness failures preserved; no incomplete scene treated as a performance win."
+    ]
+  },
+  "browserCaptures": [
+    {
+      "name": "tram-base-committed-final",
+      "disposition": "diagnostic-only-rejected-for-acceptance",
+      "phases": [
+        {
+          "name": "stationary",
+          "durationMs": 60019.0,
+          "requestedDurationMs": 60000,
+          "done": true,
+          "wallStartedAt": 1790556560738,
+          "wallEndedAtExpected": 1790556620757.0,
+          "frame": {
+            "count": 4326,
+            "durationMs": 60000,
+            "p50Ms": 16.4,
+            "p95Ms": 17.6,
+            "p99Ms": 33.575,
+            "maxMs": 141.7,
+            "over50msCount": 8
+          },
+          "longTasks": {
+            "count": 8,
+            "maxMs": 135
+          },
+          "publications": {
+            "count": 0,
+            "cpuMs": {
+              "count": 0,
+              "min": null,
+              "max": null,
+              "mean": null,
+              "median": null
+            },
+            "paintCpuMsPerPublication": []
+          },
+          "initial": {
+            "pose": {
+              "lat": 45.81286599914352,
+              "lon": 15.977282005995365,
+              "headingDeg": 128.2561359883955
+            },
+            "drain": "drained"
+          },
+          "final": {
+            "pose": {
+              "lat": 45.81286599914352,
+              "lon": 15.977282005995365,
+              "headingDeg": 128.2561359883955
+            },
+            "drain": "drained"
+          },
+          "host": {
+            "available": true,
+            "phaseWindowEpochMs": [
+              1790556560738,
+              1790556620757.0
+            ],
+            "sampleCount": 12,
+            "oneMinuteLoadMinMaxMean": {
+              "min": 7.7880859375,
+              "max": 13.2587890625,
+              "mean": 10.329549153645834
+            },
+            "swapPageDelta": {
+              "swapinsPages": 10435,
+              "swapoutsPages": 296,
+              "pageSizeBytes": 16384,
+              "samples": 12,
+              "sampleElapsedSeconds": 55.012,
+              "swapinsBytes": 170967040,
+              "swapoutsBytes": 4849664,
+              "swapinsMiBPerSecond": 2.963842,
+              "swapoutsMiBPerSecond": 0.084073
+            },
+            "pagingEvidenceAvailable": true
+          },
+          "requests": {
+            "available": true,
+            "phaseWindowEpochMs": [
+              1790556560738,
+              1790556620757.0
+            ],
+            "requestCount": 0,
+            "missCount": 0,
+            "missingEndpointCounts": {},
+            "httpStatusCounts": {},
+            "uniqueEndpointCount": 0,
+            "uniqueEndpoints": [],
+            "endpointCounts": {}
+          }
+        },
+        {
+          "name": "movement",
+          "durationMs": 120028.6,
+          "requestedDurationMs": 120000,
+          "done": true,
+          "wallStartedAt": 1790556621735,
+          "wallEndedAtExpected": 1790556741763.6,
+          "frame": {
+            "count": 7273,
+            "durationMs": 120000,
+            "p50Ms": 16.6,
+            "p95Ms": 25.1,
+            "p99Ms": 41.728,
+            "maxMs": 2500,
+            "over50msCount": 40
+          },
+          "longTasks": {
+            "count": 24,
+            "maxMs": 2491
+          },
+          "publications": {
+            "count": 4,
+            "cpuMs": {
+              "count": 4,
+              "min": 256,
+              "max": 9029.8,
+              "mean": 3881.425,
+              "median": 3119.95
+            },
+            "paintCpuMsPerPublication": [
+              {
+                "generation": 7,
+                "cpuMs": 0
+              },
+              {
+                "generation": 8,
+                "cpuMs": 176.1
+              },
+              {
+                "generation": 9,
+                "cpuMs": 1150.6
+              },
+              {
+                "generation": 10,
+                "cpuMs": 3608.7
+              }
+            ]
+          },
+          "initial": {
+            "pose": {
+              "lat": 45.81286599914352,
+              "lon": 15.977282005995365,
+              "headingDeg": 128.2561359883955
+            },
+            "drain": "drained"
+          },
+          "final": {
+            "pose": {
+              "lat": 45.80527045167979,
+              "lon": 15.979569647988175,
+              "headingDeg": 85.48352459866106
+            },
+            "drain": "pending"
+          },
+          "host": {
+            "available": true,
+            "phaseWindowEpochMs": [
+              1790556621735,
+              1790556741763.6
+            ],
+            "sampleCount": 23,
+            "oneMinuteLoadMinMaxMean": {
+              "min": 5.1748046875,
+              "max": 7.05322265625,
+              "mean": 5.909391983695652
+            },
+            "swapPageDelta": {
+              "swapinsPages": 58755,
+              "swapoutsPages": 146336,
+              "pageSizeBytes": 16384,
+              "samples": 23,
+              "sampleElapsedSeconds": 110.086,
+              "swapinsBytes": 962641920,
+              "swapoutsBytes": 2397569024,
+              "swapinsMiBPerSecond": 8.339361,
+              "swapoutsMiBPerSecond": 20.770125
+            },
+            "pagingEvidenceAvailable": true
+          },
+          "requests": {
+            "available": true,
+            "phaseWindowEpochMs": [
+              1790556621735,
+              1790556741763.6
+            ],
+            "requestCount": 402,
+            "missCount": 55,
+            "missingEndpointCounts": {
+              "/api/buildings-mesh": 33,
+              "/api/roads": 3,
+              "/api/roads/cab": 2,
+              "/api/roads/vertical-alignments": 2,
+              "/api/roads/curbs": 15
+            },
+            "httpStatusCounts": {
+              "200": 347,
+              "unknown": 55
+            },
+            "uniqueEndpointCount": 10,
+            "uniqueEndpoints": [
+              "/api/buildings-mesh",
+              "/api/buildings-render",
+              "/api/roads",
+              "/api/roads/cab",
+              "/api/roads/curbs",
+              "/api/roads/labels",
+              "/api/roads/vertical-alignments",
+              "/api/street-facing/facades",
+              "/api/terrain/grid",
+              "/api/water"
+            ],
+            "endpointCounts": {
+              "/api/roads/labels": 17,
+              "/api/roads/cab": 34,
+              "/api/roads": 110,
+              "/api/roads/vertical-alignments": 34,
+              "/api/roads/curbs": 45,
+              "/api/buildings-mesh": 95,
+              "/api/street-facing/facades": 59,
+              "/api/terrain/grid": 4,
+              "/api/water": 1,
+              "/api/buildings-render": 3
+            }
+          }
+        }
+      ],
+      "errors": {
+        "count": 0,
+        "items": []
+      },
+      "viewport": {
+        "width": 1600,
+        "height": 1000,
+        "dpr": 1
+      },
+      "gpu": {
+        "vendor": "Google Inc. (Apple)",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M1 Pro, Unspecified Version)"
+      },
+      "readyMs": 16916,
+      "initialOrigin": {
+        "native": {
+          "lat": 45.81286599914352,
+          "lon": 15.977282005995365,
+          "headingDeg": 128.2561359883955,
+          "status": {
+            "paused": false,
+            "stationName": null,
+            "dwellRemainingS": null,
+            "nextStation": {
+              "name": "Zrinjevac",
+              "distanceMeters": 446.89891730030894
+            },
+            "totalPassengers": 0,
+            "capacity": 0,
+            "lastAlighted": 0,
+            "lastBoarded": 0
+          }
+        },
+        "fixed": {
+          "lat": 45.81286597184228,
+          "lon": 15.977282197104037,
+          "headingDeg": 128.28535352225333,
+          "status": {
+            "paused": false,
+            "stationName": null,
+            "dwellRemainingS": null,
+            "nextStation": {
+              "name": "Zrinjevac",
+              "distanceMeters": 446.89891730030894
+            },
+            "totalPassengers": 0,
+            "capacity": 0,
+            "lastAlighted": 0,
+            "lastBoarded": 0
+          }
+        }
+      },
+      "routeSha256": "68da25a804366f94faf951f075aa0759ecbbaf62a09c42271df0162209241948",
+      "originCorrectionM": 0.015136465588397896,
+      "sources": {
+        "requests": 726,
+        "missingRequests": 92,
+        "uniqueMissingRequests": 33
+      },
+      "finalDrain": "pending",
+      "postMovementPausedAt": 295561.89999997616,
+      "postMovementDrainedAt": null
+    },
+    {
+      "name": "tram-candidate-committed-final",
+      "disposition": "diagnostic-only-rejected-for-acceptance",
+      "phases": [
+        {
+          "name": "stationary",
+          "durationMs": 60100.3,
+          "requestedDurationMs": 60000,
+          "done": true,
+          "wallStartedAt": 1790556988530,
+          "wallEndedAtExpected": 1790557048630.3,
+          "frame": {
+            "count": 4264,
+            "durationMs": 60000,
+            "p50Ms": 16.5,
+            "p95Ms": 17.6,
+            "p99Ms": 33.437,
+            "maxMs": 58.4,
+            "over50msCount": 2
+          },
+          "longTasks": {
+            "count": 0,
+            "maxMs": null
+          },
+          "publications": {
+            "count": 0,
+            "cpuMs": {
+              "count": 0,
+              "min": null,
+              "max": null,
+              "mean": null,
+              "median": null
+            },
+            "paintCpuMsPerPublication": []
+          },
+          "initial": {
+            "pose": {
+              "lat": 45.81286599907548,
+              "lon": 15.977282006471636,
+              "headingDeg": 128.25620880090617
+            },
+            "drain": "drained"
+          },
+          "final": {
+            "pose": {
+              "lat": 45.81286599907548,
+              "lon": 15.977282006471636,
+              "headingDeg": 128.25620880090617
+            },
+            "drain": "drained"
+          },
+          "host": {
+            "available": true,
+            "phaseWindowEpochMs": [
+              1790556988530,
+              1790557048630.3
+            ],
+            "sampleCount": 12,
+            "oneMinuteLoadMinMaxMean": {
+              "min": 6.935546875,
+              "max": 8.58935546875,
+              "mean": 7.7410888671875
+            },
+            "swapPageDelta": {
+              "swapinsPages": 11009,
+              "swapoutsPages": 0,
+              "pageSizeBytes": 16384,
+              "samples": 12,
+              "sampleElapsedSeconds": 55.018,
+              "swapinsBytes": 180371456,
+              "swapoutsBytes": 0,
+              "swapinsMiBPerSecond": 3.126534,
+              "swapoutsMiBPerSecond": 0.0
+            },
+            "pagingEvidenceAvailable": true
+          },
+          "requests": {
+            "available": true,
+            "phaseWindowEpochMs": [
+              1790556988530,
+              1790557048630.3
+            ],
+            "requestCount": 0,
+            "missCount": 0,
+            "missingEndpointCounts": {},
+            "httpStatusCounts": {},
+            "uniqueEndpointCount": 0,
+            "uniqueEndpoints": [],
+            "endpointCounts": {}
+          }
+        },
+        {
+          "name": "movement",
+          "durationMs": 120100.0,
+          "requestedDurationMs": 120000,
+          "done": true,
+          "wallStartedAt": 1790557049516,
+          "wallEndedAtExpected": 1790557169616.0,
+          "frame": {
+            "count": 7098,
+            "durationMs": 120000,
+            "p50Ms": 16.7,
+            "p95Ms": 25.6,
+            "p99Ms": 41.7,
+            "maxMs": 275,
+            "over50msCount": 42
+          },
+          "longTasks": {
+            "count": 27,
+            "maxMs": 272
+          },
+          "publications": {
+            "count": 4,
+            "cpuMs": {
+              "count": 4,
+              "min": 296.3,
+              "max": 6012.0,
+              "mean": 2906.05,
+              "median": 2657.95
+            },
+            "paintCpuMsPerPublication": [
+              {
+                "generation": 7,
+                "cpuMs": 0
+              },
+              {
+                "generation": 8,
+                "cpuMs": 83.5
+              },
+              {
+                "generation": 9,
+                "cpuMs": 324.0
+              },
+              {
+                "generation": 10,
+                "cpuMs": 615.4
+              }
+            ]
+          },
+          "initial": {
+            "pose": {
+              "lat": 45.81286599907548,
+              "lon": 15.977282006471636,
+              "headingDeg": 128.25620880090617
+            },
+            "drain": "drained"
+          },
+          "final": {
+            "pose": {
+              "lat": 45.80527145675884,
+              "lon": 15.97958789017284,
+              "headingDeg": 85.48410909404163
+            },
+            "drain": "pending"
+          },
+          "host": {
+            "available": true,
+            "phaseWindowEpochMs": [
+              1790557049516,
+              1790557169616.0
+            ],
+            "sampleCount": 24,
+            "oneMinuteLoadMinMaxMean": {
+              "min": 5.7626953125,
+              "max": 7.50146484375,
+              "mean": 6.732686360677083
+            },
+            "swapPageDelta": {
+              "swapinsPages": 97956,
+              "swapoutsPages": 91091,
+              "pageSizeBytes": 16384,
+              "samples": 24,
+              "sampleElapsedSeconds": 115.022,
+              "swapinsBytes": 1604911104,
+              "swapoutsBytes": 1492434944,
+              "swapinsMiBPerSecond": 13.306694,
+              "swapoutsMiBPerSecond": 12.374127
+            },
+            "pagingEvidenceAvailable": true
+          },
+          "requests": {
+            "available": true,
+            "phaseWindowEpochMs": [
+              1790557049516,
+              1790557169616.0
+            ],
+            "requestCount": 484,
+            "missCount": 121,
+            "missingEndpointCounts": {
+              "/api/buildings-mesh": 94,
+              "/api/roads/curbs": 6,
+              "/api/roads/cab": 9,
+              "/api/roads/vertical-alignments": 9,
+              "/api/roads": 3
+            },
+            "httpStatusCounts": {
+              "200": 363,
+              "unknown": 121
+            },
+            "uniqueEndpointCount": 10,
+            "uniqueEndpoints": [
+              "/api/buildings-mesh",
+              "/api/buildings-render",
+              "/api/roads",
+              "/api/roads/cab",
+              "/api/roads/curbs",
+              "/api/roads/labels",
+              "/api/roads/vertical-alignments",
+              "/api/street-facing/facades",
+              "/api/terrain/grid",
+              "/api/water"
+            ],
+            "endpointCounts": {
+              "/api/roads/labels": 17,
+              "/api/roads/cab": 43,
+              "/api/roads": 121,
+              "/api/roads/vertical-alignments": 43,
+              "/api/roads/curbs": 37,
+              "/api/buildings-mesh": 155,
+              "/api/street-facing/facades": 60,
+              "/api/terrain/grid": 4,
+              "/api/water": 1,
+              "/api/buildings-render": 3
+            }
+          }
+        }
+      ],
+      "errors": {
+        "count": 0,
+        "items": []
+      },
+      "viewport": {
+        "width": 1600,
+        "height": 1000,
+        "dpr": 1
+      },
+      "gpu": {
+        "vendor": "Google Inc. (Apple)",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M1 Pro, Unspecified Version)"
+      },
+      "readyMs": 18425,
+      "initialOrigin": {
+        "native": {
+          "lat": 45.81286599907548,
+          "lon": 15.977282006471636,
+          "headingDeg": 128.25620880090617,
+          "status": {
+            "paused": false,
+            "stationName": null,
+            "dwellRemainingS": null,
+            "nextStation": {
+              "name": "Zrinjevac",
+              "distanceMeters": 446.8988796203001
+            },
+            "totalPassengers": 0,
+            "capacity": 0,
+            "lastAlighted": 0,
+            "lastBoarded": 0
+          }
+        },
+        "fixed": {
+          "lat": 45.81286597184228,
+          "lon": 15.977282197104037,
+          "headingDeg": 128.28535352225333,
+          "status": {
+            "paused": false,
+            "stationName": null,
+            "dwellRemainingS": null,
+            "nextStation": {
+              "name": "Zrinjevac",
+              "distanceMeters": 446.8988796203001
+            },
+            "totalPassengers": 0,
+            "capacity": 0,
+            "lastAlighted": 0,
+            "lastBoarded": 0
+          }
+        }
+      },
+      "routeSha256": "68da25a804366f94faf951f075aa0759ecbbaf62a09c42271df0162209241948",
+      "originCorrectionM": 0.015098743184201058,
+      "sources": {
+        "requests": 785,
+        "missingRequests": 131,
+        "uniqueMissingRequests": 61
+      },
+      "finalDrain": "pending",
+      "postMovementPausedAt": 275668.90000009537,
+      "postMovementDrainedAt": null
+    }
+  ],
+  "preflights": [
+    {
+      "name": "tram-base-committed-1",
+      "result": "Initial harness hook attached before Station3D API; browser TypeError and missing responses; no timed phases."
+    },
+    {
+      "name": "tram-base-committed-2",
+      "result": "Fixed initial anchor; source coverage incomplete; no timed phases."
+    },
+    {
+      "name": "tram-base-committed-3",
+      "result": "Dependent facade responses absent; no acceptance."
+    },
+    {
+      "name": "tram-full-source-warmup",
+      "result": "Live-on-miss source collection, explicitly unmeasured; timed observer phases are diagnostics only; capture not proof of complete route coverage."
+    }
+  ],
+  "visualInspection": {
+    "baselineAndCandidate": "Visible track, road, curbs, trees and buildings at the end pose; both screenshots show delayed-data toast. This does not prove full coverage or cross-mode parity."
+  },
+  "rawArtifacts": {
+    "root": "/Users/simun/Code/zagreb-isochrone-main/performance/station3d/results/paint-2026-09-28/committed",
+    "files": [
+      {
+        "file": "browser-summary.json",
+        "bytes": 29915,
+        "sha256": "0200bfd93bd98109d2e0af73f47d42bff91eff1a825c9498ea0f62031e67b4fa"
+      },
+      {
+        "file": "build-identities.json",
+        "bytes": 42991,
+        "sha256": "98f57e09906fe54e146f34b5a5ed19ec0c9167ca7ed10ccc83a1eaa431a69a9c"
+      },
+      {
+        "file": "curb-replay.json",
+        "bytes": 296713,
+        "sha256": "2125cc197dcba585810fca6fb329074f0493e29dcbf39430b5ee4c7d78d59611"
+      },
+      {
+        "file": "curb-replay.json.progress.json",
+        "bytes": 295,
+        "sha256": "337021e54f7c4353c5f19c28075f76ee95aed5a3bbe67d6c2385f7b15e18a739"
+      },
+      {
+        "file": "make-committed-receipt.py",
+        "bytes": 6964,
+        "sha256": "3b33598aa6f62eda1ea1c50d17bb8cec3978ccee60e50e4a459661e3aa338ec7"
+      },
+      {
+        "file": "other-browser-closed.json",
+        "bytes": 1452,
+        "sha256": "1938666cca3e161d7320b35ff2dec88e1ef9ed4875bf9e6c189e85d5444ab1f7"
+      },
+      {
+        "file": "paint-accept-observe.js",
+        "bytes": 5634,
+        "sha256": "eae033cb93ed3f08c3fb02448395dbdf4e4ed70198b2da915bd811874b21898e"
+      },
+      {
+        "file": "paint-accept-server.mjs",
+        "bytes": 8973,
+        "sha256": "9ae8066f8619a927c664a81b4f5d3649019ca9fcfb290e81492b5012bf561b4c"
+      },
+      {
+        "file": "paint-arm.js",
+        "bytes": 1155,
+        "sha256": "fefc79a43576910d6b09338864d4b51aad0689a5b2a4b210543deee7631cf6d5"
+      },
+      {
+        "file": "paint-extend-sources.json",
+        "bytes": 89,
+        "sha256": "d3b1fdf6f8eb89104d74b08ae0d25c69307cbba1f0a7504bf81457ab5f45d688"
+      },
+      {
+        "file": "paint-extend-sources.log",
+        "bytes": 7695,
+        "sha256": "054b77ed81d29026f876c137b9046c4c6f425e29edc867c51ccc47f0cad22bf8"
+      },
+      {
+        "file": "paint-extend-sources.mjs",
+        "bytes": 1302,
+        "sha256": "ee9443052e3d25d95c98e17b03fe7e2699e5b36ea3a442ae7a70331708321395"
+      },
+      {
+        "file": "paint-replay.json",
+        "bytes": 10596,
+        "sha256": "99ca5cc49e30a8c575b52996fb86049ab85bafbd12710d469f5115e544089815"
+      },
+      {
+        "file": "paint-status.js",
+        "bytes": 459,
+        "sha256": "c0b84b25bc26d3f7dc86b875b49e7079a2bc1b638038a3d111caf489d86a293b"
+      },
+      {
+        "file": "protocol-warmup.json",
+        "bytes": 1980,
+        "sha256": "6f824e8faa9f81b00d1bacd4c68ab3afcf8a4f793eea7a9515828267c94afd6c"
+      },
+      {
+        "file": "protocol.json",
+        "bytes": 1980,
+        "sha256": "79f0c1abb90135b14bb551e988927ddd27cb9b7fb123cea86ce1b567422b81d0"
+      },
+      {
+        "file": "raw/curb-owner-query-replay.mjs",
+        "bytes": 21449,
+        "sha256": "fe33369b5b070639d75516087d72b4a1784bda05bfe093d453fe39823706af19"
+      },
+      {
+        "file": "raw/paint-cpu-compare.mjs",
+        "bytes": 23782,
+        "sha256": "96d91869a6dbec158255c2c7a1de6ade90fe94fb2e18871a7f984f4f7829de9c"
+      },
+      {
+        "file": "raw/paint-summarize-committed.py",
+        "bytes": 9774,
+        "sha256": "ae2b777fb4d3dada319cbeef993a24efce2917f3c76be1baaa5c57559319d43b"
+      },
+      {
+        "file": "raw/perf-ground-drain.mjs",
+        "bytes": 7836,
+        "sha256": "8825c0929bf35aa8a30031f98831554dfb3fcb901fd3064aa2e100bb979731ea"
+      },
+      {
+        "file": "raw/perf-paused-start.mjs",
+        "bytes": 2377,
+        "sha256": "4e129eee2edcb0840267e5082fe72ca9e2d6f65302b4af480822eec1c8e66105"
+      },
+      {
+        "file": "raw/perf-tram-route.mjs",
+        "bytes": 4249,
+        "sha256": "32104fe8e231e1b24ed396eb3da4eee20265abb81e47845700ce4d11cb55d2df"
+      },
+      {
+        "file": "raw/surface-audit-fixtures.mjs",
+        "bytes": 8592,
+        "sha256": "722e89011f8e9c229e429ced0554ec57bb25574663ae66265febf3a461dd57f4"
+      },
+      {
+        "file": "station3d-measure-base-build.log",
+        "bytes": 285,
+        "sha256": "ad5f477c6848d5c082e96ee652d09afdf0ceee824bf77ae8f6d06feb9a6a4718"
+      },
+      {
+        "file": "tram-base-committed-1.host.jsonl",
+        "bytes": 13870,
+        "sha256": "07bd5391b6006c4daf515e0c679de61adca88cbae1d3868842ea9b7e43e3fa70"
+      },
+      {
+        "file": "tram-base-committed-1.json",
+        "bytes": 526230,
+        "sha256": "68fbf6e4c0e5ee7a7ab2d017630fca1c0674e5c0412191494ea9e4d840776e98"
+      },
+      {
+        "file": "tram-base-committed-1.requests.jsonl",
+        "bytes": 173489,
+        "sha256": "d6e43bd65052c3552c92cd3cb32920e10afa7832b963a7481985a31bfc236004"
+      },
+      {
+        "file": "tram-base-committed-1.served.json",
+        "bytes": 25269,
+        "sha256": "9011575bbbdc39a3c7174088e792a6b98d452dd7aa223880d9b9aee1a1f4fcfa"
+      },
+      {
+        "file": "tram-base-committed-1.server-errors.jsonl",
+        "bytes": 273054,
+        "sha256": "d5dbe4f191da0a22b4d58a2095390baacf8b7db323b49b3128551b8860179a5d"
+      },
+      {
+        "file": "tram-base-committed-2.host.jsonl",
+        "bytes": 20801,
+        "sha256": "915652abd257b7914706f3633c7e1fbd22d99226418f04afd6cfb2731dc4efa2"
+      },
+      {
+        "file": "tram-base-committed-2.json",
+        "bytes": 3106114,
+        "sha256": "19459ddbc98ebab23ab9ba2f26731828e1282d051ffef9ac6e3ac2d43f60b5ab"
+      },
+      {
+        "file": "tram-base-committed-2.requests.jsonl",
+        "bytes": 149011,
+        "sha256": "c1cfa75bf9aac8d0062dcf3525904d17610e67ff6b921cba7b8cd726cc12e298"
+      },
+      {
+        "file": "tram-base-committed-2.served.json",
+        "bytes": 25269,
+        "sha256": "2026e95e360586ce5976943c00b04c6d37865c5843d86a8940a6cd929689e0eb"
+      },
+      {
+        "file": "tram-base-committed-2.server-errors.jsonl",
+        "bytes": 89908,
+        "sha256": "f984b509b692ec0ff292ae5629aa1a02ad7fdf9f9cc51e61c2491f723f26e637"
+      },
+      {
+        "file": "tram-base-committed-3.host.jsonl",
+        "bytes": 24958,
+        "sha256": "67479831ec1f9ac56f36fdf3af7a95acca5453cdb4b98984996fe614adf349eb"
+      },
+      {
+        "file": "tram-base-committed-3.json",
+        "bytes": 3582500,
+        "sha256": "650dfe9f0c0a6af49e9d7ed30cafe3162a5594c7cb057fb080d71d48900c38f8"
+      },
+      {
+        "file": "tram-base-committed-3.requests.jsonl",
+        "bytes": 123154,
+        "sha256": "9c298a431f712e14acb03d4d313c88577e4d0a84a6b287d80cb65e391eb0b72a"
+      },
+      {
+        "file": "tram-base-committed-3.served.json",
+        "bytes": 25269,
+        "sha256": "893ac46fcbc0d321bd02f965fcf0b6c69a34dd40a9268b17b380923cfc2f4977"
+      },
+      {
+        "file": "tram-base-committed-3.server-errors.jsonl",
+        "bytes": 5110,
+        "sha256": "455131f5cd3c9e3d3b15e54078ced0d82e2d8fbb90b3ec9c0ced2d1822056cba"
+      },
+      {
+        "file": "tram-base-committed-final.host.jsonl",
+        "bytes": 120534,
+        "sha256": "21c528fb9b29404fcb094b4d5cd204f905dcab42110bfd0b5d3b62512ac77bd8"
+      },
+      {
+        "file": "tram-base-committed-final.json",
+        "bytes": 19767770,
+        "sha256": "039f1c8c749f6809d57b10c78e3681f56813ed4d76301b9e2c5ad7cf0a9629bc"
+      },
+      {
+        "file": "tram-base-committed-final.png",
+        "bytes": 722851,
+        "sha256": "83d1164ab8680b14b0606c13e34a954408440c8ca268bf0f5d76605552444a1e"
+      },
+      {
+        "file": "tram-base-committed-final.requests.jsonl",
+        "bytes": 296684,
+        "sha256": "e6e6ba09da67c30af6ee5f25cdf3becc5f6d1b42e0ac5bbb537987afad762b3c"
+      },
+      {
+        "file": "tram-base-committed-final.served.json",
+        "bytes": 25863,
+        "sha256": "2529cea85ba701e8cd75b33a97383045dc804bc8c05f151474faa2157db73844"
+      },
+      {
+        "file": "tram-base-committed-final.server-errors.jsonl",
+        "bytes": 27318,
+        "sha256": "351e0bea9c6dcd55aa7a9961733548d264db7050388d265d169bd2297b070146"
+      },
+      {
+        "file": "tram-candidate-committed-final.host.jsonl",
+        "bytes": 97034,
+        "sha256": "7dbc704ed5c160463b0a7b932bcd471dc9ef4346ce4915ffceade11ed3f9d202"
+      },
+      {
+        "file": "tram-candidate-committed-final.json",
+        "bytes": 15088711,
+        "sha256": "7b3a67ffc1a61bf83a6ef559999e0f9710bebf1965c5097cc44745ae92d97716"
+      },
+      {
+        "file": "tram-candidate-committed-final.png",
+        "bytes": 732454,
+        "sha256": "a9435ba7e4921c3bbc22aac846f34d5b8bfd9c8579082d63b596dadf5fd004a8"
+      },
+      {
+        "file": "tram-candidate-committed-final.requests.jsonl",
+        "bytes": 312773,
+        "sha256": "67287ca53bc3293157978ba863052ca403db26a37b047e0852759f7498484110"
+      },
+      {
+        "file": "tram-candidate-committed-final.served.json",
+        "bytes": 33523,
+        "sha256": "5b6f9b2af4111b39c38530406d2612cceb8d653374435bad7dfd610c434954ac"
+      },
+      {
+        "file": "tram-candidate-committed-final.server-errors.jsonl",
+        "bytes": 40380,
+        "sha256": "6f3d9a3e2747e8d91000e918b8d5d33b76e5d962f0562750ed0dde51e5bae05e"
+      },
+      {
+        "file": "tram-full-source-warmup.host.jsonl",
+        "bytes": 94270,
+        "sha256": "9f45c6cdd579d447287d2f8cbb3f49a93233a4eaba16071ff84592750aeb084c"
+      },
+      {
+        "file": "tram-full-source-warmup.json",
+        "bytes": 16350021,
+        "sha256": "6b563377cf4885d41378a6e5f42884eae122b8e73db56653c2b495870abdae1d"
+      },
+      {
+        "file": "tram-full-source-warmup.requests.jsonl",
+        "bytes": 346083,
+        "sha256": "fc7691207d144baae34938b6c18faa70ea014486e8d0c2f17e436678fb8d686d"
+      },
+      {
+        "file": "tram-full-source-warmup.served.json",
+        "bytes": 26062,
+        "sha256": "b1d3672a55b72bcb98a1e23bc38de6444bcd954eb166f74e849d8656abf9d3e0"
+      },
+      {
+        "file": "sources/manifest.json",
+        "bytes": 508669,
+        "sha256": "a1af07b7d8d1d70be7e762da870d19bb6eb1e5403c42cba19fa6dd88d306339f"
+      },
+      {
+        "file": "sources-complete/manifest.json",
+        "bytes": 537576,
+        "sha256": "ec017581d6f90f6ea48618dafd12cc4c48aa2b9657c521e9bc33de9f0bdec810"
+      }
+    ]
+  }
+}
