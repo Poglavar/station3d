@@ -1,6 +1,6 @@
 // Inspects the npm tarball file list and rejects host or campaign leakage.
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -12,7 +12,8 @@ if (packageJson.scripts?.prepare !== 'npm run build:station3d') {
     throw new Error('Git installs must build the browser distribution through prepare');
 }
 const npmCache = mkdtempSync(resolve(tmpdir(), 'station3d-npm-cache-'));
-const fixtureRoot = mkdtempSync(resolve(tmpdir(), 'station3d-consumer-'));
+// Avoid macOS /var symlinks hiding bugs in relative paths that Linux exposes.
+const fixtureRoot = realpathSync(mkdtempSync(resolve(tmpdir(), 'station3d-consumer-')));
 try {
     const output = execFileSync('npm', [
         'pack', '--ignore-scripts', '--json', '--pack-destination', npmCache,

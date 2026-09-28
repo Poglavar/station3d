@@ -154,8 +154,9 @@ function publicEntryPoint(value) {
     }
     return null;
 }
+// esbuild's relative output keys use absWorkingDir, not the consumer's cwd.
 const outputs = Object.entries(result.metafile.outputs).map(([file, metadata]) => ({
-    file: relative(outdir, file).split(sep).join('/'),
+    file: relative(outdir, resolve(packageRoot, file)).split(sep).join('/'),
     bytes: metadata.bytes,
     entryPoint: publicEntryPoint(metadata.entryPoint),
 })).sort((a, b) => a.file.localeCompare(b.file));
