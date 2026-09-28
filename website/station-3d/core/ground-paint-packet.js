@@ -1,13 +1,13 @@
 // CPU preparation for one immutable material page. Triangulation is independent
 // of terrain height; the page may only be consumed by its resolved receiver.
-import { ShapeUtils, Vector2 } from 'three';
+import { triangulateGroundPaintPolygon } from './ground-paint-triangulation.js';
 import { GROUND_PAINT_UPDATE, planGroundPaintUpdate } from './ground-paint-update.js';
 import { captureGroundPaintStyles } from './ground-paint-styles.js';
 
 export const GROUND_PAINT_PACKET = 'station3d-ground-paint-packet-v3';
 const finite = value => typeof value === 'number' && Number.isFinite(value);
 
-export function* createGroundPaintPacketSteps({ plan, bounds, size, styles, limits, update = null }) {
+export function* createGroundPaintPacketSteps({ plan, bounds, size, styles, limits, update = null, triangulationCache = null }) {
     if (plan?.contract !== 'station3d-ground-composite-plan-v1' || !(styles instanceof Map)) {
         throw new TypeError('Paint page requires a completed plan and explicit material recipes');
     }
@@ -38,7 +38,7 @@ export function* createGroundPaintPacketSteps({ plan, bounds, size, styles, limi
     // in a different order. No source triangulation is needed for copied blocks.
     const paintCommands = plan.commands.filter(command => commands.has(command.key));
     const draws = [];
-    let vertices = 0, triangles = 0, geometryBytes = 0, submissions = 0;
+    let vertices = 0, triangles = 0, geometryBytes = 0, submissions = 0, triangulations = 0, triangulationHits = 0;
     function* emitGroup(group) {
         if (!group) return;
         if (draws.length >= limits.draws) throw new RangeError('Paint page draw budget exceeded');
@@ -71,7 +71,7 @@ export function* createGroundPaintPacketSteps({ plan, bounds, size, styles, limi
             || recipe.surfaceClass !== command.claim.surfaceClass) {
             throw new TypeError(`Missing or invalid paint recipe ${command.materialKey}`);
         }
-        for (const polygon of command.polygons) {
+        for (const [polygonIndex, polygon] of command.polygons.entries()) {
             const sourceRings = [polygon.outerRing, ...polygon.holeRings];
             const vertexCount = sourceRings.reduce((count, ring) => count + ring.length, 0);
             if (vertexCount > limits.verticesPerPolygon) throw new RangeError('Paint triangulation item budget exceeded');
@@ -95,13 +95,15 @@ export function* createGroundPaintPacketSteps({ plan, bounds, size, styles, limi
                 continue;
             }
             // Page-local coordinates preserve centimetres far from the session
-            // anchor. ShapeUtils removes duplicate closing points in these copies.
-            const rings = sourceRings.map(ring => ring.map(point => new Vector2(
-                point.x - pageBounds.minX, point.z - pageBounds.minZ,
-            )));
-            const faces = ShapeUtils.triangulateShape(rings[0], rings.slice(1));
-            if (!faces.length) throw new Error(`Paint polygon has no triangles: ${command.key}`);
-            const points = rings.flat();
+            // anchor. Closing points are normalised once with the cached topology.
+            const prepared = triangulationCache?.get(command, polygonIndex)
+                || { geometry: triangulateGroundPaintPolygon(polygon), reused: false };
+            if (prepared.reused) triangulationHits++; else triangulations++;
+            const { coordinates, indices: sourceIndices } = prepared.geometry;
+            const points = [];
+            for (let index = 0; index < coordinates.length; index += 2) {
+                points.push({ x: coordinates[index] - pageBounds.minX, y: coordinates[index + 1] - pageBounds.minZ });
+            }
             // Only consecutive, identically shaded contributions may merge.
             // Keep source index ranges for ownership inspection without forcing
             // a separate upload/draw for every road segment or decoration owner.
@@ -111,14 +113,16 @@ export function* createGroundPaintPacketSteps({ plan, bounds, size, styles, limi
                 group = { signature, recipe, styleId: recipe.id, regions, points: [], faces: [], sources: [] };
             }
             const source = group.sources.at(-1);
-            if (source?.key === command.key) source.indexCount += faces.length * 3;
+            if (source?.key === command.key) source.indexCount += sourceIndices.length;
             else {
                 group.sources.push({ key: command.key, sourceRevision: command.sourceRevision,
-                    indexOffset: group.faces.length * 3, indexCount: faces.length * 3 });
+                    indexOffset: group.faces.length * 3, indexCount: sourceIndices.length });
             }
             const offset = group.points.length;
             group.points.push(...points);
-            for (const face of faces) group.faces.push(face.map(index => index + offset));
+            for (let index = 0; index < sourceIndices.length; index += 3) {
+                group.faces.push([sourceIndices[index] + offset, sourceIndices[index + 1] + offset, sourceIndices[index + 2] + offset]);
+            }
             yield { phase: 'paint-triangulation', draws: draws.length, vertices, triangles };
         }
     }
@@ -127,6 +131,7 @@ export function* createGroundPaintPacketSteps({ plan, bounds, size, styles, limi
         contract: GROUND_PAINT_PACKET, receiver: plan.receiver, receiverBounds: plan.bounds, bounds: pageBounds, size,
         draws: Object.freeze(draws), update, styles: styleTable,
         stats: Object.freeze({ vertices, triangles, geometryBytes, draws: draws.length, submissions,
+            triangulations, triangulationHits,
             // Exact R8 material ID; zero is uncovered. Material textures and
             // shading tables are separate, explicitly budgeted resources.
             textureBytes: size * size }),

@@ -1,7 +1,8 @@
 // Session-owned ordinary-ground material coverage. Roads stage source records;
 // their physical dependency group publishes the prepared paint entry with them.
 import { createGroundPaintCache } from '../core/ground-paint-cache.js';
-import { createGroundCompositePlanSteps } from '../core/ground-composite-plan.js';
+import { createGroundCompositePlanSteps, sameGroundPaintSource } from '../core/ground-composite-plan.js';
+import { prepareGroundPaintReadSteps } from '../core/ground-paint-read-slice.js';
 import { combineGroundPaintSourcePlansSteps, groundPaintCapacity } from '../core/ground-paint-source-plans.js';
 import { GROUND_GENERATION_LIMITS } from '../core/ground-generation-limits.js';
 import { bindGroundPaintMaterial } from '../core/ground-paint-material.js';
@@ -12,6 +13,8 @@ const REGION_LIMITS = Object.freeze({ records: 2048, vertices: 131072, verticesP
 const SOURCE_LIMITS = GROUND_GENERATION_LIMITS.paintSources;
 const MAX_OWNER_RECORDS = 8;
 let sessionSequence = 0;
+const sameRecords = (a, b) => a === b || !!a && !!b && a.length === b.length
+    && a.every((record, index) => sameGroundPaintSource(record, b[index]));
 
 function validateOwnerRecords(records) {
     if (records === null) return;
@@ -40,6 +43,8 @@ export function createWorldGroundPaint({ renderer, registry, boundary, qualityPr
     const bindings = new WeakMap(), sourceRecordCounts = new WeakMap();
     let published = new Map(), publishedPlan = null, closed = false, generation = 0, sourceTurn = null;
     let restoreGroundMaterial = null;
+    const readWork = { slices: 0, checks: 0, operations: 0, maxSliceMs: 0 }, reuse = { owners: 0, buckets: 0 };
+    const readSteps = (steps, current) => prepareGroundPaintReadSteps(steps, current, { stats: readWork });
     const cache = cacheFactory({ renderer, receiver, registry, boundary, size,
         widthsM: [128, 1024, 4096], blockSize: 256, maxTextureBytes: size * size * 4,
         packetLimits: { pixels: size * size, draws: 4096, verticesPerPolygon: 8192,
@@ -71,7 +76,7 @@ export function createWorldGroundPaint({ renderer, registry, boundary, qualityPr
         validateOwnerRecords(recordsOrNull);
         let records = desired.get(bucketKey);
         const next = recordsOrNull;
-        if (records?.get(owner) === next || (!next && !records?.has(owner))) return;
+        if (sameRecords(records?.get(owner), next) || (!next && !records?.has(owner))) return;
         const count = (sourceRecordCounts.get(records) || 0) - (records?.get(owner)?.length || 0) + (next?.length || 0);
         if (count > REGION_LIMITS.records) throw groundPaintCapacity('Ground paint region record capacity exceeded');
         if (!records) desired.set(bucketKey, records = new Map());
@@ -90,11 +95,10 @@ export function createWorldGroundPaint({ renderer, registry, boundary, qualityPr
     const desiredCurrent = captured => [...captured].every(([key, row]) => desired.get(key) === row.records
         && (!row.records || (desiredVersions.get(row.records) || 0) === row.version));
 
-    function* copyRecordsSteps(records, current) {
+    function* copyRecordsSteps(records) {
         const copy = new Map();
         let count = 0;
         for (const [owner, ownerRecords] of records || []) {
-            if (!current()) return null;
             count += ownerRecords.length;
             if (count > REGION_LIMITS.records) throw groundPaintCapacity('Ground paint region record capacity exceeded');
             copy.set(owner, ownerRecords);
@@ -102,6 +106,43 @@ export function createWorldGroundPaint({ renderer, registry, boundary, qualityPr
         }
         sourceRecordCounts.set(copy, count);
         return copy;
+    }
+
+    function* collectRecordsSteps(source) {
+        const records = [];
+        for (const ownerRecords of source.values()) for (const record of ownerRecords) {
+            if (records.length >= REGION_LIMITS.records) throw groundPaintCapacity('Ground paint region record capacity exceeded');
+            records.push(record);
+            yield { phase: 'paint-source-records' };
+        }
+        return records;
+    }
+
+    function* replaceRecordsSteps(copy, changes) {
+        let count = sourceRecordCounts.get(copy) || 0;
+        for (const [owner, ownerRecords] of changes) {
+            count += (ownerRecords?.length || 0) - (copy.get(owner)?.length || 0);
+            yield { phase: 'paint-source-capacity' };
+        }
+        // Admit the complete replacement, including removals, independent
+        // of row order. Nothing becomes visible until the batch commits.
+        if (count > REGION_LIMITS.records) throw groundPaintCapacity('Ground paint region record capacity exceeded');
+        for (const [owner, ownerRecords] of changes) {
+            if (ownerRecords) copy.set(owner, ownerRecords); else copy.delete(owner);
+            yield { phase: 'paint-source-replacements' };
+        }
+        sourceRecordCounts.set(copy, count);
+        return copy;
+    }
+
+    function* changedRecordsSteps(changes, previous) {
+        const changed = new Map();
+        for (const [owner, ownerRecords] of changes) {
+            if (sameRecords(previous?.get(owner), ownerRecords) || !ownerRecords && !previous?.has(owner)) reuse.owners++;
+            else changed.set(owner, ownerRecords);
+            yield { phase: 'paint-source-diff' };
+        }
+        return changed;
     }
 
     // Both ordinary bucket delivery and a complete ground candidate use this
@@ -133,20 +174,23 @@ export function createWorldGroundPaint({ renderer, registry, boundary, qualityPr
         try {
             if (!current()) return null;
             for (const [key, source] of recordsByBucket) {
-                const records = [];
-                for (const ownerRecords of source.values()) {
-                    for (const record of ownerRecords) {
-                        if (!current()) return null;
-                        if (records.length >= REGION_LIMITS.records) throw groundPaintCapacity('Ground paint region record capacity exceeded');
-                        records.push(record);
-                        yield { phase: 'paint-source-records' };
-                    }
+                const records = yield* readSteps(collectRecordsSteps(source), current);
+                if (!records) return null;
+                if (records.length) {
+                    const prepared = yield* readSteps(createGroundCompositePlanSteps({ receiver, records,
+                        limits: REGION_LIMITS, previous: before.get(key), retained: beforePlan }), current);
+                    if (!prepared) return null;
+                    if (prepared === before.get(key)) reuse.buckets++;
+                    next.set(key, prepared);
                 }
-                if (records.length) next.set(key, yield* createGroundCompositePlanSteps({ receiver, records, limits: REGION_LIMITS }));
                 else next.delete(key);
                 if (!current()) return null;
             }
-            const plan = yield* combineGroundPaintSourcePlansSteps({ receiver, plans: next });
+            const unchanged = beforePlan && next.size === before.size
+                && [...next].every(([key, value]) => before.get(key) === value);
+            const plan = unchanged ? beforePlan
+                : yield* readSteps(combineGroundPaintSourcePlansSteps({ receiver, plans: next }), current);
+            if (!plan) return null;
             if (!current()) return null;
             paint = yield* cache.prepareSourceSteps({ plan, styles: recipes,
                 isCurrent: current });
@@ -189,7 +233,7 @@ export function createWorldGroundPaint({ renderer, registry, boundary, qualityPr
         const captured = captureDesired(changed), records = new Map();
         const current = () => !closed && desiredCurrent(captured) && isCurrent();
         for (const [key, row] of captured) {
-            const copy = yield* copyRecordsSteps(row.records, current);
+            const copy = yield* readSteps(copyRecordsSteps(row.records), current);
             if (!copy || !current()) return null;
             records.set(key, copy);
         }
@@ -219,24 +263,14 @@ export function createWorldGroundPaint({ renderer, registry, boundary, qualityPr
         if (!rows.size) return null;
         const captured = captureDesired([...rows.keys()]), records = new Map();
         const current = () => !closed && desiredCurrent(captured) && isCurrent();
-        for (const [key, changes] of rows) {
-            const copy = yield* copyRecordsSteps(captured.get(key).records, current);
+        for (const [key, replacements] of rows) {
+            const previous = captured.get(key).records;
+            const changes = yield* readSteps(changedRecordsSteps(replacements, previous), current);
+            if (!changes) return null;
+            if (!changes.size) { reuse.buckets++; continue; }
+            const copy = yield* readSteps(copyRecordsSteps(previous), current);
             if (!copy || !current()) return null;
-            let count = sourceRecordCounts.get(copy) || 0;
-            for (const [owner, ownerRecords] of changes) {
-                count += (ownerRecords?.length || 0) - (copy.get(owner)?.length || 0);
-                yield { phase: 'paint-source-capacity' };
-                if (!current()) return null;
-            }
-            // Admit the complete replacement, including removals, independent
-            // of row order. Nothing becomes visible until the batch commits.
-            if (count > REGION_LIMITS.records) throw groundPaintCapacity('Ground paint region record capacity exceeded');
-            for (const [owner, ownerRecords] of changes) {
-                if (ownerRecords) copy.set(owner, ownerRecords); else copy.delete(owner);
-                yield { phase: 'paint-source-replacements' };
-                if (!current()) return null;
-            }
-            sourceRecordCounts.set(copy, count);
+            if (!(yield* readSteps(replaceRecordsSteps(copy, changes), current))) return null;
             records.set(key, copy);
         }
         return yield* prepareRecordsSteps(records, captured, isCurrent, true);
@@ -264,6 +298,7 @@ export function createWorldGroundPaint({ renderer, registry, boundary, qualityPr
         paintAt: (x, z) => cache.paintAt(x, z, receiver),
         sourceAt: (x, z) => publishedPlan?.paintAt(x, z, receiver) || null,
         snapshot: () => ({ ...cache.snapshot(), receiver, sourceRegions: published.size,
+            sourcePreparation: { ...readWork, reusedOwners: reuse.owners, reusedBuckets: reuse.buckets },
             sourceRecords: [...published.values()].reduce((sum, plan) => sum + plan.commands.length, 0) }),
         dispose() {
             if (closed) return;

@@ -31,6 +31,12 @@ function binding(input) {
 }
 const sameBinding = (a, b) => a?.key === b?.key && a?.verticalBand === b?.verticalBand
     && a?.coverageRevision === b?.coverageRevision;
+// The producer's revision covers geometry and claim changes. Keep the same
+// identity rule for plan reuse and pixel invalidation, including hidden sources.
+export const sameGroundPaintSource = (a, b) => !!a && !!b && a.key === b.key
+    && a.sourceRevision === b.sourceRevision && a.materialRevision === b.materialRevision
+    && a.materialKey === b.materialKey && (a.visible !== false) === (b.visible !== false)
+    && (a.sourcePriority ?? 0) === (b.sourcePriority ?? 0) && sameBinding(a.receiver, b.receiver);
 // Higher class rank wins. Equal-rank source priority must be assigned by the
 // shared source/style adapter; stable identity breaks remaining ties. Neither
 // arrival order nor drawing bucket chooses an overlapping material.
@@ -63,14 +69,14 @@ function* copyFootprint(polygons, counter, limits, verticesPerStep) {
         }
         copied.push(Object.freeze({ outerRing: rings[0], holeRings: Object.freeze(rings.slice(1)) }));
     }
-    return { polygons: Object.freeze(copied), bounds: bounds(box) };
+    return { polygons: Object.freeze(copied), bounds: bounds(box), vertices: recordVertices };
 }
 
 // Producers retain immutable source records across yields, just as the road
 // identity index and terrain compiler do. Only the completed return value may
 // be published. Limits are explicit prototype/device inputs, never truncation.
 export function* createGroundCompositePlanSteps({
-    receiver, records, limits, cellM = 24, verticesPerStep = 128,
+    receiver, records, limits, cellM = 24, verticesPerStep = 128, previous = null, retained = previous,
 }) {
     const receiverBinding = binding(receiver);
     const receiverBounds = bounds(receiver.bounds);
@@ -85,6 +91,9 @@ export function* createGroundCompositePlanSteps({
     const grid = createMutableBoundsGrid({ cellM });
     const recordsByKey = new Map();
     const counter = { vertices: 0 };
+    let unchanged = !!previous && previous.stats.cellM === cellM && sameBinding(previous.receiver, receiverBinding)
+        && ['minX', 'minZ', 'maxX', 'maxZ'].every(key => previous.bounds[key] === receiverBounds[key])
+        && previous.sourceKeys.length === sources.length;
     for (const input of sources) {
         const key = identity(input?.key, 'paint source owner');
         if (recordsByKey.has(key)) throw new Error(`Duplicate paint owner ${key}; select one source revision before composition`);
@@ -99,25 +108,37 @@ export function* createGroundCompositePlanSteps({
             || !finite(sourceClaim.rank)) throw new Error(`Paint ${key} lacks published same-receiver colour authority`);
         const sourcePriority = input.sourcePriority ?? 0;
         if (!Number.isSafeInteger(sourcePriority)) throw new TypeError('Invalid paint source priority');
-        const footprint = yield* copyFootprint(input.polygons, counter, limits, verticesPerStep);
-        const record = Object.freeze({ key, sourceRevision, materialRevision, materialKey,
+        const old = previous?.byKey(key) || retained?.byKey(key);
+        let record;
+        if (sameGroundPaintSource(old, input)) {
+            counter.vertices += old.vertices;
+            if (counter.vertices > limits.vertices || old.vertices > limits.verticesPerRecord) {
+                throw new RangeError('Paint vertex budget exceeded');
+            }
+            record = old;
+        } else {
+            const footprint = yield* copyFootprint(input.polygons, counter, limits, verticesPerStep);
+            record = Object.freeze({ key, sourceRevision, materialRevision, materialKey,
             receiver: receiverBinding, sourcePriority, visible: input.visible !== false,
             // Material coverage cannot provide support or remove a backstop.
             claim: reviseSurfaceClaim(sourceClaim, { supportReady: false, cutsBackstop: false }),
             ...footprint,
-        });
+            });
+        }
+        unchanged &&= previous.byKey(key) === record;
         recordsByKey.set(key, record);
         if (record.visible && intersects(receiverBounds, record.bounds)) grid.set(key, record);
         if (grid.stats().oversized > limits.oversized) throw new RangeError('Oversized paint query budget exceeded');
         yield { phase: 'paint-record', records: recordsByKey.size, vertices: counter.vertices };
     }
+    if (unchanged) return previous;
     const commands = Object.freeze([...recordsByKey.values()].filter(record => record.visible
         && intersects(record.bounds, receiverBounds)).sort(compareGroundPaint));
     const byKey = key => recordsByKey.get(key) || null;
     return Object.freeze({
         contract: 'station3d-ground-composite-plan-v1', receiver: receiverBinding, bounds: receiverBounds,
         commands, sourceKeys: Object.freeze([...recordsByKey.keys()]), byKey,
-        stats: Object.freeze({ ...grid.stats(), vertices: counter.vertices, records: recordsByKey.size }),
+        stats: Object.freeze({ ...grid.stats(), cellM, vertices: counter.vertices, records: recordsByKey.size }),
         paintAt(x, z, requestedReceiver) {
             if (!sameBinding(receiverBinding, requestedReceiver) || !finite(x) || !finite(z)
                 || !contains(receiverBounds, x, z)) return null;
@@ -158,8 +179,7 @@ export function groundPaintInvalidationBounds(previous, next) {
     const keys = new Set([...previous.sourceKeys, ...next.sourceKeys]);
     for (const key of keys) {
         const a = previous.byKey(key), b = next.byKey(key);
-        if (a && b && a.sourceRevision === b.sourceRevision && a.materialRevision === b.materialRevision
-            && a.materialKey === b.materialKey && a.visible === b.visible && a.sourcePriority === b.sourcePriority) continue;
+        if (sameGroundPaintSource(a, b)) continue;
         if (a?.visible) changed.push(a.bounds);
         if (b?.visible) changed.push(b.bounds);
     }

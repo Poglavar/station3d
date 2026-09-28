@@ -1,0 +1,941 @@
+{
+  "schema": "station3d-paint-performance-receipt-v1",
+  "recordedDate": "2026-09-28",
+  "baselineCommit": "6cfaaaa8075aef0520cf62c702972fa8d4fb97f0",
+  "candidateBranch": "paint-perf",
+  "disposition": "implemented-unreleased-performance-gate-open",
+  "identities": {
+    "baseline": {
+      "inputHash": "458dcbe3b7731ddf1013a12059e445d29dafb500d5a86c28dd667bceb9c00741",
+      "outputHash": "766ffd5059e2547ba16a71c5021c1fd6a196811306d62d8a4ac1d3b8c9aed50e"
+    },
+    "observed-candidate": {
+      "inputHash": "b11e61fbb9fd0c8947253741b3700d9faea2d6461a28565bb8afd497a5a4c215",
+      "outputHash": "e5ee51785bed34a270f6f3ab1320a5c48638c1e8af524af869fedf24325bdee8"
+    },
+    "final-candidate": {
+      "inputHash": "f225db8f24a44c80807f06587c2453614f0b35174c8414052a80f50eef67452e",
+      "outputHash": "5b9b50210f9ef98ab6e1e9d57d23e4c7feb2ce06930e209142d16f8bd13cab89"
+    }
+  },
+  "observedCandidateNote": "Final candidate additionally prevents complete-plan reuse when the query grid cell size changes and avoids invalidating pages between disjoint outside edits; both regression tested. Browser observations precede those guards; final identity records the rebuilt output.",
+  "changes": [
+    "Cooperative CPU-only paint slices with fresh guards at yields, async/GPU and publication boundaries.",
+    "No-op owner/bucket/plan reuse and immutable polygon retention.",
+    "Bounded disjoint per-page dirty blocks through movement and rollback.",
+    "Source-revision keyed triangulation cache bounded to 16 MiB and 8192 entries."
+  ],
+  "validation": {
+    "unit": {
+      "passed": 459,
+      "failed": 0
+    },
+    "build": {
+      "passed": true,
+      "reviewRequiredInputs": []
+    },
+    "releaseAssetAudit": "passed",
+    "packedInstallAndVendor": "passed",
+    "diffCheck": "passed",
+    "firstPackageAttempt": {
+      "disposition": "interrupted",
+      "reason": "Silent clean-install wait in network-restricted sandbox; network-enabled rerun passed."
+    },
+    "performanceAcceptance": "not-passed",
+    "crossModeAppearanceSupportSelection": "not-passed"
+  },
+  "sourceReplay": {
+    "sealed": false,
+    "method": "Read-only GET responses cached by exact pathname/query and shared by baseline/candidate local origins. New requests admitted throughout; no source equivalence claim.",
+    "responses": 1034,
+    "bytes": 464901118,
+    "nonSuccessResponses": 18,
+    "manifestSha256": "696414f57062f46ba0dbd18f146ab249634026b9c01104f1d50e9c53cc2b59af"
+  },
+  "cpuReplay": {
+    "schema": "station3d-paint-cpu-comparison-v1",
+    "source": {
+      "fixture": "/private/tmp/station3d-paint-base/website/station-3d/__tests__/fixtures/ground-jelacic-source.json",
+      "sha256": "fcddd406de838f8723ac83cb538dffbc54e91b42d425f549865d6c58633c6d94",
+      "featureId": -20770250001,
+      "geometryType": "Polygon",
+      "ringVertexCounts": [
+        82,
+        15
+      ],
+      "copiedRecords": 4,
+      "note": "Receipt covers this copied fixture workload only; no world-wide percentages are inferred.",
+      "baselineModules": {
+        "ground-composite-plan.js": "74389c18ca20f0bb4d394f7e73b48b63763ebe68579069380df9a0631140f618",
+        "ground-paint-packet.js": "dc28f5579ecc60129ad8a239a44c3a7e371c17b82f1c7f15ad3d8dc86632483f",
+        "ground-paint-update.js": "333fa3e545ddfdaa1260e5c534c1419a3e713392228f3949e4a7d2d2aa505d17"
+      },
+      "candidateModules": {
+        "ground-composite-plan.js": "b0ae4579d62300ba9eb794476967b69a11a55f3849e04e9b695b543fa3d9aaeb",
+        "ground-paint-packet.js": "c35743993bee364ca48a1ea638dd98a24b8db9693bcaa0bfd4b98190e92ac703",
+        "ground-paint-update.js": "bdfccb854431ee90179ac0ec73865bcac1d1a051fc872aa832963ec3ba33e0be"
+      }
+    },
+    "setup": {
+      "pageSize": 128,
+      "blockSize": 8,
+      "pageBounds": {
+        "minX": -640,
+        "minZ": -160,
+        "maxX": 640,
+        "maxZ": 160
+      },
+      "sourceOffsetsM": [
+        -420,
+        -140,
+        140,
+        420
+      ]
+    },
+    "scenarios": [
+      {
+        "name": "initial-composite",
+        "baseline": {
+          "receipt": {
+            "provenance": {
+              "fixture-copy-1": 4545.49217196242,
+              "fixture-copy-2": 4545.491452901147,
+              "fixture-copy-3": 4545.491477163718,
+              "fixture-copy-4": 4545.4913454999405
+            },
+            "triangleArea": 18181.966447527222,
+            "vertexCopies": 380,
+            "actualTriangulations": 4,
+            "repaintedPixels": 16384,
+            "copiedPixels": 0,
+            "draws": 4
+          },
+          "informationalMs": 307.73291599999993
+        },
+        "candidate": {
+          "receipt": {
+            "provenance": {
+              "fixture-copy-1": 4545.49217196242,
+              "fixture-copy-2": 4545.491452901147,
+              "fixture-copy-3": 4545.491477163718,
+              "fixture-copy-4": 4545.4913454999405
+            },
+            "triangleArea": 18181.966447527222,
+            "vertexCopies": 380,
+            "actualTriangulations": 4,
+            "repaintedPixels": 16384,
+            "copiedPixels": 0,
+            "draws": 4
+          },
+          "informationalMs": 91.23712499999988
+        },
+        "planWork": {
+          "baseline": {
+            "footprintVertexCopies": 388,
+            "yieldedPhases": {
+              "paint-record": 4,
+              "paint-vertices": 3
+            }
+          },
+          "candidate": {
+            "footprintVertexCopies": 388,
+            "yieldedPhases": {
+              "paint-record": 4,
+              "paint-vertices": 3
+            }
+          }
+        }
+      },
+      {
+        "name": "identical-record-recompile",
+        "baseline": {
+          "receipt": {
+            "provenance": {},
+            "triangleArea": 0,
+            "vertexCopies": 0,
+            "actualTriangulations": 0,
+            "repaintedPixels": 0,
+            "copiedPixels": 16384,
+            "draws": 0
+          },
+          "informationalMs": 0.27575000000024374
+        },
+        "candidate": {
+          "receipt": {
+            "provenance": {},
+            "triangleArea": 0,
+            "vertexCopies": 0,
+            "actualTriangulations": 0,
+            "repaintedPixels": 0,
+            "copiedPixels": 16384,
+            "draws": 0
+          },
+          "informationalMs": 39.81058299999995
+        },
+        "planWork": {
+          "baseline": {
+            "footprintVertexCopies": 388,
+            "yieldedPhases": {
+              "paint-record": 4,
+              "paint-vertices": 3
+            }
+          },
+          "candidate": {
+            "footprintVertexCopies": 0,
+            "yieldedPhases": {
+              "paint-record": 4
+            }
+          }
+        }
+      },
+      {
+        "name": "separated-source-update-fixture-1",
+        "baseline": {
+          "receipt": {
+            "provenance": {
+              "fixture-copy-1": 4545.492208526257
+            },
+            "triangleArea": 4545.492208526257,
+            "vertexCopies": 95,
+            "actualTriangulations": 1,
+            "repaintedPixels": 1152,
+            "copiedPixels": 15232,
+            "draws": 1
+          },
+          "informationalMs": 0.378624999999829
+        },
+        "candidate": {
+          "receipt": {
+            "provenance": {
+              "fixture-copy-1": 4545.492208526257
+            },
+            "triangleArea": 4545.492208526257,
+            "vertexCopies": 95,
+            "actualTriangulations": 1,
+            "repaintedPixels": 1152,
+            "copiedPixels": 15232,
+            "draws": 1
+          },
+          "informationalMs": 0.3740839999995842
+        },
+        "planWork": {
+          "baseline": {
+            "footprintVertexCopies": 388,
+            "yieldedPhases": {
+              "paint-record": 4,
+              "paint-vertices": 3
+            }
+          },
+          "candidate": {
+            "footprintVertexCopies": 97,
+            "yieldedPhases": {
+              "paint-record": 4
+            }
+          }
+        },
+        "oldAccumulatedUnion": {
+          "minX": -428.1532981475388,
+          "minZ": -160.47651813310372,
+          "maxX": -329.1490434648322,
+          "maxZ": -59.189059453261194
+        },
+        "candidateDirtyBlocks": 18,
+        "coverageChecks": {
+          "baseline": {
+            "copiedProbeSamples": 363,
+            "repaintedProbeSamples": 121,
+            "paintedRepaintSamples": 58
+          },
+          "candidate": {
+            "copiedProbeSamples": 363,
+            "repaintedProbeSamples": 121,
+            "paintedRepaintSamples": 58
+          }
+        }
+      },
+      {
+        "name": "separated-source-update-fixture-2",
+        "baseline": {
+          "receipt": {
+            "provenance": {
+              "fixture-copy-1": 4545.492208526257,
+              "fixture-copy-2": 4545.491452901147,
+              "fixture-copy-3": 4545.491477163718,
+              "fixture-copy-4": 4545.4913454999405
+            },
+            "triangleArea": 18181.966484091063,
+            "vertexCopies": 380,
+            "actualTriangulations": 4,
+            "repaintedPixels": 4992,
+            "copiedPixels": 11392,
+            "draws": 4
+          },
+          "informationalMs": 7.581833000000188
+        },
+        "candidate": {
+          "receipt": {
+            "provenance": {
+              "fixture-copy-1": 4545.492208526257,
+              "fixture-copy-4": 4545.4913454999405
+            },
+            "triangleArea": 9090.983554026197,
+            "vertexCopies": 190,
+            "actualTriangulations": 1,
+            "repaintedPixels": 1920,
+            "copiedPixels": 14464,
+            "draws": 2
+          },
+          "informationalMs": 169.354417
+        },
+        "planWork": {
+          "baseline": {
+            "footprintVertexCopies": 388,
+            "yieldedPhases": {
+              "paint-record": 4,
+              "paint-vertices": 3
+            }
+          },
+          "candidate": {
+            "footprintVertexCopies": 97,
+            "yieldedPhases": {
+              "paint-record": 4,
+              "paint-vertices": 1
+            }
+          }
+        },
+        "oldAccumulatedUnion": {
+          "minX": -428.1532981475388,
+          "minZ": -160.47651813310372,
+          "maxX": 510.8509565351678,
+          "maxZ": -59.189059453261194
+        },
+        "candidateDirtyBlocks": 30,
+        "coverageChecks": {
+          "baseline": {
+            "copiedProbeSamples": 0,
+            "repaintedProbeSamples": 484,
+            "paintedRepaintSamples": 240
+          },
+          "candidate": {
+            "copiedProbeSamples": 242,
+            "repaintedProbeSamples": 242,
+            "paintedRepaintSamples": 116
+          }
+        }
+      }
+    ],
+    "repeatedPolygonPages": [
+      {
+        "originShift": 0,
+        "baseline": {
+          "receipt": {
+            "provenance": {
+              "fixture-copy-2": 4545.491452901147
+            },
+            "triangleArea": 4545.491452901147,
+            "vertexCopies": 95,
+            "actualTriangulations": 1,
+            "repaintedPixels": 16384,
+            "copiedPixels": 0,
+            "draws": 1
+          },
+          "informationalMs": 292.2762499999999
+        },
+        "candidate": {
+          "receipt": {
+            "provenance": {
+              "fixture-copy-2": 4545.491452901147
+            },
+            "triangleArea": 4545.491452901147,
+            "vertexCopies": 95,
+            "actualTriangulations": 0,
+            "repaintedPixels": 16384,
+            "copiedPixels": 0,
+            "draws": 1
+          },
+          "informationalMs": 10.923291000000063
+        }
+      },
+      {
+        "originShift": 19,
+        "baseline": {
+          "receipt": {
+            "provenance": {
+              "fixture-copy-2": 4545.491291398801
+            },
+            "triangleArea": 4545.491291398801,
+            "vertexCopies": 95,
+            "actualTriangulations": 1,
+            "repaintedPixels": 16384,
+            "copiedPixels": 0,
+            "draws": 1
+          },
+          "informationalMs": 180.29529099999945
+        },
+        "candidate": {
+          "receipt": {
+            "provenance": {
+              "fixture-copy-2": 4545.491291398801
+            },
+            "triangleArea": 4545.491291398801,
+            "vertexCopies": 95,
+            "actualTriangulations": 0,
+            "repaintedPixels": 16384,
+            "copiedPixels": 0,
+            "draws": 1
+          },
+          "informationalMs": 106.76554099999976
+        }
+      },
+      {
+        "originShift": 37,
+        "baseline": {
+          "receipt": {
+            "provenance": {
+              "fixture-copy-2": 4545.490985753864
+            },
+            "triangleArea": 4545.490985753864,
+            "vertexCopies": 95,
+            "actualTriangulations": 1,
+            "repaintedPixels": 16384,
+            "copiedPixels": 0,
+            "draws": 1
+          },
+          "informationalMs": 47.417749999999614
+        },
+        "candidate": {
+          "receipt": {
+            "provenance": {
+              "fixture-copy-2": 4545.490985753864
+            },
+            "triangleArea": 4545.490985753864,
+            "vertexCopies": 95,
+            "actualTriangulations": 0,
+            "repaintedPixels": 16384,
+            "copiedPixels": 0,
+            "draws": 1
+          },
+          "informationalMs": 32.66437499999938
+        }
+      }
+    ],
+    "correctness": {
+      "result": "semantic samples, candidate-subset triangle provenance, and copied/repainted probe coverage matched",
+      "semanticSamples": 484,
+      "paintedSamples": 240
+    },
+    "triangulationCache": {
+      "entries": 4,
+      "bytes": 10640,
+      "maxBytes": 16777216,
+      "maxEntries": 8192,
+      "hits": 4,
+      "misses": 6,
+      "evictions": 0
+    }
+  },
+  "browserRuns": [
+    {
+      "label": "tram-base-1",
+      "disposition": "rejected-for-performance-acceptance",
+      "reason": [
+        "Host contention and active paging; unsealed request cache.",
+        "Screenshot shows missing ground/support coverage; not an appearance acceptance baseline."
+      ],
+      "requestedDurationMs": 120000,
+      "completedRequestedWindow": true,
+      "observedFrameWindowMs": 120006.79999999999,
+      "readyMsDiagnosticOnly": 32456,
+      "environment": {
+        "dpr": 1,
+        "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M1 Pro, Unspecified Version)",
+        "height": 1000,
+        "url": "http://localhost:8208/transit.html?st3d=tram&line=6&stop=106_1&shape=6_25&offset=0&dir=0&elevation=1&time=14&stats=0&perfAttribution=0&telemetry=0",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36",
+        "visibility": "visible",
+        "width": 1600
+      },
+      "initialPose": {
+        "headingDeg": 128.31638490173395,
+        "lat": 45.81286594284722,
+        "lon": 15.977282400069456
+      },
+      "endPose": {
+        "headingDeg": 85.11201249381418,
+        "lat": 45.80525299486991,
+        "lon": 15.979251913946852
+      },
+      "errors": [],
+      "groundHealth": {
+        "failed": 0,
+        "rejected": 0,
+        "capacityBlocked": false,
+        "failureBlocked": false,
+        "sourceBlocked": false,
+        "pending": 7,
+        "preparing": 1,
+        "published": 3
+      },
+      "frameDiagnostics": {
+        "count": 7554,
+        "meanMs": 15.886523696055068,
+        "p95Ms": 25.20000000001164,
+        "maxMs": 199.89999999999415,
+        "over50ms": 35
+      },
+      "host": {
+        "load1m": [
+          22.59521484375,
+          21.453125,
+          16.00341796875,
+          17.84423828125
+        ],
+        "vmCounterDeltas": {
+          "Swapins": 97448,
+          "Swapouts": 146708,
+          "Pageins": 69766,
+          "Pageouts": 2267,
+          "Compressions": 4390571,
+          "Decompressions": 3926845
+        },
+        "pageSizeBytes": 16384
+      },
+      "generations": [
+        {
+          "generation": 1,
+          "atMs": 0,
+          "paintRecords": 231,
+          "cpuMsDiagnosticOnly": 1608.9000010490415,
+          "paintCpuMsDiagnosticOnly": 33.200000286102295,
+          "roadSteps": 3238,
+          "repaintedBlocks": 1,
+          "freshTriangulations": 199,
+          "triangulationHits": null
+        },
+        {
+          "generation": 2,
+          "atMs": 25287.4,
+          "paintRecords": 2401,
+          "cpuMsDiagnosticOnly": 2592.100002884865,
+          "paintCpuMsDiagnosticOnly": 540.7000025510788,
+          "roadSteps": 6489,
+          "repaintedBlocks": 9,
+          "freshTriangulations": 5478,
+          "triangulationHits": null
+        },
+        {
+          "generation": 3,
+          "atMs": 72049.6,
+          "paintRecords": 2752,
+          "cpuMsDiagnosticOnly": 2695.600000023842,
+          "paintCpuMsDiagnosticOnly": 555.8999975919724,
+          "roadSteps": 5876,
+          "repaintedBlocks": 6,
+          "freshTriangulations": 4333,
+          "triangulationHits": null
+        }
+      ],
+      "paintWork": {
+        "sourcePreparation": null,
+        "packetPreparation": null,
+        "triangulation": null
+      }
+    },
+    {
+      "label": "tram-candidate-1",
+      "disposition": "rejected-for-performance-acceptance",
+      "reason": [
+        "Host contention and active paging; unsealed request cache.",
+        "Capture saved prematurely at about 113 seconds of requested 120; retained as partial."
+      ],
+      "requestedDurationMs": 120000,
+      "completedRequestedWindow": false,
+      "observedFrameWindowMs": 114083.5,
+      "readyMsDiagnosticOnly": 28119,
+      "environment": {
+        "dpr": 1,
+        "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M1 Pro, Unspecified Version)",
+        "height": 1000,
+        "url": "http://localhost:8209/transit.html?st3d=tram&line=6&stop=106_1&shape=6_25&offset=0&dir=0&elevation=1&time=14&stats=0&perfAttribution=0&telemetry=0",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36",
+        "visibility": "visible",
+        "width": 1600
+      },
+      "initialPose": {
+        "headingDeg": 128.300133071853,
+        "lat": 45.812865958032454,
+        "lon": 15.977282293772836
+      },
+      "endPose": {
+        "headingDeg": 85.49139019093542,
+        "lat": 45.80525306019624,
+        "lon": 15.97925308353235
+      },
+      "errors": [],
+      "groundHealth": {
+        "failed": 0,
+        "rejected": 0,
+        "capacityBlocked": false,
+        "failureBlocked": false,
+        "sourceBlocked": false,
+        "pending": 7,
+        "preparing": 0,
+        "published": 4
+      },
+      "frameDiagnostics": {
+        "count": 6785,
+        "meanMs": 16.814075165806926,
+        "p95Ms": 25.70000000001164,
+        "maxMs": 359,
+        "over50ms": 70
+      },
+      "host": {
+        "load1m": [
+          22.8857421875,
+          26.72021484375,
+          37.2646484375,
+          47.23193359375
+        ],
+        "vmCounterDeltas": {
+          "Swapins": 239485,
+          "Swapouts": 316504,
+          "Pageins": 61812,
+          "Pageouts": 1062,
+          "Compressions": 5927203,
+          "Decompressions": 5224925
+        },
+        "pageSizeBytes": 16384
+      },
+      "generations": [
+        {
+          "generation": 1,
+          "atMs": 0,
+          "paintRecords": 231,
+          "cpuMsDiagnosticOnly": 1655.1000015735626,
+          "paintCpuMsDiagnosticOnly": 9.200000286102295,
+          "roadSteps": 3241,
+          "repaintedBlocks": 1,
+          "freshTriangulations": 134,
+          "triangulationHits": 65
+        },
+        {
+          "generation": 2,
+          "atMs": 20996.5,
+          "paintRecords": 2401,
+          "cpuMsDiagnosticOnly": 2422.899996161461,
+          "paintCpuMsDiagnosticOnly": 177.59999918937683,
+          "roadSteps": 6440,
+          "repaintedBlocks": 6,
+          "freshTriangulations": 625,
+          "triangulationHits": 3241
+        },
+        {
+          "generation": 3,
+          "atMs": 43841.8,
+          "paintRecords": 2752,
+          "cpuMsDiagnosticOnly": 2560.3999996185303,
+          "paintCpuMsDiagnosticOnly": 179.0999994277954,
+          "roadSteps": 5836,
+          "repaintedBlocks": 5,
+          "freshTriangulations": 962,
+          "triangulationHits": 2827
+        },
+        {
+          "generation": 4,
+          "atMs": 95633.5,
+          "paintRecords": 2978,
+          "cpuMsDiagnosticOnly": 5832.200001716614,
+          "paintCpuMsDiagnosticOnly": 552.2000012397766,
+          "roadSteps": 15754,
+          "repaintedBlocks": 18,
+          "freshTriangulations": 643,
+          "triangulationHits": 4136
+        }
+      ],
+      "paintWork": {
+        "sourcePreparation": {
+          "checks": 742,
+          "maxSliceMs": 1.899999976158142,
+          "operations": 18708,
+          "reusedBuckets": 24,
+          "reusedOwners": 716,
+          "slices": 386
+        },
+        "packetPreparation": {
+          "checks": 652,
+          "maxSliceMs": 15.900000095367432,
+          "operations": 44545,
+          "slices": 626
+        },
+        "triangulation": {
+          "bytes": 2108428,
+          "entries": 8042,
+          "evictions": 434,
+          "hits": 17934,
+          "maxBytes": 16777216,
+          "maxEntries": 8192,
+          "misses": 8632
+        }
+      }
+    },
+    {
+      "label": "walk-candidate-1",
+      "disposition": "rejected-for-performance-acceptance",
+      "reason": [
+        "Host contention and active paging; unsealed request cache.",
+        "No matched stationary baseline after load exceeded 100; settled queues and performance unverified."
+      ],
+      "requestedDurationMs": 120000,
+      "completedRequestedWindow": true,
+      "observedFrameWindowMs": 120037.00000000001,
+      "readyMsDiagnosticOnly": 45323,
+      "environment": {
+        "dpr": 1,
+        "height": 1000,
+        "url": "http://localhost:8209/transit.html?st3d=walk&lat=45.8105&lon=15.96916&heading=7.78&elevation=1&time=14&stats=0&perfAttribution=0&telemetry=0",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36",
+        "visibility": "visible",
+        "width": 1600
+      },
+      "initialPose": {
+        "headingDeg": 7.779999999999973,
+        "lat": 45.8105,
+        "lon": 15.96916
+      },
+      "endPose": {
+        "headingDeg": 7.779999999999973,
+        "lat": 45.8105,
+        "lon": 15.96916
+      },
+      "errors": [],
+      "groundHealth": {
+        "failed": 0,
+        "rejected": 0,
+        "capacityBlocked": false,
+        "failureBlocked": false,
+        "sourceBlocked": false,
+        "pending": 3,
+        "preparing": 1,
+        "published": 3
+      },
+      "frameDiagnostics": {
+        "count": 3691,
+        "meanMs": 32.52153887835276,
+        "p95Ms": 99.20000000001164,
+        "maxMs": 6945.400000000009,
+        "over50ms": 333
+      },
+      "host": {
+        "load1m": [
+          112.6865234375,
+          77.13916015625
+        ],
+        "vmCounterDeltas": {
+          "Swapins": 1420290,
+          "Swapouts": 1406912,
+          "Pageins": 91465,
+          "Pageouts": 1638,
+          "Compressions": 7535083,
+          "Decompressions": 6973552
+        },
+        "pageSizeBytes": 16384
+      },
+      "generations": [
+        {
+          "generation": 1,
+          "atMs": 0,
+          "paintRecords": 297,
+          "cpuMsDiagnosticOnly": 1088.8000009059906,
+          "paintCpuMsDiagnosticOnly": 40.80000042915344,
+          "roadSteps": 4254,
+          "repaintedBlocks": 4,
+          "freshTriangulations": 526,
+          "triangulationHits": 371
+        },
+        {
+          "generation": 2,
+          "atMs": 28208.60000000001,
+          "paintRecords": 580,
+          "cpuMsDiagnosticOnly": 4064.5000002384186,
+          "paintCpuMsDiagnosticOnly": 522.2000007629395,
+          "roadSteps": 5750,
+          "repaintedBlocks": 64,
+          "freshTriangulations": 471,
+          "triangulationHits": 897
+        },
+        {
+          "generation": 3,
+          "atMs": 75798.90000000001,
+          "paintRecords": 689,
+          "cpuMsDiagnosticOnly": 9372.299999952316,
+          "paintCpuMsDiagnosticOnly": 837.1999990940094,
+          "roadSteps": 3611,
+          "repaintedBlocks": 5,
+          "freshTriangulations": 110,
+          "triangulationHits": 61
+        }
+      ],
+      "paintWork": {
+        "sourcePreparation": {
+          "checks": 342,
+          "maxSliceMs": 17.100000023841858,
+          "operations": 4442,
+          "reusedBuckets": 12,
+          "reusedOwners": 306,
+          "slices": 225
+        },
+        "packetPreparation": {
+          "checks": 447,
+          "maxSliceMs": 292.5,
+          "operations": 8474,
+          "slices": 429
+        },
+        "triangulation": {
+          "bytes": 889128,
+          "entries": 1478,
+          "evictions": 0,
+          "hits": 3288,
+          "maxBytes": 16777216,
+          "maxEntries": 8192,
+          "misses": 1496
+        }
+      }
+    }
+  ],
+  "remainingGates": [
+    "Same-source, same-route quiet-host moving and stationary comparison.",
+    "Resolve/recheck baseline ground-support/appearance gap before appearance parity claim.",
+    "Verify no recurring >50 ms paint work on quiet host; walk contention produced a 292.5 ms packet slice.",
+    "Road/rail/water/flight support and interaction matrix; memory-limited hardware."
+  ],
+  "rawArtifacts": {
+    "directory": "/Users/simun/Code/zagreb-isochrone-main/performance/station3d/results/paint-2026-09-28",
+    "files": [
+      {
+        "file": "assets.log",
+        "sha256": "c029de42db46a8579f7a7e300d4a1714d743084510ee3bee0cef584ebbc08e16",
+        "bytes": 196
+      },
+      {
+        "file": "baseline-identity.json",
+        "sha256": "dc589566f178607850c279465cadda0ddb08043190afe657bb325917bb619088",
+        "bytes": 131227
+      },
+      {
+        "file": "build.log",
+        "sha256": "f899559c8e80fff04859d4cb13f18b3c175974af9f41b6c7bf732161956b7cb2",
+        "bytes": 283
+      },
+      {
+        "file": "cpu-compare.mjs",
+        "sha256": "c49704d06b2b3f42d82706674c899208219630c7f7cfb1cdea1cebb8962af1c4",
+        "bytes": 23772
+      },
+      {
+        "file": "cpu-comparison.json",
+        "sha256": "67171ca27e58488b81d550953938be76d7af5d14853c04d71afff79b5dfc79f1",
+        "bytes": 10576
+      },
+      {
+        "file": "final-candidate-identity.json",
+        "sha256": "28464d85e56b04ed79b6705aba8014a17601f502b1735e0c1548d6911dc6084d",
+        "bytes": 131724
+      },
+      {
+        "file": "final-packed-output.json",
+        "sha256": "5c6d3d7e9bfa13ec8abde5e792aa08d8c2839d4d9df56165ccaa39874562609f",
+        "bytes": 161
+      },
+      {
+        "file": "make-receipt.py",
+        "sha256": "cb68bcfde3ef224ab483f796081d89f911e4d5d92a48725749d7b50f5a982cd0",
+        "bytes": 9139
+      },
+      {
+        "file": "observed-candidate-identity.json",
+        "sha256": "cba4320821b4571782a8b82eceb452170a68bbe420547aad22805091df8fbe34",
+        "bytes": 131724
+      },
+      {
+        "file": "observer.js",
+        "sha256": "903657bbffa0eda6daf57f67ddcff61e322c6c20370517cb219c06ea9ef8d5ca",
+        "bytes": 3028
+      },
+      {
+        "file": "outside-edit-green.log",
+        "sha256": "e5799f93599ffb4f20ee79e57d6701f66e61405b0169b708194b885ff1fc84b2",
+        "bytes": 1500
+      },
+      {
+        "file": "outside-edit-red.log",
+        "sha256": "ca9f54b9d16b60bae0931b60af168b9efd165d45ce18a00795e4cf2a0ff60189",
+        "bytes": 983
+      },
+      {
+        "file": "package-first-interrupted.log",
+        "sha256": "fa84f5b86e625f1993c821b7051280e531fa9f8e87e3fa0c9df078c9bea4d6b0",
+        "bytes": 73
+      },
+      {
+        "file": "package-verified.log",
+        "sha256": "25848c33a3398e26162d5a8ba0f248a5999aa8dea853a2d03b36d7730862bb9d",
+        "bytes": 452
+      },
+      {
+        "file": "paint-perf.patch",
+        "sha256": "e00dfdc85d647370d82f601be5223af5420af31881d504bd065c22cbfe193750",
+        "bytes": 184528
+      },
+      {
+        "file": "preview-final.json",
+        "sha256": "a5e27fb456662a0b96bbe07830e8d42874866b221985224705d9d00da6b2ad6e",
+        "bytes": 258
+      },
+      {
+        "file": "preview-server.mjs",
+        "sha256": "e7884ecbe13c39f4e401dbf3ccb13ef8a9fd00b9744685100d81fdc7fb6bcc92",
+        "bytes": 4455
+      },
+      {
+        "file": "source-responses.json",
+        "sha256": "696414f57062f46ba0dbd18f146ab249634026b9c01104f1d50e9c53cc2b59af",
+        "bytes": 329843
+      },
+      {
+        "file": "tram-base-1.json",
+        "sha256": "2279294c412fe3bf9b4b51a5002d3feb17220838ce32c01375b94904ea70a348",
+        "bytes": 7734047
+      },
+      {
+        "file": "tram-base-1.png",
+        "sha256": "7c62c0cd2fac5306463ed893e23453c5733e8d87fb41ea017a7bb0115542ff5a",
+        "bytes": 502004
+      },
+      {
+        "file": "tram-candidate-1.json",
+        "sha256": "5765e510f8cc1847f5a3da62ac3545722c055e87aac12556ce1b9f370e8a5c89",
+        "bytes": 7380015
+      },
+      {
+        "file": "tram-candidate-1.png",
+        "sha256": "34673dd9c82520b56f365c10dd74b3d2d584b7fd345a827f4e37aa0b1e027bd0",
+        "bytes": 722886
+      },
+      {
+        "file": "unit.log",
+        "sha256": "37beda594dc09dd6964ef455f16be7c6a886884f5fd6761acf2d6c3696ba22cb",
+        "bytes": 44345
+      },
+      {
+        "file": "walk-candidate-1.json",
+        "sha256": "c3499099633ff674f803b69a85877c19449e053e62d4e81273e1171bc2690b67",
+        "bytes": 6792418
+      },
+      {
+        "file": "walk-candidate-1.png",
+        "sha256": "2fba6ae37508e33073145300592adbc8c08de52943c1827a2561c7ca9d5da14a",
+        "bytes": 1394126
+      }
+    ]
+  }
+}

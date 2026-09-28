@@ -1,0 +1,412 @@
+{
+  "schema": "station3d-paint-curb-performance-receipt-v1",
+  "date": "2026-09-28",
+  "disposition": "implemented-unreleased-performance-gate-open",
+  "branch": "paint-perf",
+  "baseCommit": "fc1e89b8b5e2af7a4105f154bebeb87fdf511475",
+  "lastReleaseTag": "v0.1.0-alpha.5",
+  "lastReleaseCommit": "43361b505016ca6d8818ca02f6d4179abe58611b",
+  "previousReceipt": {
+    "file": "paint-2026-09-28.summary.json",
+    "sha256": "c8516553586acdd99873ad3c8449fca5c83a628eb6832b6ed12069acebea6019"
+  },
+  "identity": {
+    "inputHash": "e9c4ed72fc50c31797bfaf891ec71a41a60dfc963702684828b357c756077994",
+    "outputHash": "42e24fc9b2e6d0af17ce3b1163e356bb4ef5cfc46c451dc7fac709ea5097d494"
+  },
+  "packedOutput": {
+    "filename": "station3d-0.1.0-alpha.5.tgz",
+    "sha256": "e030e707fbc662986eef2cfc05b52f9aa4b4e08616e67676c79db9f32aab9927",
+    "filesCompared": 865,
+    "allBytesMatchWorktree": true,
+    "packedBytes": 12984714,
+    "unpackedBytes": 30747913
+  },
+  "validation": {
+    "toolchain": {
+      "node": "22.23.2",
+      "npm": "10.9.8"
+    },
+    "ci": "passed",
+    "testsPassed": 471,
+    "testsFailed": 0,
+    "build": "passed",
+    "reviewRequiredInputs": [],
+    "releaseAssetAudit": "passed",
+    "packedInstallAndVendor": "passed",
+    "diffCheck": "passed",
+    "performanceAccepted": false,
+    "crossModeAppearanceSupportSelection": "not-passed"
+  },
+  "curbQueryReplay": {
+    "vertices": 28117,
+    "features": 169,
+    "exactMismatches": 0,
+    "baselineNulls": 0,
+    "candidateNulls": 0,
+    "baseline": {
+      "segmentProjections": 4382434,
+      "ownSegmentSearchCalls": 833145,
+      "ownerSetSearchCalls": 0
+    },
+    "candidate": {
+      "segmentProjections": 3557589,
+      "ownSegmentSearchCalls": 556890,
+      "ownerSetSearchCalls": 26753
+    },
+    "absentReferencedOwnerIds": 70,
+    "limits": [
+      "Query replay uses recorded centerlines and a deterministic non-flat terrain sampler; not complete production draping or frame timing.",
+      "Stored ring positions include closing coordinates. All absent IDs were kept in both queries."
+    ],
+    "syntheticRegression": {
+      "owners": 128,
+      "baselineProjections": 3066,
+      "candidateProjections": 18
+    }
+  },
+  "sourceArchive": {
+    "directory": "/Users/simun/Code/zagreb-isochrone-main/performance/station3d/results/paint-2026-09-28/continuation/sources",
+    "complete": true,
+    "entries": 1516,
+    "entriesHash": "e58a3d7df1ef47da6ecab86c4bbecd3d018dcc28b9098932918599bec938f43c",
+    "manifestSha256": "9e2ebd673146c21dd2d559aed4740f98bfc98696038064239080d45f7275bb35",
+    "originalArchivePreserved": true
+  },
+  "browserAttempts": [
+    {
+      "id": "tram-base-2",
+      "disposition": "rejected-preflight",
+      "performanceAccepted": false,
+      "errors": [],
+      "missingUniqueSourceUrls": 125,
+      "missingSourceRequests": 1062,
+      "phases": [],
+      "host": {
+        "load1mMin": 2.81494140625,
+        "load1mMax": 7.5634765625,
+        "sampledSeconds": 62.493,
+        "swapMiB": {
+          "Swapins": 1658.859375,
+          "Swapouts": 2470.6875
+        },
+        "combinedSwapMiBPerSecond": 66.08015097690941
+      },
+      "ground": {
+        "closed": false,
+        "generation": 0,
+        "published": 0,
+        "pending": 4,
+        "preparing": 0,
+        "waitingPublication": 0,
+        "phase": null,
+        "failed": 0,
+        "lastError": null,
+        "capacityBlocked": false,
+        "sourceBlocked": false,
+        "failureBlocked": false,
+        "preparationCpuMs": 0,
+        "preparationSteps": 0
+      },
+      "paintSourceRecords": 1839,
+      "drainState": "unavailable"
+    },
+    {
+      "id": "tram-sources-warmup",
+      "disposition": "unmeasured-source-capture",
+      "performanceAccepted": false,
+      "errors": [],
+      "missingUniqueSourceUrls": 0,
+      "missingSourceRequests": 0,
+      "phases": [
+        {
+          "name": "unmeasured-source-warmup",
+          "done": true,
+          "durationMs": 180000
+        }
+      ],
+      "host": {
+        "load1mMin": 5.24951171875,
+        "load1mMax": 34.00830078125,
+        "sampledSeconds": 262.085,
+        "swapMiB": {
+          "Swapins": 7479.046875,
+          "Swapouts": 10978.3125
+        },
+        "combinedSwapMiBPerSecond": 70.42508871167752
+      },
+      "ground": {
+        "closed": false,
+        "generation": 9,
+        "published": 8,
+        "pending": 7,
+        "preparing": 1,
+        "waitingPublication": 0,
+        "phase": "curb-generation:terrain-drape",
+        "failed": 0,
+        "lastError": null,
+        "capacityBlocked": false,
+        "sourceBlocked": false,
+        "failureBlocked": false,
+        "preparationCpuMs": 5279.699994325638,
+        "preparationSteps": 85018
+      },
+      "paintSourceRecords": 2714,
+      "drainState": "pending"
+    },
+    {
+      "id": "walk-final-visual",
+      "disposition": "limited-visual-check",
+      "performanceAccepted": false,
+      "errors": [],
+      "missingUniqueSourceUrls": 7,
+      "missingSourceRequests": 38,
+      "phases": [],
+      "host": {
+        "load1mMin": 5.32080078125,
+        "load1mMax": 10.0927734375,
+        "sampledSeconds": 85.297,
+        "swapMiB": {
+          "Swapins": 1224.328125,
+          "Swapouts": 2377.1875
+        },
+        "combinedSwapMiBPerSecond": 42.22323909398924
+      },
+      "ground": {
+        "closed": false,
+        "generation": 6,
+        "published": 6,
+        "pending": 0,
+        "preparing": 0,
+        "waitingPublication": 0,
+        "phase": null,
+        "failed": 0,
+        "lastError": null,
+        "capacityBlocked": false,
+        "sourceBlocked": false,
+        "failureBlocked": false,
+        "preparationCpuMs": 0,
+        "preparationSteps": 0
+      },
+      "paintSourceRecords": 2782,
+      "drainState": "drained"
+    }
+  ],
+  "browserLimits": [
+    "Tram preflight exact bbox strings drifted by millimetres despite identical pinned route; no timing phase began.",
+    "Source warmup explicitly admitted new responses and is not performance evidence.",
+    "Walk ground drained without JS errors, but seven building-mesh URLs were absent and screenshot showed a delayed-data toast.",
+    "Walk visual build preceded the final fallback deduplication; final source is covered by exact query parity and pinned-toolchain CI.",
+    "All observation browsers closed; quiet-host moving/stationary and cross-mode gates remain open."
+  ],
+  "earlierAttempts": [
+    {
+      "stage": "ci",
+      "disposition": "rejected",
+      "reason": "Default shell Node25/npm11 did not meet new pinned toolchain; Node22/npm10 CI passed."
+    },
+    {
+      "stage": "preserve-tarball",
+      "disposition": "failed",
+      "reason": "Sandbox denied default npm cache/log writes; retried successfully with /private/tmp cache."
+    }
+  ],
+  "rawDirectory": "/Users/simun/Code/zagreb-isochrone-main/performance/station3d/results/paint-2026-09-28/continuation",
+  "artifacts": [
+    {
+      "file": "continuation/assets-final.log",
+      "bytes": 196,
+      "sha256": "c029de42db46a8579f7a7e300d4a1714d743084510ee3bee0cef584ebbc08e16"
+    },
+    {
+      "file": "continuation/ci-final.log",
+      "bytes": 106260,
+      "sha256": "e8323aad9b79bb1700e947c329a83163fc2231656de045da39e359ded824def4"
+    },
+    {
+      "file": "continuation/ci-wrong-toolchain.log",
+      "bytes": 233,
+      "sha256": "bc89d03d4dcebb3ff2d27563374c83bcc01c5d7a5c445606487ea5911538e11e"
+    },
+    {
+      "file": "continuation/comparison-server.mjs",
+      "bytes": 7766,
+      "sha256": "f61328bbcc579ab3e7eebd0ee69eaaa979a2120d8a3e2160db570dd01da1883a"
+    },
+    {
+      "file": "continuation/curb-owner-query-replay.json",
+      "bytes": 296709,
+      "sha256": "688733598a7dff0e080c91e1052d6c4508d3d5873d6cdb45ec454286814eaf96"
+    },
+    {
+      "file": "continuation/curb-owner-query-replay.mjs",
+      "bytes": 21449,
+      "sha256": "fe33369b5b070639d75516087d72b4a1784bda05bfe093d453fe39823706af19"
+    },
+    {
+      "file": "continuation/curb-query-fallback-red.log",
+      "bytes": 1655,
+      "sha256": "0a776b1f4ee74bc9379c78220ac899d6e3571e9fb26f66b2bab18250dd59d2b9"
+    },
+    {
+      "file": "continuation/curb-query-green.log",
+      "bytes": 683,
+      "sha256": "e4c3a77a02eb8d810a31811eb73183b274d608c0c1250e8a496b30fca43d59c6"
+    },
+    {
+      "file": "continuation/curb-query-red.log",
+      "bytes": 1493,
+      "sha256": "14ce3f6feead49aec3c87ce9bdbc6afc0d61ef8f3700ca76d8ac8ae884979532"
+    },
+    {
+      "file": "continuation/curb-union-source-counts.json",
+      "bytes": 43105,
+      "sha256": "de5e9a572366d873fed06ac265e43bb6a3e0b192b825221e3803fa44ab426661"
+    },
+    {
+      "file": "continuation/final-identity.json",
+      "bytes": 131724,
+      "sha256": "a8f280434b1f35aaecd27ea633a97c352b7a9f68ad800d5825b1a3a42389644c"
+    },
+    {
+      "file": "continuation/fixture-conversion.json",
+      "bytes": 25145,
+      "sha256": "43380590f3a8cdd393f02f833d34cd554935f2a89990b9a5bc35a0414a00b54d"
+    },
+    {
+      "file": "continuation/make-receipt.py",
+      "bytes": 9440,
+      "sha256": "560be1367198ca9093a2bd16d70499cd52cc8dca41597aeb7c6cf08ec058d3df"
+    },
+    {
+      "file": "continuation/observer.js",
+      "bytes": 5590,
+      "sha256": "0f0960fb8e374ecf608f7668eb827b85acacf413a95cc7deb185193189af1afd"
+    },
+    {
+      "file": "continuation/pack-report.json",
+      "bytes": 108375,
+      "sha256": "c68e19c397ca52bf299250ce1e0df2e059ecdacc8bc217f5c09aabc7fa3e2e3a"
+    },
+    {
+      "file": "continuation/pack.log",
+      "bytes": 345,
+      "sha256": "3d196dbf51ddb9cc54e8dd1a3db106d5bb758e72e9024621a6b9ae4584c7b5d9"
+    },
+    {
+      "file": "continuation/packed-output.json",
+      "bytes": 241,
+      "sha256": "9d06b95c0c0238da1271475d94a3720d93647a1348c4ef9cbf4654966e7de853"
+    },
+    {
+      "file": "continuation/paint-curb.patch",
+      "bytes": 200077,
+      "sha256": "338ee42ebcc7d3721f050071fa92a19c60a687cd07951f991a4391a7228a8dfc"
+    },
+    {
+      "file": "continuation/preview-final.json",
+      "bytes": 274,
+      "sha256": "2e2c57a8b649d774ea628844338e669c8285e517d30bf215cfc5f555fe3b954b"
+    },
+    {
+      "file": "continuation/query-replay-first-pass.json",
+      "bytes": 296332,
+      "sha256": "2915f8f86010f6ecba4f367436c24b979105ba2eb945c1493663dec0e4c412d1"
+    },
+    {
+      "file": "continuation/station3d-0.1.0-alpha.5.tgz",
+      "bytes": 12984714,
+      "sha256": "e030e707fbc662986eef2cfc05b52f9aa4b4e08616e67676c79db9f32aab9927"
+    },
+    {
+      "file": "acceptance/protocol-warmup.json",
+      "bytes": 1980,
+      "sha256": "0395dd32e0137f50e5f59545c8d4eb707b3701d3057f993240e1b821f9ef452f"
+    },
+    {
+      "file": "acceptance/protocol.json",
+      "bytes": 1980,
+      "sha256": "f8b11eef265d0104f5028f7eeb024b2645a0414feb83eb960eae9cbbdcc8b420"
+    },
+    {
+      "file": "acceptance/tram-base-2.host.jsonl",
+      "bytes": 19413,
+      "sha256": "2d5836b461b766258b1691f05fc13ab1983b91c15b668ec90d895ccb181232e9"
+    },
+    {
+      "file": "acceptance/tram-base-2.json",
+      "bytes": 720316,
+      "sha256": "535a24e3299041d97412c3318e19a03606961fbd0cb977f5d9d0592c563e5857"
+    },
+    {
+      "file": "acceptance/tram-base-2.requests.jsonl",
+      "bytes": 196647,
+      "sha256": "f313b7ac09a2b87c998e8e97d54f63d002c55c696e2175a820250eeeb69cc01c"
+    },
+    {
+      "file": "acceptance/tram-base-2.served.json",
+      "bytes": 25185,
+      "sha256": "a1d55463d9bbeef3cdf99f9dfb97537740d926e546b3e8310a0413dad9255f6b"
+    },
+    {
+      "file": "acceptance/tram-base-2.server-errors.jsonl",
+      "bytes": 311486,
+      "sha256": "8c465c303946a7f29b7d5822552407aa167aea817e748de20aa06bbf2aa68350"
+    },
+    {
+      "file": "acceptance/tram-sources-warmup.host.jsonl",
+      "bytes": 74945,
+      "sha256": "b6e8d7b68496bc23d63f75da35ab3ef15eda5a353d266365e8a2c47eb5ec9c56"
+    },
+    {
+      "file": "acceptance/tram-sources-warmup.json",
+      "bytes": 11922102,
+      "sha256": "f5c986667c9954fcc97f5bdbc2c23bf0582b6dbc2dd0d0e5435d968a001c00cc"
+    },
+    {
+      "file": "acceptance/tram-sources-warmup.png",
+      "bytes": 723989,
+      "sha256": "ea5c85cd7adc6618c49a4ddfa15575b88686842c81f45902d809209161b9e365"
+    },
+    {
+      "file": "acceptance/tram-sources-warmup.requests.jsonl",
+      "bytes": 291759,
+      "sha256": "8e64d95087f93fd47ff36a474f181a5db27648993aa630a29952d2453b89152b"
+    },
+    {
+      "file": "acceptance/tram-sources-warmup.served.json",
+      "bytes": 25978,
+      "sha256": "350426b6eb72c9fffd6e7f56e3aa94258e57dddc052cca07de42fdd956b50066"
+    },
+    {
+      "file": "acceptance/walk-final-visual.host.jsonl",
+      "bytes": 27715,
+      "sha256": "0b9b03b9896522c8fcbcd323f71e2a507d5c4ad3903a7b2e0ce8c6ee3ad57da2"
+    },
+    {
+      "file": "acceptance/walk-final-visual.json",
+      "bytes": 2315097,
+      "sha256": "aa239eb9d00f6fdee2b84d31e2e15403deea5a3dbf734e42e133e08d3e41f6dd"
+    },
+    {
+      "file": "acceptance/walk-final-visual.png",
+      "bytes": 1400145,
+      "sha256": "4cf904f1a7ec693233be7c0227b48c546b66e5302ffe8a9a6a2e55443fb4554c"
+    },
+    {
+      "file": "acceptance/walk-final-visual.requests.jsonl",
+      "bytes": 186390,
+      "sha256": "7397725457238c2d040342fcade05c681242446bec14bd970f5b944df5e12648"
+    },
+    {
+      "file": "acceptance/walk-final-visual.served.json",
+      "bytes": 24402,
+      "sha256": "83b3190c44b6c1b2ee4d7d9dd5db0dc2a5dce652d02fc06ce188d341952959ef"
+    },
+    {
+      "file": "acceptance/walk-final-visual.server-errors.jsonl",
+      "bytes": 11700,
+      "sha256": "336c4df46a6a8b6bba696b8fddfb4b05a145037f56adcbb6aeac680dead6b007"
+    }
+  ]
+}

@@ -9,11 +9,13 @@ import { createGroundPaintPagePainter } from './ground-paint-page-three.js';
 import { createGroundPaintTargetPool } from './ground-paint-target-pool.js';
 import { createGroundPaintMaterialState } from './ground-paint-material.js';
 import { groundPaintInvalidationBounds } from './ground-composite-plan.js';
+import { planGroundPaintDirtyBlocks } from './ground-paint-dirty-blocks.js';
+import { prepareGroundPaintReadSteps } from './ground-paint-read-slice.js';
+import { createGroundPaintTriangulationCache } from './ground-paint-triangulation.js';
 
 const union = (a, b) => !a ? { ...b } : ({ minX: Math.min(a.minX,b.minX), minZ: Math.min(a.minZ,b.minZ),
     maxX: Math.max(a.maxX,b.maxX), maxZ: Math.max(a.maxZ,b.maxZ) });
 const inside = (b,x,z) => b && x >= b.minX && x <= b.maxX && z >= b.minZ && z <= b.maxZ;
-const intersects = (a,b) => a.minX <= b.maxX && a.maxX >= b.minX && a.minZ <= b.maxZ && a.maxZ >= b.minZ;
 let publicationGeneration = 0;
 
 // Material cache only. Source publication supplies immutable plans; physical
@@ -42,7 +44,9 @@ export function createGroundPaintCache({ renderer, receiver, size, widthsM, bloc
     queue ||= createFrameChunkQueue({ label: 'ground:paint', frameBudgetMs: 1,
         pauseDuringMovement: false, preferAnimationFrame: true, workClass: 'near', trackWorldReady: true });
     painter ||= createGroundPaintPagePainter({ renderer });
-    const active = widths.map(() => null), invalid = widths.map(() => null);
+    const active = widths.map(() => null), invalid = widths.map(() => null), dirtyBlocks = widths.map(() => null);
+    const packetWork = { slices: 0, checks: 0, operations: 0, maxSliceMs: 0 };
+    const triangulationCache = createGroundPaintTriangulationCache();
     let sourceRevision = 0, planRevision = -1, plan = null, styles = null, styleKey = null;
     let cameraX = 0, cameraZ = 0, candidate = null, closed = false;
     let pendingSource = null;
@@ -72,22 +76,23 @@ export function createGroundPaintCache({ renderer, receiver, size, widthsM, bloc
         }
     };
     function stagePublication(c) {
-        let before = null, beforeInvalid = null;
+        let before = null, beforeInvalid = null, beforeDirty = null;
         c.surfaceTicket = registry.begin({ key: `ground-paint:${receiver.key}:${c.index}`, generation: ++publicationGeneration });
         const entry = { ticket: c.surfaceTicket, clear: true,
             isCurrent: () => !closed && candidate === c && !c.page.disposed,
             commit() {
-                before = active[c.index]; beforeInvalid = invalid[c.index];
+                before = active[c.index]; beforeInvalid = invalid[c.index]; beforeDirty = dirtyBlocks[c.index];
                 active[c.index] = { page: c.page, layout: c.layout, plan: c.plan, revision: c.revision };
                 invalid[c.index] = c.invalidAfter;
+                dirtyBlocks[c.index] = null;
                 try { publishMapping(); } catch (error) {
-                    active[c.index] = before; invalid[c.index] = beforeInvalid; throw error;
+                    active[c.index] = before; invalid[c.index] = beforeInvalid; dirtyBlocks[c.index] = beforeDirty; throw error;
                 }
                 c.committed = true; return true;
             },
             rollback() {
                 if (!c.committed) return;
-                active[c.index] = before; invalid[c.index] = beforeInvalid;
+                active[c.index] = before; invalid[c.index] = beforeInvalid; dirtyBlocks[c.index] = beforeDirty;
                 publishMapping(); c.committed = false;
             },
             discard() { if (!c.committed) c.page.dispose(); },
@@ -102,8 +107,14 @@ export function createGroundPaintCache({ renderer, receiver, size, widthsM, bloc
     }
     function* preparePageSteps(c, update) {
         c.phase = 'packet';
-        const packet = yield* createGroundPaintPacketSteps({ plan: c.plan, bounds: c.layout.bounds, size,
-            styles: c.styles, limits: packetLimits, update });
+        // Only immutable CPU preparation is batched. Return to the caller's
+        // fresh guards before allocation, asynchronous preparation or GPU work.
+        const packet = yield* prepareGroundPaintReadSteps(createGroundPaintPacketSteps({
+            plan: c.plan, bounds: c.layout.bounds, size, styles: c.styles, limits: packetLimits, update, triangulationCache,
+        }), c.isCurrent || (() => !closed && candidate === c), { stats: packetWork });
+        if (!packet) return null;
+        yield { phase: 'paint-packet-ready' };
+        if (closed || candidate !== c || c.isCurrent && !c.isCurrent()) return null;
         const lease = pool.acquire();
         if (!lease) throw new Error('Ground paint staging layer exhausted');
         try { c.task = painter.createTask({ packet, targetLease: lease, resolveAlbedoMap,
@@ -147,8 +158,9 @@ export function createGroundPaintCache({ renderer, receiver, size, widthsM, bloc
         const c = { index, layout, plan, styles, revision: planRevision, invalidAfter: null,
             phase: 'packet', steps: null, task: null, page: null, batch: null, ticket: null, committed: false };
         const copy = previous?.page.styles.key === styleKey ? previous.page : null;
+        const damage = planGroundPaintDirtyBlocks({ bounds: layout.bounds, size, blockSize, previous: dirtyBlocks[index] });
         const update = planGroundPaintUpdate({ receiver, bounds: layout.bounds, size, previous: copy,
-            dirtyBounds: invalid[index] ? [invalid[index]] : [], blockSize });
+            dirtyBlocks: damage, blockSize });
         c.steps = preparePageSteps(c, update);
         candidate = c;
         c.job = queue.enqueue([c], () => {
@@ -156,7 +168,9 @@ export function createGroundPaintCache({ renderer, receiver, size, widthsM, bloc
             if (c.phase !== 'publish') {
                 const step = c.steps.next();
                 if (!step.done) return step.value?.deferFrame ? FRAME_CHUNK_DEFER_ITEM : FRAME_CHUNK_REPEAT_ITEM;
-                c.page = step.value; stagePublication(c); c.phase = 'publish';
+                c.page = step.value;
+                if (!c.page) { releaseCandidate(c); return; }
+                stagePublication(c); c.phase = 'publish';
                 return FRAME_CHUNK_REPEAT_ITEM;
             }
             if (c.phase === 'publish') {
@@ -198,7 +212,7 @@ export function createGroundPaintCache({ renderer, receiver, size, widthsM, bloc
             if (!changed.length) return null;
             const dirty = changed.reduce((box, bounds) => union(box, bounds), null);
             const before = { plan, styles, styleKey, sourceRevision, planRevision,
-                active: [...active], invalid: [...invalid] };
+                active: [...active], invalid: [...invalid], dirtyBlocks: [...dirtyBlocks] };
             const revision = sourceRevision+1;
             const current = () => available() && sourceRevision === before.sourceRevision;
             const index = widths.length-1;
@@ -207,33 +221,45 @@ export function createGroundPaintCache({ renderer, receiver, size, widthsM, bloc
             c = { index, layout, plan: nextPlan, styles: nextRecipes, revision, phase: 'source',
                 page: null, committed: false, steps: null, task: null, isCurrent: current };
             candidate = c;
+            const damage = planGroundPaintDirtyBlocks({ bounds: layout.bounds, size, blockSize,
+                dirtyBounds: changed, previous: dirtyBlocks[index] });
             const needsPage = !active[index] ? nextPlan.commands.length > 0
-                : layout.changed || intersects(layout.bounds, dirty);
+                : layout.changed || damage.blocks.length > 0;
             if (needsPage) {
                 const copy = active[index]?.page.styles.key === table.key ? active[index].page : null;
                 const update = planGroundPaintUpdate({ receiver, bounds: layout.bounds, size, previous: copy,
-                    dirtyBounds: [dirty, invalid[index]].filter(Boolean), blockSize });
+                    dirtyBlocks: damage, blockSize });
                 c.steps = preparePageSteps(c, update);
                 for (;;) {
                     if (!current()) return null;
                     const step = c.steps.next();
-                    if (step.done) { c.page = step.value; break; }
+                    if (step.done) { if (!step.value) return null; c.page = step.value; break; }
                     yield step.value;
                 }
             }
             if (!current()) return null;
             const nextActive = active.map(entry => entry ? { ...entry, revision } : null);
-            const nextInvalid = invalid.map((bounds, i) => active[i] && intersects(active[i].page.bounds, dirty)
-                ? union(bounds, dirty) : bounds);
+            const nextDirty = active.map((entry, i) => entry ? planGroundPaintDirtyBlocks({
+                bounds: entry.page.bounds, size, blockSize, dirtyBounds: changed, previous: dirtyBlocks[i],
+            }) : null);
+            // The union is only a conservative material fallback for pages
+            // with actual damage. Edits on opposite sides outside a page must
+            // not hide its still-current coverage in the gap between them.
+            const nextInvalid = nextDirty.map((damage, i) => damage?.blocks.length ? union(invalid[i], dirty) : null);
+            for (let i = 0; i < nextDirty.length; i++) {
+                if (!nextDirty[i]?.blocks.length) nextDirty[i] = null;
+            }
             if (c.page) {
                 nextActive[index] = { page: c.page, layout, plan: nextPlan, revision };
                 nextInvalid[index] = null;
+                nextDirty[index] = null;
             }
             c.surfaceTicket = registry.begin({ key: `ground-paint:${receiver.key}:sources`, generation: ++publicationGeneration });
             const restore = () => {
                 ({ plan, styles, styleKey, sourceRevision, planRevision } = before);
                 active.splice(0, active.length, ...before.active);
                 invalid.splice(0, invalid.length, ...before.invalid);
+                dirtyBlocks.splice(0, dirtyBlocks.length, ...before.dirtyBlocks);
                 publishMapping(); c.committed = false;
             };
             const entry = { ticket: c.surfaceTicket, clear: true,
@@ -243,6 +269,7 @@ export function createGroundPaintCache({ renderer, receiver, size, widthsM, bloc
                     sourceRevision = revision; planRevision = revision;
                     active.splice(0, active.length, ...nextActive);
                     invalid.splice(0, invalid.length, ...nextInvalid);
+                    dirtyBlocks.splice(0, dirtyBlocks.length, ...nextDirty);
                     c.committed = true;
                     try { publishMapping(); } catch (error) { restore(); throw error; }
                     return true;
@@ -261,6 +288,7 @@ export function createGroundPaintCache({ renderer, receiver, size, widthsM, bloc
                     if (finalized || !c.committed) return false;
                     finalized = true;
                     if (c.page) { before.active[index]?.page.dispose(); published++; }
+                    triangulationCache.retain(nextPlan);
                     failures = 0; lastError = null; retryAt = 0;
                     releaseCandidate(c);
                     if (pendingSource === token) pendingSource = null;
@@ -287,7 +315,7 @@ export function createGroundPaintCache({ renderer, receiver, size, widthsM, bloc
             if (c.job) queue.cancel(c.job);
             releaseCandidate(c);
         }
-        active.forEach((entry,i) => { entry?.page.dispose(); active[i] = null; invalid[i] = null; });
+        active.forEach((entry,i) => { entry?.page.dispose(); active[i] = null; invalid[i] = null; dirtyBlocks[i] = null; });
         materialState.clear(); failures = 0; retryAt = 0;
     };
     renderer.domElement?.addEventListener('webglcontextlost', contextReset);
@@ -320,11 +348,14 @@ export function createGroundPaintCache({ renderer, receiver, size, widthsM, bloc
             return null;
         },
         snapshot: () => ({ closed, sourceRevision, planRevision, published, failures, retryAt, lastError,
+            packetPreparation: { ...packetWork },
+            triangulation: triangulationCache.snapshot(),
             submissions: { frame: submissionFrame, count: frameSubmissions, elapsedMs: frameSubmissionMs,
                 budgetMs: submissionBudgetMs, limit: maxSubmissionsPerFrame, total: totalSubmissions, maxItemMs: maxSubmissionMs },
             pending: candidate ? { index:candidate.index,phase:candidate.phase,revision:candidate.revision } : null,
             pages: active.map((entry,i) => entry ? { revision:entry.revision,layer:entry.page.layer,
-                bounds:entry.page.bounds,invalidBounds:invalid[i],disposed:entry.page.disposed } : null),
+                bounds:entry.page.bounds,invalidBounds:invalid[i],dirtyBlocks:dirtyBlocks[i]?.blocks.length || 0,
+                receipt:entry.page.receipt,disposed:entry.page.disposed } : null),
             resources:pool.stats(), materialTableBytes:materialState.textureBytes,
             patterns:painter.stats?.().patterns || null }),
         dispose() {
@@ -332,7 +363,7 @@ export function createGroundPaintCache({ renderer, receiver, size, widthsM, bloc
             closed = true; contextReset();
             renderer.domElement?.removeEventListener('webglcontextlost',contextReset);
             renderer.domElement?.removeEventListener('webglcontextrestored',contextReset);
-            queue.dispose(); painter.dispose(); pool.dispose(); materialState.dispose();
+            queue.dispose(); painter.dispose(); pool.dispose(); materialState.dispose(); triangulationCache.clear();
             return true;
         },
     });

@@ -2,6 +2,8 @@
 // the existing frame queue advances each copy/clear/draw and publishes only the
 // complete page. Blocks are disjoint; every destination texel is written once
 // by a copy or a clear before any paint ranks are replayed.
+import { GROUND_PAINT_DIRTY_BLOCKS } from './ground-paint-dirty-blocks.js';
+
 export const GROUND_PAINT_UPDATE = 'station3d-ground-paint-update-v1';
 const finite = value => typeof value === 'number' && Number.isFinite(value);
 const sameReceiver = (a, b) => a?.key === b?.key && a?.verticalBand === b?.verticalBand
@@ -12,7 +14,7 @@ const intersects = (a, b) => a.x < b.x + b.width && a.x + a.width > b.x
     && a.y < b.y + b.height && a.y + a.height > b.y;
 
 export function planGroundPaintUpdate({ receiver, bounds, size, previous = null, dirtyBounds = [],
-    blockSize = 256, maxBlocks = 256, maxDirtyBounds = 256 }) {
+    blockSize = 256, maxBlocks = 256, maxDirtyBounds = 256, dirtyBlocks = null }) {
     if (!receiver?.key || !receiver?.verticalBand || !receiver?.coverageRevision || !validBounds(bounds)
         || ![size, blockSize, maxBlocks, maxDirtyBounds].every(n => Number.isSafeInteger(n) && n > 0)) {
         throw new TypeError('Invalid ground paint update dimensions or receiver');
@@ -20,6 +22,16 @@ export function planGroundPaintUpdate({ receiver, bounds, size, previous = null,
     if (Math.ceil(size / blockSize) ** 2 > maxBlocks) throw new RangeError('Ground paint block budget exceeded');
     if (!Array.isArray(dirtyBounds) || dirtyBounds.length > maxDirtyBounds) throw new RangeError('Ground paint dirty-region budget exceeded');
     if (!dirtyBounds.every(validBounds)) throw new TypeError('Invalid ground paint dirty bounds');
+    const columns = Math.ceil(size / blockSize);
+    if (dirtyBlocks && (dirtyBlocks.contract !== GROUND_PAINT_DIRTY_BLOCKS
+        || dirtyBlocks.size !== size || dirtyBlocks.blockSize !== blockSize
+        || !validBounds(dirtyBlocks.bounds)
+        || ['minX', 'minZ', 'maxX', 'maxZ'].some(key => dirtyBlocks.bounds[key] !== bounds[key])
+        || !Array.isArray(dirtyBlocks.blocks) || dirtyBlocks.blocks.length > maxBlocks
+        || dirtyBlocks.blocks.some(index => !Number.isSafeInteger(index) || index < 0 || index >= columns ** 2))) {
+        throw new TypeError('Dirty blocks belong to a different ground paint page');
+    }
+    const marked = new Set(dirtyBlocks?.blocks);
     const stepX = (bounds.maxX - bounds.minX) / size, stepZ = (bounds.maxZ - bounds.minZ) / size;
     let offsetX = 0, offsetY = 0, reusable = false;
     if (previous && !previous.disposed && sameReceiver(receiver, previous.receiver)
@@ -50,7 +62,9 @@ export function planGroundPaintUpdate({ receiver, bounds, size, previous = null,
         const rect = { x, y, width: Math.min(blockSize, size - x), height: Math.min(blockSize, size - y) };
         const sourceX = x + offsetX, sourceY = y + offsetY;
         if (reusable && sourceX >= 0 && sourceY >= 0 && sourceX + rect.width <= size
-            && sourceY + rect.height <= size && !dirty.some(b => intersects(rect, b))) {
+            && sourceY + rect.height <= size
+            && !marked.has(Math.floor(y / blockSize) * columns + Math.floor(x / blockSize))
+            && !dirty.some(b => intersects(rect, b))) {
             copies.push(Object.freeze({ ...rect, sourceX, sourceY }));
             copiedPixels += rect.width * rect.height;
         } else {

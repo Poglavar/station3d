@@ -110,3 +110,33 @@ test('the real Jelačić polygon keeps its 15-vertex hole in the independent pai
     }
     assert.ok(pavingSamples > 10, 'actual material coverage must survive; an empty index cannot pass the hole check');
 });
+
+test('unchanged plans and polygons reuse immutable copies under the same revision contract', () => {
+    const road = paint('road', 'road-carriageway'), paving = paint('paving', 'sidewalk');
+    const previous = build([road, paving]);
+    const identical = { ...paving, get polygons() { throw new Error('unchanged geometry was copied'); } };
+    assert.equal(build([{ ...road }, identical], { previous }), previous);
+    const changed = build([road, { ...paving, sourceRevision: 'source:2', polygons: [{ outerRing: ring(30, 40), holeRings: [] }] }], { previous });
+    assert.equal(changed.byKey('road'), previous.byKey('road'));
+    assert.notEqual(changed.byKey('paving'), previous.byKey('paving'));
+    assert.equal(changed.paintAt(0, 0, receiver).key, 'road');
+    assert.equal(changed.paintAt(35, 35, receiver).key, 'paving');
+    assert.throws(() => build([road, paving], { previous, limits: { ...limits, vertices: 3 } }), /vertex budget/);
+    assert.throws(() => build([road, paving], { previous, limits: { ...limits, verticesPerRecord: 3 } }), /vertex budget/);
+    const differentGrid = build([road, paving], { previous, cellM: 48 });
+    assert.notEqual(differentGrid, previous, 'new index dimensions must not return the previous index');
+    assert.equal(differentGrid.byKey('road'), previous.byKey('road'), 'changing the index still reuses source geometry');
+    const wide = paint('wide', 'sidewalk', { polygons: [{ outerRing: ring(-200, 200), holeRings: [] }] });
+    const smallCells = build([wide]);
+    assert.equal(smallCells.stats.oversized, 1);
+    const largeCells = build([wide], { previous: smallCells, cellM: 400, limits: { ...limits, oversized: 0 } });
+    assert.equal(largeCells.stats.oversized, 0, 'reuse must respect the new index capacity');
+});
+
+test('a source moving between buckets retains its polygon without retaining the old bucket plan', () => {
+    const source = paint('road', 'road-carriageway');
+    const retained = build([source]);
+    const moved = build([{ ...source }], { retained });
+    assert.notEqual(moved, retained);
+    assert.equal(moved.byKey('road'), retained.byKey('road'));
+});

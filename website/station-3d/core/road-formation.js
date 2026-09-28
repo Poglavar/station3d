@@ -3495,6 +3495,12 @@ export class RoadFormationModel {
                 new Set(osmIds.map(numericId).filter(value => value != null)),
             );
             if (requestedIds.length > 0) {
+                // A curb union can name dozens of roads. Searching each road
+                // separately makes the distant ones scan their entire length
+                // at every vertex. Small sets keep the cheaper direct path.
+                if (requestedIds.length >= 8) {
+                    return this._nearestOnOwnerSet(Number(x), Number(z), requestedIds);
+                }
                 let best = null;
                 for (const id of requestedIds) {
                     const candidate = this._nearestOnOwnSegments(Number(x), Number(z), id);
@@ -3511,6 +3517,42 @@ export class RoadFormationModel {
             this._genericSegmentsNear(x, z, maxDistanceM),
             maxDistanceM,
         );
+    }
+
+    _nearestOnOwnerSet(x, z, requestedIds) {
+        const requested = new Set(requestedIds), nearbyIds = new Set();
+        // Even an absent/distant member must invalidate this answer if it
+        // arrives or moves closer in a later generation.
+        for (const id of requestedIds) recordGroundReadId(id);
+        const cellX = Math.floor(x / INDEX_CELL_M), cellZ = Math.floor(z / INDEX_CELL_M);
+        for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) {
+            for (const segment of this._segmentIndex.get(`${cellX + dx}_${cellZ + dz}`) || []) {
+                if (requested.has(segment.osmId)) nearbyIds.add(segment.osmId);
+            }
+        }
+        let best = null;
+        // Keep caller order for equal-distance owners and use the existing
+        // exact per-owner query, including its segment ties and height rules.
+        for (const id of requestedIds) {
+            if (!nearbyIds.has(id)) continue;
+            const candidate = this._nearestOnOwnSegments(x, z, id);
+            if (candidate && (!best || candidate.distanceSquared < best.distanceSquared)) best = candidate;
+        }
+        // Every segment is indexed in every cell its bounds touch. This 3×3
+        // block covers at least one cell width in all directions, so an owner
+        // omitted above cannot tie or beat a winner strictly inside that
+        // distance. Otherwise retain the unbounded search without repeating
+        // any owner query. Only the local winner can win the complete search;
+        // insert it at its original position to preserve cross-owner ties.
+        if (best && best.distanceSquared < INDEX_CELL_M * INDEX_CELL_M) return best;
+        let complete = null;
+        for (const id of requestedIds) {
+            const candidate = nearbyIds.has(id)
+                ? (id === best?.osmId ? best : null)
+                : this._nearestOnOwnSegments(x, z, id);
+            if (candidate && (!complete || candidate.distanceSquared < complete.distanceSquared)) complete = candidate;
+        }
+        return complete;
     }
 
     // True when this location sits beside the rendered earthwork/retaining
@@ -5151,7 +5193,7 @@ export class RoadFormationModel {
                 throw error;
             }
             const methods = [
-                'toLocal', '_baseY', '_nearestOnSegments', '_genericSegmentsNear', '_nearestOnOwnSegments',
+                'toLocal', '_baseY', '_nearestOnSegments', '_genericSegmentsNear', '_nearestOnOwnSegments', '_nearestOnOwnerSet',
                 'formationAtLocal', 'sceneYAtLocal', 'groundSceneYAtLocal', 'civilGroundSceneYAtLocal',
                 'hasDressedSurfaceBoundaryAtLocal', 'nearbyCenterlineSegments', 'surfaceAtLocal',
                 'publishedSurfaceAtLocal', '_surfaceAtLocalBuilt', 'surfaceProfilesNear', 'dressingProfilesNear',

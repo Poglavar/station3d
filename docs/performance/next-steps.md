@@ -1,8 +1,8 @@
 # Station3D performance next steps
 
-Updated 23 September 2026. Read [audit.md](audit.md) for measurements, completed
+Updated 28 September 2026. Read [audit.md](audit.md) for measurements, completed
 work, scope and limitations. This is the single active performance backlog.
-S1–S3 and R1–R3 are implemented (see the status table); the remaining items are proposals.
+S1–S3 and R1–R3 are implemented (see the status table). The ground-paint candidate below is implemented but has not passed the quiet-host performance gate; other remaining items are proposals.
 
 The 23 September revision re-measured the 22 September claims against the same
 served bundles (`cdd475cb…` standard, `d6ba6799…` Sloboda) and added frame-anatomy,
@@ -389,11 +389,140 @@ paint; per generation the cleanest pair (c) spent 8.1 s (base) against 7.0 s
 50 ms in total over five generations. Frame pacing on the tram is unchanged
 within noise. Receipts: `zagreb-isochrone-main/performance/station3d/results/audit-2026-09-25/g1/`.
 
+**Curbs: read evidence evaluated and rejected (26 September).** Curb tiles
+are selected by every receiver region and re-drape whole 200 m tiles (tram 6:
+21–43 tiles, ~2 s of ~7 s generation CPU). A candidate recorded each tile's
+reads like a road receiver and selected tiles by evidence instead of road
+source boxes. Against `v0.1.0-alpha.5` (alternating runs, load 3.6–9.0) it
+still re-drew 93–99% of the tiles on the tram and changed nothing on the
+walk; curb time differed within the base-to-base spread. A breakdown showed
+why: every read-selected tile hits both a terrain region (2–7 detail windows
+of ~1.1 km, 5–17 km² per generation) and a formation profile by id (440–620
+changed profiles, mostly terrain-derived `points`, `baseTerrainCutout` and
+`terrainExcavationRegions`). Of 68 re-drapes with a previous build to
+compare, 42 moved kerb vertices by more than 5 cm (up to 6.1 m), 18 by
+1–5 cm and only 5 by under 1 cm. The work is real, so the candidate was
+dropped. Reusing per-run draped heights was also rejected: a run is a whole
+road-union kerb ring (12,000 vertices across 28 roads on one tile). Receipts:
+`zagreb-isochrone-main/performance/station3d/results/audit-2026-09-26/g1-curbs/`.
+
 Still open:
 
-- Curb generation re-drapes whole curb tiles on any receiver change
-  (`curb-generation:terrain-drape`, ~1.5 s per tram generation); the same
-  evidence scheme applies.
+- Terrain detail windows re-height square kilometres under built roads and
+  curbs as the camera moves; that, not receiver selection, drives most
+  tram generation CPU (see the curb breakdown above). Measured on tram 6:
+  of the area each window move marked changed, ~40–45% was old/new window
+  overlap whose heights differed only because each camera-centred window
+  sampled the LiDAR on its own lattice, ~20–30% was trailing windows falling
+  back to the base, and ~25–35% was fine terrain genuinely arriving.
+  Fixed 1 m detail tiles were built and measured (26–27 September) and are
+  parked, not released: one tile per 400 m terrain mesh tile, each requested
+  with a 34 m apron snapped to the source lattice and kept as one grid for
+  its life; the footprint is the mesh tiles meeting a ±200 m support square
+  plus those along the first 700 m of the road ahead corridor (after
+  reveal); tiles retire beyond 600 m once out of the footprint for 20 s, at
+  most 16; landed tiles publish once per frame. The complete patch
+  (`fixed-detail-tiles.patch`, applies to 6cfaaaa), probes and receipts are
+  in `zagreb-isochrone-main/performance/station3d/results/audit-2026-09-26/terrain-tiles/`.
+  Final clean A/B against the same code without tiles (tram 6, three
+  alternating pairs, load 3.5–6.7): existing-road recompiles 2,290→823
+  (−64%), but generation CPU 36.0→35.1 s (flat), median fps 71→69, median
+  p95 25.0 ms both, readiness 24.1→28.9 s (an earlier startup-only A/B had
+  31.9→26.6 s; the API was slow that day). Recompiles are not the cost:
+  a tram generation spends ~6 s whatever it recompiles. Per run of six
+  generations (both sides alike): curbs ~11 s (drape 8.2 s), ground paint
+  ~7.5 s, roads ~8 s (road 4.7 s, formation 3.2 s), rails ~2 s. The tiles
+  cut the road stages by ~1.5 s and nothing else.
+  Lessons kept for any retry: geographic tiles must be chosen in mesh tiles
+  (a mesh tile is fine only when fine cores cover it completely); the ahead
+  corridor must not load during the world build (a tile landing mid-load
+  re-published terrain and delayed readiness ~25 s); retirement needs time
+  hysteresis (a wobbling lead point caused 74 revisions in 12 minutes);
+  keeping tiles under the whole 1.4 km corridor raised p95 frame time
+  25→32 ms.
+- The parked curb and terrain changes removed different invalidation drivers.
+  Curb selection still includes the 264 m padded boxes around changed road
+  source tiles (`core/ground-generation-scope.js`); paint records follow road
+  source revisions (`core/ground-surface-paint.js`), rather than height-only
+  terrain revisions. This explains the limited measured gains. It does not
+  establish that every loaded curb always rebuilds or an 11% CPU ceiling:
+  owner counts alone do not measure the cost of existing versus new roads.
+- Ground paint rework (28 September, branch `paint-perf`, not released):
+  - The original 18 `dt11` publications averaged 1.254 s paint within 6.009 s
+    generation CPU, 23.6 coarse blocks repainted and 4,438 polygon visits. This
+    is excess repeated work, but 24 of 64 blocks does not prove a near-full
+    repaint of populated coverage. The inferred 0.7 s validation cost and
+    1.25→0.5 s prediction were not profiler measurements. The archived run also
+    contains a terrain-worker failure, so it is not clean acceptance evidence.
+  - Pure paint preparation now advances in 0.5 ms CPU slices, checking the
+    clock after every operation with a 256-operation cap. Fresh validity checks
+    occur between slices and before allocation, asynchronous preparation and
+    publication. A frame-wide validity memo would be unsafe: the frame can
+    contain a source edit or publication. One expensive operation can exceed
+    the slice target; it is not a hard task-duration guarantee.
+  - Identical owner replacements skip regional rebuilding; unchanged compiled
+    polygons and complete plans are reused by the existing source-revision
+    contract. Ownership moves and no-op publications retain their atomic
+    metadata and stale-input checks.
+  - Disjoint source rectangles accumulate into bounded per-page dirty blocks,
+    including pending fine-page changes, shifts and rollback. The conservative
+    material fallback bounds remain valid while those fine pages catch up.
+  - A session cache shares source polygon triangulations across pages and
+    generations, capped at 16 MiB and 8,192 entries. Removed/revised sources
+    retire; eviction can cause later triangulation. Packet geometry remains
+    page-local and preserves holes and material/source order.
+  - Added engine-owned coverage for cancellation, source moves, same-source
+    reuse, dirty-page rollback/shift, triangulation parity and capacity limits.
+    All 471 tests, the build, release asset audit and packed install/vendor check
+    pass. In a deterministic copied-fixture replay, unchanged recompiles copy
+    388→0 source vertices; two separated edits repaint 4,992→1,920 pixels and
+    triangulate 4→1 polygons. Coverage and holes match at 484 probe points per
+    update. These are fixture work counts, not general speedup percentages.
+  - Browser observations reached moving tram and stationary walk without engine
+    errors. Tram publications with 2,401/2,752 paint records repainted 9/6 blocks
+    on baseline versus 6/5 on the candidate; the candidate performed 625/962
+    fresh triangulations versus baseline's 5,478/4,333. Raw timings are retained
+    only as diagnostics: host load rose from 16–23 to 23–47, then 77–113 during
+    walk, with paging. Tram baseline ran 120 s; candidate was saved early at
+    113 s. Sources were cached by request, not a sealed replay. The baseline
+    screenshot also shows missing ground/support coverage. These runs cannot
+    pass a cross-mode appearance or frame-time gate.
+  - Receipt: `performance/station3d/paint-2026-09-28.summary.json`; raw JSON,
+    screenshots, response hashes, probe scripts and patch remain in the Zagreb
+    consumer's `performance/station3d/results/paint-2026-09-28/`.
+  - The follow-up frozen-source preflight did not start timing: the same pinned
+    tram route had millimetre anchor drift, changing exact bbox request keys.
+    The host was also paging at about 66 MiB/s. An explicitly unmeasured warmup
+    extended the archived sources; a later walk visual check drained six ground
+    publications without JavaScript errors but lacked seven building-mesh
+    responses. These are preserved failures/limited checks, not acceptance.
+    See `performance/station3d/paint-curb-2026-09-28.summary.json`.
+  - Next: fix the comparison's initial anchor and complete the same-source
+    moving/stationary comparison on a quiet host before accepting performance.
+    Keep the cross-mode support, appearance and interaction gates open.
+- Curb owner queries (28 September, same unreleased `paint-perf` branch):
+  - Code reading identified a separate avoidable cost: every unique curb vertex
+    searched every owner in its union, and distant owners fell back to scanning
+    their whole centreline. The archived unions average 29.6 owner IDs per
+    stored ring position, up to 62; draping was already time-sliced and already
+    memoized repeated height lookups and owner-list joins.
+  - Sets of at least eight owners now use the existing 80 m spatial index to
+    select nearby owners. A strict distance proof permits early return; an
+    unbounded fallback preserves distant queries without duplicate searches.
+    Ties, captured snapshots and all owner read dependencies are retained.
+  - An archived-source query replay compares 28,117 ring positions exactly:
+    zero differences or null results, 4,382,434→3,557,589 segment projections
+    (−18.8%) and 833,145→556,890 owner searches (−33.2%). The replay uses a
+    deterministic terrain sampler and has 70 referenced IDs absent from both
+    centreline indexes; it is not a production drape or frame-time claim.
+    The complexity test goes red at 3,066→3,066 and green at 3,066→18;
+    another test prevents duplicate work in the fallback.
+  - Final branch includes main's package fixes through `fc1e89b`. Pinned-toolchain
+    CI, 471 tests, release asset audit and packed install/vendor checks pass.
+    The candidate is committed but not released. Broad curb/terrain preparation and genuine
+    new-road compilation remain potential improvements; no engine limit has
+    been demonstrated. Keep this candidate fixed for the release comparison
+    before adding another optimization.
 - Rail and opening changes still use the padded-box rule.
 - Receivers built by the ordinary per-tile path carry no evidence and use the
   box fallback.

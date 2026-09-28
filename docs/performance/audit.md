@@ -1,6 +1,6 @@
 # Station3D performance audit
 
-Updated 23 September 2026. This and [next-steps.md](next-steps.md) are the only
+Updated 28 September 2026. This and [next-steps.md](next-steps.md) are the only
 current performance documents. Update them in place; keep dated measurements in
 machine-readable receipts, not another audit or delivery tracker.
 
@@ -19,6 +19,83 @@ values below describe these exact runs; none establishes a general FPS promise,
 a before/after speedup, or mobile readiness. The small relative CPU probe often
 reported 100% clean coverage while native paging was active. That is insufficient
 evidence of an uncontended machine.
+
+## Ground-paint and curb-query candidate, 28 September
+
+The `paint-perf` worktree implements CPU read slices, unchanged owner/plan reuse,
+disjoint dirty blocks and a bounded shared triangulation cache. The source
+revision and atomic publication contracts are unchanged. The branch now also
+prunes distant owners from large curb-union height queries. It is based on
+`fc1e89b` (the current main package/CI fixes); it is not released or accepted as
+a measured frame-time improvement.
+See [next-steps.md](next-steps.md) for the implementation and remaining gate.
+
+The compact [receipt](../../performance/station3d/paint-2026-09-28.summary.json)
+records source/output hashes, deterministic geometry/work checks and every
+browser capture's disposition. Raw artifacts remain in the Zagreb consumer's
+`performance/station3d/results/paint-2026-09-28/`. Headed Chrome used the complete
+baseline/candidate engine distributions, high quality, 1600 × 1000, DPR 1 and
+Metal WebGL2. API GET responses were archived and reused by URL; this was not a
+sealed source replay or an ABBA acceptance comparison.
+
+The deterministic copied-fixture replay matches paint queries, holes, source
+triangle areas and copied/repainted coverage at 484 probe points per update.
+An identical recompile copies 388 source vertices on baseline and zero on the
+candidate. Two separated edits repaint 4,992 versus 1,920 pixels and perform four
+versus one triangulation; three later page origins perform three versus zero
+fresh triangulations. These counts describe that fixture, not a world-wide
+percentage or frame-time prediction. Final CI on the pinned Node 22.23.2 /
+npm 10.9.8 toolchain passes all 471 engine tests, the build, release asset audit
+and packed install/vendor verification. The initial CI invocation with the
+shell's Node 25 was rejected by the toolchain guard and is retained.
+
+The curb change addresses the query itself, without changing which tiles are
+rebuilt. For owner sets of eight or more, the existing spatial index finds
+members in the surrounding 3×3 cells. A nearest result strictly within 80 m is
+provably closer than any omitted member; otherwise the query searches the
+remaining owners without repeating completed searches. It preserves owner and
+segment ties, unbounded distance semantics, captured-index isolation and read
+dependencies for absent/distant owners. Small sets retain their direct path.
+
+On 28,117 archived curb ring positions from 169 distinct features, with the
+same recorded centrelines and a deterministic non-flat terrain sampler, full
+query results match exactly: zero mismatches, errors or null results. Segment
+projections fall 4,382,434→3,557,589 (18.8%); per-owner searches fall
+833,145→556,890 (33.2%). Seventy referenced owner IDs are absent from the archived
+centreline set on both sides and remain in the queries. This is a query work
+comparison, not a replay of all production curb meshing, vertical alignments or
+frame timing. The synthetic 128-owner regression goes 3,066→18 projections.
+Source hashes, coverage limits and red/green checks are in the
+[continuation receipt](../../performance/station3d/paint-curb-2026-09-28.summary.json).
+
+A later frozen-source preflight failed before timing: millimetre-scale drift
+in the tram's initial anchor changed the exact bbox URL strings despite an
+identical pinned route. Host paging averaged about 66 MiB/s in that preflight.
+A separate live-on-miss route capture is explicitly unmeasured. The final walk
+visual check published all six ground generations and drained, with 2,782 paint
+records and no JavaScript errors, but seven building-mesh source URLs were
+missing and a delayed-data toast remained visible. It proves ground-path wiring
+only, not complete appearance parity. Both attempts and screenshots are retained;
+the observation browsers were closed. A future acceptance run must hold the
+initial anchor fixed, include every source response and use a quiet host.
+
+Tram generations with 2,401 and 2,752 paint records respectively repainted 9/6
+coarse blocks on baseline versus 6/5 on candidate. Fresh triangulations were
+5,478/4,333 versus 625/962, with 3,241/2,827 cache hits on the candidate. This
+supports the work-elimination mechanism. Paint CPU totals were approximately
+541/556 ms versus 178/179 ms, but they are **diagnostic values only**: the host
+was paging, with sampled one-minute load 16–23 on baseline and 23–47 on candidate.
+The 120 s baseline and prematurely saved 113 s candidate are both preserved.
+The baseline tram screenshot lacks road/support coverage; candidate ground was
+visible. That observation does not prove a support fix or appearance parity.
+
+The stationary candidate kept the exact spawn position for 120 s and recorded
+no engine errors, but load reached 113. A packet slice reached 292.5 ms under
+that contention. The capture cannot establish a quiet steady state, a bounded
+worst-case latency, or an absence of a performance regression. The browser was
+closed and further timings stopped. Quiet-host moving/stationary comparisons,
+support and interaction parity, the remaining road/rail/water/flight modes and
+memory-limited hardware remain unverified. No frame-rate improvement is claimed.
 
 ## What was measured
 
