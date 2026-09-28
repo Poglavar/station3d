@@ -389,11 +389,89 @@ paint; per generation the cleanest pair (c) spent 8.1 s (base) against 7.0 s
 50 ms in total over five generations. Frame pacing on the tram is unchanged
 within noise. Receipts: `zagreb-isochrone-main/performance/station3d/results/audit-2026-09-25/g1/`.
 
+**Curbs: read evidence evaluated and rejected (26 September).** Curb tiles
+are selected by every receiver region and re-drape whole 200 m tiles (tram 6:
+21–43 tiles, ~2 s of ~7 s generation CPU). A candidate recorded each tile's
+reads like a road receiver and selected tiles by evidence instead of road
+source boxes. Against `v0.1.0-alpha.5` (alternating runs, load 3.6–9.0) it
+still re-drew 93–99% of the tiles on the tram and changed nothing on the
+walk; curb time differed within the base-to-base spread. A breakdown showed
+why: every read-selected tile hits both a terrain region (2–7 detail windows
+of ~1.1 km, 5–17 km² per generation) and a formation profile by id (440–620
+changed profiles, mostly terrain-derived `points`, `baseTerrainCutout` and
+`terrainExcavationRegions`). Of 68 re-drapes with a previous build to
+compare, 42 moved kerb vertices by more than 5 cm (up to 6.1 m), 18 by
+1–5 cm and only 5 by under 1 cm. The work is real, so the candidate was
+dropped. Reusing per-run draped heights was also rejected: a run is a whole
+road-union kerb ring (12,000 vertices across 28 roads on one tile). Receipts:
+`zagreb-isochrone-main/performance/station3d/results/audit-2026-09-26/g1-curbs/`.
+
 Still open:
 
-- Curb generation re-drapes whole curb tiles on any receiver change
-  (`curb-generation:terrain-drape`, ~1.5 s per tram generation); the same
-  evidence scheme applies.
+- Terrain detail windows re-height square kilometres under built roads and
+  curbs as the camera moves; that, not receiver selection, drives most
+  tram generation CPU (see the curb breakdown above). Measured on tram 6:
+  of the area each window move marked changed, ~40–45% was old/new window
+  overlap whose heights differed only because each camera-centred window
+  sampled the LiDAR on its own lattice, ~20–30% was trailing windows falling
+  back to the base, and ~25–35% was fine terrain genuinely arriving.
+  Fixed 1 m detail tiles were built and measured (26–27 September) and are
+  parked, not released: one tile per 400 m terrain mesh tile, each requested
+  with a 34 m apron snapped to the source lattice and kept as one grid for
+  its life; the footprint is the mesh tiles meeting a ±200 m support square
+  plus those along the first 700 m of the road ahead corridor (after
+  reveal); tiles retire beyond 600 m once out of the footprint for 20 s, at
+  most 16; landed tiles publish once per frame. The complete patch
+  (`fixed-detail-tiles.patch`, applies to 6cfaaaa), probes and receipts are
+  in `zagreb-isochrone-main/performance/station3d/results/audit-2026-09-26/terrain-tiles/`.
+  Final clean A/B against the same code without tiles (tram 6, three
+  alternating pairs, load 3.5–6.7): existing-road recompiles 2,290→823
+  (−64%), but generation CPU 36.0→35.1 s (flat), median fps 71→69, median
+  p95 25.0 ms both, readiness 24.1→28.9 s (an earlier startup-only A/B had
+  31.9→26.6 s; the API was slow that day). Recompiles are not the cost:
+  a tram generation spends ~6 s whatever it recompiles. Per run of six
+  generations (both sides alike): curbs ~11 s (drape 8.2 s), ground paint
+  ~7.5 s, roads ~8 s (road 4.7 s, formation 3.2 s), rails ~2 s. The tiles
+  cut the road stages by ~1.5 s and nothing else.
+  Lessons kept for any retry: geographic tiles must be chosen in mesh tiles
+  (a mesh tile is fine only when fine cores cover it completely); the ahead
+  corridor must not load during the world build (a tile landing mid-load
+  re-published terrain and delayed readiness ~25 s); retirement needs time
+  hysteresis (a wobbling lead point caused 74 revisions in 12 minutes);
+  keeping tiles under the whole 1.4 km corridor raised p95 frame time
+  25→32 ms.
+- Why neither parked change could pay, from the code (27 September): curb
+  tiles are selected by a 264 m box around every changed road source tile
+  (`core/ground-generation-scope.js` receiverBounds, used by
+  `world/ground-generations.js` curb selection), so on a moving tram nearly
+  every loaded curb tile rebuilds each generation whatever the terrain does;
+  paint invalidation follows roads arriving and leaving (records carry the
+  road's source revision, `core/ground-surface-paint.js`), not terrain. Only
+  existing-road recompiles depended on terrain (road + formation ≈ 22% of
+  generation CPU). Curb read evidence removed the road-tile boxes but not the
+  terrain churn; the fixed tiles removed the churn but not the boxes.
+- Ground paint (≈1.25 s of ≈6 s per tram generation) is incremental by
+  design but close to a full rebuild on a moving tram, from the code plus the
+  recorded step counts (tram A/B receipts, `dt11`):
+  - every recompiled road owner rebuilds its whole paint bucket plan, copying
+    every vertex (`world/roads.js` paint rows → `world/ground-paint.js`
+    `prepareRecordsSteps` → `createGroundCompositePlanSteps`), even when its
+    records are identical;
+  - all changed records are merged into one dirty bounding box
+    (`core/ground-paint-cache.js` `prepareSourceSteps`), although
+    `planGroundPaintUpdate` accepts up to 256 boxes: ~24 of the coarse page's
+    64 blocks (512 m each) repaint per generation;
+  - every polygon in a repainted block is re-triangulated
+    (`core/ground-paint-packet.js`, ~4,400 per generation), with no cache
+    although records are immutable per key and source revision; the finer
+    pages repeat it outside the generation;
+  - trivial per-record steps cost ~85 µs against 11 µs for `paint-record`,
+    the one paint loop without a per-item input check (`desiredCurrent` plus
+    the road receiver's `current()`): ~0.7 s per generation is re-checking,
+    inferred from step costs, not profiled.
+  Order: check inputs per time slice instead of per item (predicted
+  paint 1.25→~0.5 s per generation); pass changed boxes separately; cache
+  triangulation per record key and source revision.
 - Rail and opening changes still use the padded-box rule.
 - Receivers built by the ordinary per-tile path carry no evidence and use the
   box fallback.
