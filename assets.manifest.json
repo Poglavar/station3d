@@ -118,6 +118,15 @@
       "releaseCleared": true
     },
     {
+      "id": "procedural-crowd-face-atlas",
+      "paths": ["assets/people/crowd-faces.png", "assets/people/PROVENANCE.md"],
+      "author": "Station3D contributors",
+      "license": "MIT",
+      "provenance": "assets/people/PROVENANCE.md",
+      "includeInCandidate": true,
+      "releaseCleared": true
+    },
+    {
       "id": "readme-runtime-gallery",
       "paths": ["media/readme-gallery"],
       "author": "Poglavar Svemira",

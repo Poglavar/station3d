@@ -3,11 +3,23 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import os from 'node:os';
 import { parseProcVmstat, parseVmStat } from './perf-probe-summary.mjs';
+import { readLinuxContentionSample } from './perf-native-linux.mjs';
 
 const finiteNonnegative = value => typeof value === 'number' && Number.isFinite(value) && value >= 0;
 const positiveInteger = value => Number.isSafeInteger(value) && value > 0;
 const counter = value => Number.isSafeInteger(value) && value >= 0;
 const MIB = 1024 * 1024;
+
+function validCgroupEvidence(cgroup) {
+    return typeof cgroup?.mountPoint === 'string' && cgroup.mountPoint.length > 0
+        && typeof cgroup?.cgroupPath === 'string' && cgroup.cgroupPath.startsWith('/')
+        && finiteNonnegative(cgroup.effectiveCpuCapacity) && cgroup.effectiveCpuCapacity > 0
+        && Array.isArray(cgroup.ancestors) && cgroup.ancestors.length > 0
+        && cgroup.ancestors.every(entry => entry && typeof entry.path === 'string' && entry.path.startsWith('/')
+            && (entry.cpuCapacity === null || (finiteNonnegative(entry.cpuCapacity) && entry.cpuCapacity > 0))
+            && (entry.cpuMaxSetting === null || typeof entry.cpuMaxSetting === 'string')
+            && counter(entry.nrThrottled) && counter(entry.throttledUsec));
+}
 
 function parseMacPageSize(text) {
     const match = /page size of\s+(\d+)\s+bytes/i.exec(String(text));
@@ -38,6 +50,12 @@ export function readNativeHostSample() {
             sample.swapins = counters.swapins;
             sample.swapouts = counters.swapouts;
             if (!positiveInteger(sample.pageSizeBytes)) sample.pageSizeBytes = null;
+            const contention = readLinuxContentionSample({ readText: file => readFileSync(file, 'utf8'),
+                availableCpus: os.availableParallelism?.() });
+            sample.procStatTotalTicks = contention.totalTicks;
+            sample.stealTicks = contention.stealTicks;
+            sample.cgroupV2 = contention.cgroupV2;
+            sample.effectiveCpuCapacity = contention.cgroupV2.effectiveCpuCapacity;
         } else {
             sample.error = `unsupported host platform: ${process.platform}`;
         }
@@ -51,7 +69,7 @@ export function readNativeHostSample() {
 }
 
 export function summarizeNativeHostWindow(samples, {
-    maxSwapMiBPerSecond = 0.5, maxLoadPerCpu = 1.5, maxGapMs = 7500,
+    maxSwapMiBPerSecond = 0.5, maxLoadPerCpu = 1.5, maxGapMs = 7500, maxStealRatio = 0.01,
 } = {}) {
     const rows = Array.isArray(samples) ? samples : [];
     const reasons = [];
@@ -62,6 +80,7 @@ export function summarizeNativeHostWindow(samples, {
     addReason(finiteNonnegative(maxSwapMiBPerSecond), 'maxSwapMiBPerSecond must be finite and nonnegative');
     addReason(finiteNonnegative(maxLoadPerCpu), 'maxLoadPerCpu must be finite and nonnegative');
     addReason(finiteNonnegative(maxGapMs) && maxGapMs > 0, 'maxGapMs must be finite and positive');
+    addReason(finiteNonnegative(maxStealRatio) && maxStealRatio <= 1, 'maxStealRatio must be between 0 and 1');
 
     let elapsedMs = null;
     if (rows.length >= 2 && finiteNonnegative(rows[0]?.at) && finiteNonnegative(rows.at(-1)?.at)) {
@@ -75,12 +94,18 @@ export function summarizeNativeHostWindow(samples, {
     let swapInTotal = 0;
     let swapOutTotal = 0;
     let allSwapDeltasKnown = rows.length >= 2;
+    let platform = null;
+    let effectiveCpuCapacity = null;
+    let peakStealRatio = null;
+    let allLinuxContentionKnown = rows.length >= 2;
+    let observedCgroupThrottle = false;
 
     for (let i = 0; i < rows.length; i++) {
         const row = rows[i];
         addReason(row && typeof row === 'object' && !Array.isArray(row), `sample ${i} is invalid`);
         if (!row || typeof row !== 'object' || Array.isArray(row)) {
             allSwapDeltasKnown = false;
+            if (platform === 'linux') allLinuxContentionKnown = false;
             if (i > 0) {
                 const previous = rows[i - 1];
                 const intervalElapsedMs = previous && typeof previous === 'object' && !Array.isArray(previous)
@@ -96,6 +121,8 @@ export function summarizeNativeHostWindow(samples, {
         addReason(counter(row.swapins), `sample ${i} swap-in counter is missing or invalid`);
         addReason(counter(row.swapouts), `sample ${i} swap-out counter is missing or invalid`);
         addReason(row.error === null || row.error === undefined, `sample ${i} has a native sampling error`);
+        if (platform === null) platform = row.platform;
+        else addReason(row.platform === platform, 'host samples use inconsistent platforms');
 
         if (positiveInteger(row.pageSizeBytes)) {
             if (pageSize === null) pageSize = row.pageSizeBytes;
@@ -109,6 +136,22 @@ export function summarizeNativeHostWindow(samples, {
             const ratio = row.load1 / row.cpus;
             peakLoadPerCpu = peakLoadPerCpu === null ? ratio : Math.max(peakLoadPerCpu, ratio);
             addReason(ratio <= maxLoadPerCpu, `host load per CPU ${ratio.toFixed(3)} exceeds ${maxLoadPerCpu}`);
+        }
+
+        if (row.platform === 'linux') {
+            const cg = row.cgroupV2;
+            const cgroupValid = validCgroupEvidence(cg);
+            addReason(counter(row.procStatTotalTicks), `sample ${i} /proc/stat CPU ticks are missing or invalid`);
+            addReason(counter(row.stealTicks), `sample ${i} /proc/stat steal ticks are missing or invalid`);
+            addReason(cgroupValid,
+                `sample ${i} cgroup v2 contention evidence is missing or invalid`);
+            addReason(finiteNonnegative(row.effectiveCpuCapacity) && row.effectiveCpuCapacity > 0,
+                `sample ${i} effective CPU capacity is missing or invalid`);
+            if (finiteNonnegative(row.effectiveCpuCapacity) && row.effectiveCpuCapacity > 0) {
+                effectiveCpuCapacity = effectiveCpuCapacity === null ? row.effectiveCpuCapacity
+                    : Math.min(effectiveCpuCapacity, row.effectiveCpuCapacity);
+            }
+            if (!counter(row.procStatTotalTicks) || !counter(row.stealTicks) || !cgroupValid) allLinuxContentionKnown = false;
         }
 
         if (i === 0) continue;
@@ -152,7 +195,66 @@ export function summarizeNativeHostWindow(samples, {
             allSwapDeltasKnown = false;
             addReason(false, `host swap counters are unavailable in interval ${i - 1}-${i}`);
         }
-        intervals.push({ elapsedMs: intervalElapsedMs, swapInBytes, swapOutBytes, swapMiBPerSecond });
+        const interval = { elapsedMs: intervalElapsedMs, swapInBytes, swapOutBytes, swapMiBPerSecond };
+        if (row.platform === 'linux' || previous?.platform === 'linux') {
+            let cpuTotalTicks = null, stealTicks = null, stealRatio = null, cgroupThrottleDeltas = null;
+            const previousCg = previous?.cgroupV2, currentCg = row.cgroupV2;
+            const previousAncestors = previousCg?.ancestors, currentAncestors = currentCg?.ancestors;
+            const cgroupsValid = validCgroupEvidence(previousCg) && validCgroupEvidence(currentCg);
+            const stableCgroup = cgroupsValid && previous?.platform === 'linux' && row.platform === 'linux'
+                && previousCg?.mountPoint === currentCg?.mountPoint
+                && previousCg?.cgroupPath === currentCg?.cgroupPath
+                && previous?.effectiveCpuCapacity === row.effectiveCpuCapacity
+                && Array.isArray(previousAncestors) && Array.isArray(currentAncestors)
+                && previousAncestors.length === currentAncestors.length
+                && previousAncestors.every((entry, index) => entry?.path === currentAncestors[index]?.path
+                    && entry?.cpuCapacity === currentAncestors[index]?.cpuCapacity
+                    && entry?.cpuMaxSetting === currentAncestors[index]?.cpuMaxSetting);
+            if (!stableCgroup) {
+                allLinuxContentionKnown = false;
+                addReason(false, cgroupsValid
+                    ? `cgroup v2 path or CPU quota changed in interval ${i - 1}-${i}`
+                    : `cgroup v2 contention evidence is unavailable in interval ${i - 1}-${i}`);
+            }
+            if (row.platform === 'linux' && previous?.platform === 'linux'
+                && counter(row.procStatTotalTicks) && counter(previous.procStatTotalTicks)
+                && counter(row.stealTicks) && counter(previous.stealTicks)) {
+                cpuTotalTicks = row.procStatTotalTicks - previous.procStatTotalTicks;
+                stealTicks = row.stealTicks - previous.stealTicks;
+                if (cpuTotalTicks <= 0 || stealTicks < 0 || stealTicks > cpuTotalTicks) {
+                    allLinuxContentionKnown = false;
+                    addReason(false, `host CPU or steal counters reset/decreased in interval ${i - 1}-${i}`);
+                    cpuTotalTicks = stealTicks = null;
+                } else {
+                    stealRatio = stealTicks / cpuTotalTicks;
+                    peakStealRatio = peakStealRatio === null ? stealRatio : Math.max(peakStealRatio, stealRatio);
+                    addReason(stealRatio <= maxStealRatio,
+                        `host CPU steal ${(stealRatio * 100).toFixed(3)}% exceeds ${(maxStealRatio * 100).toFixed(3)}%`);
+                }
+            } else {
+                allLinuxContentionKnown = false;
+                addReason(false, `host CPU steal counters are unavailable in interval ${i - 1}-${i}`);
+            }
+            if (stableCgroup) {
+                cgroupThrottleDeltas = currentAncestors.map((entry, index) => {
+                    const prior = previousAncestors[index];
+                    const nrThrottled = entry.nrThrottled - prior.nrThrottled;
+                    const throttledUsec = entry.throttledUsec - prior.throttledUsec;
+                    if (nrThrottled < 0 || throttledUsec < 0) {
+                        allLinuxContentionKnown = false;
+                        addReason(false, `cgroup throttling counters reset/decreased at ${entry.path} in interval ${i - 1}-${i}`);
+                        return { path: entry.path, nrThrottled: null, throttledUsec: null };
+                    }
+                    if (nrThrottled > 0 || throttledUsec > 0) {
+                        observedCgroupThrottle = true;
+                        addReason(false, `cgroup CPU throttling observed at ${entry.path} in interval ${i - 1}-${i}`);
+                    }
+                    return { path: entry.path, nrThrottled, throttledUsec };
+                });
+            }
+            Object.assign(interval, { cpuTotalTicks, stealTicks, stealRatio, cgroupThrottleDeltas });
+        }
+        intervals.push(interval);
     }
 
     return {
@@ -167,6 +269,8 @@ export function summarizeNativeHostWindow(samples, {
         maxSwapMiBPerSecond,
         peakLoadPerCpu,
         maxLoadPerCpu,
+        ...(platform === 'linux' ? { effectiveCpuCapacity, peakStealRatio, maxStealRatio,
+            platform: 'linux', observedCgroupThrottle, linuxContentionKnown: allLinuxContentionKnown } : {}),
         intervals,
     };
 }

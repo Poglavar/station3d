@@ -1,0 +1,157 @@
+{
+  "schema": "station3d-daytime-fixes-summary-v1",
+  "date": "2026-10-08",
+  "baseRevision": "c54390a4eed82e320f4f4a851593f6bf0582d951",
+  "changesCommittedAtValidation": false,
+  "scope": {
+    "purpose": "Correctness and test-runner fixes while laptop measurement is deferred",
+    "executionHost": "prod-de",
+    "platform": "linux",
+    "arch": "arm64",
+    "node": "22.23.2",
+    "npm": "10.9.8",
+    "laptopTestsRun": false,
+    "browserTestsRun": false,
+    "fullWorldTimingRun": false,
+    "performanceGainClaimed": false
+  },
+  "changes": [
+    {
+      "id": "browser-launch",
+      "result": "Optional explicit Chromium executable and flags are validated and included in scenario identity; headed mode and window/control settings are retained. Software renderer names no longer abort capture; exact renderer matching remains required."
+    },
+    {
+      "id": "native-contention",
+      "result": "Linux samples record CPU steal, cgroup v2 ancestor quotas/throttling and effective CPU capacity. Timing rejects observed throttling, interval steal above 1%, missing or changed evidence, and changing ABBA CPU capacity."
+    },
+    {
+      "id": "crowd-face-atlas",
+      "result": "The existing first-party procedural face atlas is generated, licensed in the asset manifest, copied into the package and checked after installation/vendoring.",
+      "path": "website/station-3d/assets/people/crowd-faces.png",
+      "bytes": 40446,
+      "sha256": "aa75d8f39fbc819fd1f8e541eb65602a21bd03f95afb0aaca3cd3d30b0652f18",
+      "width": 1024,
+      "height": 1024,
+      "license": "MIT"
+    }
+  ],
+  "validation": {
+    "focusedTests": {
+      "tests": 41,
+      "passed": 41,
+      "failed": 0
+    },
+    "ci": {
+      "command": "npm run ci",
+      "tests": 562,
+      "passed": 562,
+      "failed": 0,
+      "reviewRequiredBundleInputs": 0,
+      "tarballInstallVendor": "passed",
+      "crowdAtlasVendoredBytesMatchSource": true
+    },
+    "releaseAssets": {
+      "command": "npm run assets:audit:release",
+      "passed": true,
+      "groups": 15,
+      "files": 59
+    },
+    "diffCheck": "passed",
+    "sourceFilesVerifiedOnBothHosts": 16,
+    "sourceInputManifest": {
+      "file": "candidate-files-1.json",
+      "sha256": "fceebc460ed771c24ae327beabd990995bc67c1c9ec1dfb0eb231dace1fac5b2",
+      "bytes": 1776
+    },
+    "sourceHeadArchiveSha256": "1a68d7c6c11b7e97dd4b3e97428da8d6233dc3a5dad676d9815b809db6ba2ac8"
+  },
+  "nativeAdmissionRegression": {
+    "quiet": {
+      "oldClean": true,
+      "newClean": true,
+      "passed": true
+    },
+    "deliberatelyThrottled": {
+      "oldClean": true,
+      "newClean": false,
+      "observedThrottle": true,
+      "effectiveCpuCapacity": 0.2,
+      "intervals": [
+        {
+          "elapsedMs": 694,
+          "swapInBytes": 0,
+          "swapOutBytes": 0,
+          "swapMiBPerSecond": 0,
+          "cpuTotalTicks": 555,
+          "stealTicks": 0,
+          "stealRatio": 0
+        }
+      ],
+      "throttledMicroseconds": 491887,
+      "passed": true
+    }
+  },
+  "executionIsolation": {
+    "temporaryWorkingDirectory": true,
+    "persistentApplicationsChanged": false,
+    "ciMemoryMaxGiB": 3,
+    "ciCpuQuotaPercent": 200,
+    "nice": 10,
+    "allFiveTransientUnitsStopped": true,
+    "finalLoad1": 0.05029296875
+  },
+  "remaining": [
+    "Close terrain and curb replay coverage before complete frozen-source route measurements.",
+    "Rebuild both compared packages with identical asset repair and rerun preflights under the final collector identity.",
+    "Full-world visual, lifecycle and movement/FPS verification remains deferred to the overnight testing window.",
+    "Optional downstream facade/voice assets and the empty-provider readiness timeout are not fixed by this patch."
+  ],
+  "rawArtifactsDirectory": "results/daytime-2026-10-08",
+  "artifacts": [
+    {
+      "file": "daytime-setup.log",
+      "sha256": "3088da7214ecd82a2b1b3fc900d38a9fb0eb1ba20d7ebdd939c1289c8856ad5d",
+      "bytes": 314
+    },
+    {
+      "file": "daytime-focused-1.log",
+      "sha256": "5daae5e295d9ad6174be798c5e94017b0b462d79e78693c7e7ab41337914606a",
+      "bytes": 10679
+    },
+    {
+      "file": "daytime-ci-1.log",
+      "sha256": "d8043cde468a3820e8a7872206da8b40f4971d85f556a2e940d73bdfe9fa902c",
+      "bytes": 127970
+    },
+    {
+      "file": "native-contention-check.mjs",
+      "sha256": "5de6f3c1b2e17467ab97bb7cf3ced516ff8d8c311e9fa8fcfb6b0f303d57081c",
+      "bytes": 1366
+    },
+    {
+      "file": "native-contention-quiet.json",
+      "sha256": "3ff61fcb73f84c5c44b707c41cf8fcc7850343b1d9f112e25c31de8f55319f3e",
+      "bytes": 3879
+    },
+    {
+      "file": "native-contention-throttled.json",
+      "sha256": "b4aa07a7080289a4bc7ede2784f2aa7ccbae945aec6a8162ee7bbd28e0716611",
+      "bytes": 4048
+    },
+    {
+      "file": "native-contention-quiet.log",
+      "sha256": "e95aba1f105511cf6eeef035d2afc0e26e3e6e7f2dffbdcfe6f79be9adbe0c7b",
+      "bytes": 413
+    },
+    {
+      "file": "native-contention-throttled.log",
+      "sha256": "39b0cca680fd1d2690333812c8a0a2be66917100f60d33c67ce9307f9f21cfb6",
+      "bytes": 534
+    },
+    {
+      "file": "daytime-final-host.json",
+      "sha256": "9bc50f9c26d815299fa24c042acf6b7f8eaf4c2f9c69c90afd60d4ab51e0679a",
+      "bytes": 1116
+    }
+  ]
+}

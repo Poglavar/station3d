@@ -267,6 +267,33 @@ test('same-engine A/A controls are allowed, while per-variant engine drift is re
     assert.ok(result.mismatches.some(mismatch => mismatch.field === 'identity.engineHash.candidate'));
 });
 
+test('Linux ABBA comparison requires stable effective CPU capacity across all measured phases', () => {
+    const runs = ['baseline', 'candidate', 'candidate', 'baseline'].map(variant => makeRun({ variant }));
+    for (const run of runs) for (const phase of ['stationary', 'movement']) {
+        Object.assign(run.phases[phase].host, { platform: 'linux', effectiveCpuCapacity: 2 });
+    }
+    assert.equal(comparePerfAcceptanceRuns(runs).accepted, true);
+
+    runs[2].phases.movement.host.effectiveCpuCapacity = 1.5;
+    const changed = comparePerfAcceptanceRuns(runs);
+    assert.equal(changed.accepted, false);
+    assert.ok(changed.mismatches.some(row => row.field === 'runs[2].phases.movement.host.effectiveCpuCapacity'));
+
+    runs[2].phases.movement.host.effectiveCpuCapacity = 2;
+    delete runs[1].phases.stationary.host.effectiveCpuCapacity;
+    const missing = comparePerfAcceptanceRuns(runs);
+    assert.equal(missing.accepted, false);
+    assert.ok(missing.mismatches.some(row => row.field === 'runs[1].phases.stationary.host.effectiveCpuCapacity'));
+});
+
+test('matching software renderer runs can be compared without a hardware GPU', () => {
+    const runs = ['baseline', 'candidate', 'candidate', 'baseline'].map(variant => makeRun({ variant }));
+    for (const run of runs) run.identity.gpu = 'ANGLE (Mesa, llvmpipe (LLVM 21.1.8), OpenGL 4.5)';
+    assert.equal(comparePerfAcceptanceRuns(runs).accepted, true);
+    runs[2].identity.gpu = 'ANGLE (Google, SwiftShader)';
+    assert.equal(comparePerfAcceptanceRuns(runs).accepted, false);
+});
+
 test('comparison preserves every invalid run and reports capture identity mismatches', () => {
     const runs = [
         makeRun({ variant: 'baseline', engineHash: hash('a') }),

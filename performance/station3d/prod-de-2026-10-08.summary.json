@@ -1,0 +1,251 @@
+{
+  "schema": "station3d-remote-performance-host-summary-v1",
+  "date": "2026-10-08",
+  "host": "prod-de",
+  "result": {
+    "fullWorldPerformanceAccepted": false,
+    "fullWorldTimingStarted": false,
+    "hardwareAccelerationAvailableInTestedBackends": false,
+    "cpuFixturePassed": true,
+    "reason": "Full-world timing was not attempted; source coverage and controlled repeated runs remain unfinished. The usable llvmpipe backend permits comparisons scoped to this software-rendered host."
+  },
+  "hostContext": {
+    "platform": "linux",
+    "arch": "arm64",
+    "cpus": 8,
+    "initialLoad": [
+      0.35,
+      0.18,
+      0.19
+    ],
+    "finalLoad": [
+      0.17724609375,
+      0.16845703125,
+      0.17578125
+    ],
+    "memory": {
+      "MemTotal": "15941680 kB",
+      "MemAvailable": "10835784 kB",
+      "SwapTotal": "0 kB",
+      "SwapFree": "0 kB"
+    },
+    "cpuProbeSwapBefore": {
+      "pswpin": 0,
+      "pswpout": 0
+    },
+    "cpuProbeSwapAfter": {
+      "pswpin": 0,
+      "pswpout": 0
+    }
+  },
+  "graphicsProbes": [
+    {
+      "label": "default-headed",
+      "receipt": {
+        "file": "renderer-default.json",
+        "sha256": "3bb11f9ea099ed4754d8963ebd9059879858defdf692490e1e89b098fbbc7f03",
+        "bytes": 9151
+      },
+      "script": {
+        "file": "renderer-probe.mjs",
+        "sha256": "f44e4c68575930355a355614f0ad5243f7ebda8440adb02f6ad424ee01ed6e64",
+        "bytes": 3267
+      },
+      "browser": "149.0.7827.0",
+      "headless": false,
+      "display": "Xvfb 1600x1000x24",
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver-5.0.0)",
+      "displayType": "ANGLE_SWIFTSHADER",
+      "contextParametersAvailable": false,
+      "disposition": "Software backend. Initial context object existed, but renderer/attributes were null after the frame loop. Not accepted as a usable performance target."
+    },
+    {
+      "label": "explicit-opengl",
+      "receipt": {
+        "file": "renderer-opengl.json",
+        "sha256": "a7415ae9c5cdea79abbc719af5abdc252d4ad3e7f4f9fe25c2fafe3ad50eff68",
+        "bytes": 8470
+      },
+      "script": {
+        "file": "renderer-probe-v2.mjs",
+        "sha256": "d85a004c0554dc2c2669661e8c7a80921abe5a7195d09e08700147eade5fcd42",
+        "bytes": 3824
+      },
+      "browser": "149.0.7827.0",
+      "headless": false,
+      "display": "Xvfb 1600x1000x24",
+      "additionalFlags": [
+        "--use-gl=angle",
+        "--use-angle=gl",
+        "--ignore-gpu-blocklist"
+      ],
+      "renderer": "ANGLE (Mesa, llvmpipe (LLVM 21.1.8 128 bits), OpenGL 4.5)",
+      "contextUsable": true,
+      "contextLost": false,
+      "glError": 0,
+      "pixel": [
+        20,
+        31,
+        51,
+        255
+      ],
+      "disposition": "WebGL2 and pixel readback work, but llvmpipe is a CPU renderer. No engine FPS or GPU timing claim."
+    }
+  ],
+  "cpuFixture": {
+    "receipt": {
+      "file": "paint-cpu-replay.json",
+      "sha256": "e64596847f8156af444e7a7fd2492ff7952f8cc33e84b34f4180e1720031b34c",
+      "bytes": 10541
+    },
+    "execution": {
+      "file": "paint-cpu-execution.json",
+      "sha256": "7f469b64f74a026d57f0eb2740f3c81610c40cdaa4354877fb9b2794fd925a66",
+      "bytes": 2902
+    },
+    "setup": {
+      "file": "cpu-setup.json",
+      "sha256": "517359ca6cee002e3710257ba4ee579d57d2f6f8f240dc7cc68a37fa5f8e9c5d",
+      "bytes": 1129
+    },
+    "runner": {
+      "file": "paint-cpu-compare-portable.mjs",
+      "sha256": "fa6cbbabb6c4e146fca367a71e250880be0e221d9a2edb90c28a6dbf2063efa0",
+      "bytes": 24458
+    },
+    "archivedRunnerSha256": "96d91869a6dbec158255c2c7a1de6ade90fe94fb2e18871a7f984f4f7829de9c",
+    "runnerAdaptation": "Only input/output path arguments and validation changed; normalized source matches the archived script byte-for-byte. Workload order and correctness assertions are unchanged.",
+    "revisions": {
+      "baseline": "fc1e89b8b5e2af7a4105f154bebeb87fdf511475",
+      "candidate": "c54390a4eed82e320f4f4a851593f6bf0582d951"
+    },
+    "node": "v22.23.2",
+    "npm": "10.9.8",
+    "three": "0.184.0",
+    "nodeArchiveSha256": "fff4078c5def658577f92c88db7db3bc0072924bfb93fe52c1e744a54e94abb8",
+    "fixture": {
+      "file": "paint-fixture.json",
+      "sha256": "fcddd406de838f8723ac83cb538dffbc54e91b42d425f549865d6c58633c6d94",
+      "bytes": 18231
+    },
+    "sourceArchives": {
+      "cpu-baseline.tar": {
+        "sha256": "f03d895842a48ac53642f5a11efb1c577503bf1fa8ec75af10f4cf5a62f13ece",
+        "bytes": 4833280
+      },
+      "cpu-candidate.tar": {
+        "sha256": "152bfd455da5b378e70510527e22e8c64b3fb13bcb8e1daa1a38c4b3e6e11a34",
+        "bytes": 4864000
+      }
+    },
+    "moduleHashes": {
+      "baselineModules": {
+        "ground-composite-plan.js": "74389c18ca20f0bb4d394f7e73b48b63763ebe68579069380df9a0631140f618",
+        "ground-paint-packet.js": "dc28f5579ecc60129ad8a239a44c3a7e371c17b82f1c7f15ad3d8dc86632483f",
+        "ground-paint-update.js": "333fa3e545ddfdaa1260e5c534c1419a3e713392228f3949e4a7d2d2aa505d17"
+      },
+      "candidateModules": {
+        "ground-composite-plan.js": "b0ae4579d62300ba9eb794476967b69a11a55f3849e04e9b695b543fa3d9aaeb",
+        "ground-paint-packet.js": "c35743993bee364ca48a1ea638dd98a24b8db9693bcaa0bfd4b98190e92ac703",
+        "ground-paint-update.js": "bdfccb854431ee90179ac0ec73865bcac1d1a051fc872aa832963ec3ba33e0be"
+      }
+    },
+    "correctness": {
+      "result": "semantic samples, candidate-subset triangle provenance, and copied/repainted probe coverage matched",
+      "semanticSamples": 484,
+      "paintedSamples": 240
+    },
+    "workCounts": {
+      "identicalRecompileFootprintVertexCopies": {
+        "baseline": 388,
+        "candidate": 0
+      },
+      "separatedEditRepaintedPixels": {
+        "baseline": 4992,
+        "candidate": 1920
+      },
+      "separatedEditTriangulations": {
+        "baseline": 4,
+        "candidate": 1
+      },
+      "laterPageTriangulations": {
+        "baseline": 3,
+        "candidate": 0
+      }
+    },
+    "timingDisposition": "Informational only: one pass, fixed baseline-first workload order, no ABBA timing acceptance, and a brief cgroup throttle. Work counts and correctness assertions are valid.",
+    "throttledMicroseconds": 9623,
+    "childResource": {
+      "userSeconds": 0.39799799999999996,
+      "systemSeconds": 0.047571999999999996,
+      "maxRssKiB": 85608,
+      "majorFaults": 0,
+      "minorFaults": 7018,
+      "voluntaryContextSwitches": 298,
+      "involuntaryContextSwitches": 3
+    },
+    "hostObserver": {
+      "file": "cpu-host-runner.py",
+      "sha256": "96b59eb0a41d6895a531f29f40b51aea6b55bd58b132bb4284043f8a1aec962c",
+      "bytes": 2282
+    }
+  },
+  "executionIsolation": {
+    "temporaryDirectory": true,
+    "persistentApplicationsChanged": false,
+    "browserAndCpuMemoryMaxGiB": 2,
+    "cpuQuotaPercent": 200,
+    "nice": 10,
+    "browserRuntimeLimitSeconds": 90,
+    "cpuRuntimeLimitSeconds": 120,
+    "allTransientUnitsStopped": true,
+    "finalHostReceipt": {
+      "file": "final-host.json",
+      "sha256": "f4cb9a68cb7416be3964a00069802a90cc1397873ae3d0aaa80c69161c9ba24e",
+      "bytes": 1170
+    }
+  },
+  "scopeLimits": [
+    "This was a graphics capability check and an existing copied-fixture CPU replay, not a full browser movement benchmark.",
+    "Software rendering does not invalidate a controlled comparison on this host. Complete terrain/curb source coverage, comparable workload, stable browser/backend configuration and uncontended repeated runs remain required.",
+    "CPU phases, loading, memory and end-to-end frame times can be compared on the usable llvmpipe backend. Software rasterization competes for CPU resources and changes bottlenecks; numeric gains do not establish GPU-equipped client performance.",
+    "Only small source snapshots and the existing paint fixture were transferred; frozen world-response archives were not transferred or changed."
+  ],
+  "rawArtifactsDirectory": "results/prod-de-2026-10-08",
+  "validation": {
+    "sourceAndFixtureHashesVerified": true,
+    "pixelReadbackVerified": true,
+    "cpuAssertionsPassed": true,
+    "repositoryCodeChanged": false,
+    "localCi": {
+      "file": "final-ci.log",
+      "sha256": "10e72e219553bac942dc17e001d0aa33fbef8065a3106d587085c71d9fdf90f9",
+      "bytes": 123829,
+      "node": "22.23.2",
+      "npm": "10.9.8",
+      "tests": 548,
+      "passed": 548,
+      "failed": 0,
+      "reviewRequiredBundleInputs": 0,
+      "tarballInstallVendor": "passed",
+      "retryReason": "Initial sandboxed attempt could not bind local test listeners; full rerun with localhost permission passed."
+    },
+    "releaseAssets": {
+      "file": "final-assets-release.log",
+      "sha256": "98acbc7a75d4390089a77c51af44c2c9a7dc0bebe1ef26b659abb3d1f2f303fc",
+      "bytes": 196,
+      "passed": true
+    },
+    "diffCheck": "passed",
+    "initialCiAttempt": {
+      "file": "final-ci-sandbox-failure.json",
+      "sha256": "241afc41ad88b3f7a035ffa2655be553816020477b85da698fa5ce9271b1e693",
+      "bytes": 2564,
+      "passed": 534,
+      "failed": 14,
+      "reason": "Sandbox denied localhost test listeners with EPERM.",
+      "fullLogRetained": false,
+      "supersededBy": "Successful complete CI rerun with localhost permission; no source changes."
+    }
+  }
+}

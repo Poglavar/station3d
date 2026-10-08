@@ -8,6 +8,10 @@ following packaged audio retains its own terms; source, creator and
 modification details live in the referenced records and in
 `assets.manifest.json`.
 
+The procedural crowd-face atlas is also first-party MIT material, generated
+from the repository's face definitions without third-party image inputs.
+Its provenance and regeneration command are in `assets/people/PROVENANCE.md`.
+
 | Asset group | License | Provenance record |
 | --- | --- | --- |
 | Bird calls | CC0 1.0 or public domain | `audio/sfx/birds/SOURCES.md` |

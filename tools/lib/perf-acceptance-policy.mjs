@@ -343,6 +343,24 @@ export function comparePerfAcceptanceRuns(runs) {
                 mismatches.push(mismatch); reasons.push(`${variant} runs use different engine hashes`);
             }
         }
+        const hostCapacityRows = input.flatMap((run, index) => PHASES.map(phase => ({
+            index, phase, host: run?.phases?.[phase]?.host,
+            value: run?.phases?.[phase]?.host?.effectiveCpuCapacity,
+        })));
+        if (hostCapacityRows.some(row => row.host?.platform === 'linux' || row.value !== undefined)) {
+            const reference = hostCapacityRows[0]?.value;
+            for (const row of hostCapacityRows) {
+                if (row.host?.platform !== 'linux' || !finitePositive(row.value)) {
+                    const mismatch = { field: `runs[${row.index}].phases.${row.phase}.host.effectiveCpuCapacity`,
+                        expected: 'positive Linux CPU capacity', actual: row.value ?? null };
+                    mismatches.push(mismatch); reasons.push(`run ${row.index} ${row.phase} Linux CPU capacity is missing or invalid`);
+                } else if (finitePositive(reference) && row.value !== reference) {
+                    const mismatch = { field: `runs[${row.index}].phases.${row.phase}.host.effectiveCpuCapacity`,
+                        runs: [0, row.index], values: [reference, row.value] };
+                    mismatches.push(mismatch); reasons.push(`run ${row.index} ${row.phase} uses a different effective Linux CPU capacity`);
+                }
+            }
+        }
     }
     const comparable = reasons.length === 0;
     let comparison = null;

@@ -53,6 +53,7 @@
     "__tests__/packed-instance-blocks.test.mjs",
     "__tests__/perf-acceptance-browser.test.mjs",
     "__tests__/perf-acceptance-diagnostic.test.mjs",
+    "__tests__/perf-acceptance-launch.test.mjs",
     "__tests__/perf-acceptance-policy.test.mjs",
     "__tests__/perf-native-host.test.mjs",
     "__tests__/perf-probe-summary.test.mjs",

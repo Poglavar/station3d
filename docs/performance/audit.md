@@ -169,6 +169,53 @@ zero review-required inputs, the release asset audit and actual tarball
 install/vendor verification. These checks do not erase the browser failures
 or close quiet-host ABBA, high-DPI, support, appearance and selection gates.
 
+The [remote-host receipt](../../performance/station3d/prod-de-2026-10-08.summary.json)
+records a subsequent attempt on `prod-de`: eight ARM cores, low host load and
+no swap activity. Its existing Chromium 149 launched headed under Xvfb, but
+the default backend reported SwiftShader and the explicit OpenGL backend
+reported Mesa llvmpipe. The latter rendered verified pixels but still uses
+the CPU. Browser feature flags saying WebGL or compositing is enabled do not
+establish hardware acceleration. No full walk/tram timing run was started on
+this renderer, and no GPU or frame-rate improvement is claimed.
+
+The existing paint CPU fixture did run there on the pinned Node 22.23.2, using
+the `fc1e89b` and `c54390a` source modules with identical Three.js 0.184.0.
+All 484 semantic probes matched. The unchanged rebuild again copied 388 versus
+zero footprint vertices; the separated-edit fixture repainted 4,992 versus
+1,920 pixels and triangulated four versus one polygon. These reproduce the
+fixture's work reduction on ARM. Its single-pass stopwatch values remain
+informational: this was not an ABBA timing comparison, and the temporary CPU
+cap throttled the process briefly. All three transient probe units stopped;
+deployed applications were not changed.
+
+Software rendering does not disqualify this host from performance comparisons.
+A controlled ABBA run on its usable llvmpipe backend can measure CPU phases,
+loading, memory and end-to-end frame times for that environment. Complete
+terrain/curb source coverage, comparable route work and uncontended repeated
+runs remain unfinished. Record renderer CPU work and host/cgroup contention
+alongside engine timings: software rasterization can dominate frame time and
+change the bottleneck. Scope any result to this ARM/software-rendered host;
+GPU-equipped client performance requires a separate representative run. The
+capability probe above established neither a full-world failure nor a timing
+improvement, and the existing acceptance policy does not ban software renderers.
+
+The [daytime-fixes receipt](../../performance/station3d/daytime-2026-10-08.summary.json)
+records the follow-up changes, with all test execution on `prod-de`. The CLI's
+separate software-renderer rejection is removed, explicit Chromium launch
+settings are supported and included in the scenario hash, and Linux admission
+now checks CPU steal and cgroup v2 ancestor throttling/quotas. A controlled
+throttled sample reproduced the old false-clean verdict; the repaired collector
+rejected it, while both collectors accepted the quiet control. Effective CPU
+capacity must also remain equal across the ABBA phases and runs.
+
+The missing crowd-face PNG is now generated from the existing first-party
+rasterizer and included in the licensed asset manifest. The actual packed
+tarball installed and vendored the identical atlas bytes. All 562 tests,
+the build with zero review-required inputs, and the release asset audit passed
+on the server. All five temporary test units stopped. No laptop test or browser
+benchmark ran; full-world appearance/lifecycle verification and timing remain
+open, as do the terrain/curb replay gaps and the empty-provider readiness issue.
+
 ## Ground-paint and curb-query release, 28 September
 
 The `paint-perf` worktree implements CPU read slices, unchanged owner/plan reuse,

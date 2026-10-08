@@ -13,6 +13,7 @@ import { captureAcceptanceDiagnostic, acceptanceDiagnosticSourceHash, captureGro
 import { readNativeHostSample, summarizeNativeHostWindow } from './lib/perf-native-host.mjs';
 import { summarizeIntervals } from './lib/perf-probe-summary.mjs';
 import { evaluatePerfAcceptanceRun, comparePerfAcceptanceRuns, assertComparablePreflight } from './lib/perf-acceptance-policy.mjs';
+import { resolvePerfBrowserLaunch, classifyPerfRenderer } from './lib/perf-acceptance-launch.mjs';
 
 const usage = `Usage: node tools/perf-acceptance.mjs --config FILE --stage STAGE [options]
   --stage import --seed DIR             clone an existing source archive; original is unchanged
@@ -27,7 +28,8 @@ const usage = `Usage: node tools/perf-acceptance.mjs --config FILE --stage STAGE
 Config requires hostRoot, engines.{baseline,candidate}.dist, sourceArchive, outputDir,
 scenario.{id,url,mode,initialPose?,headingDeg?,corridorM?,stationarySeconds,movementSeconds,
 readyTimeoutSeconds,drainTimeoutSeconds,minDistanceM,lifecycleCycles}, viewport, quality,
-and an optional initScript, playwrightModule, providerBaseUrl, sourceKeyRules and vectorSources.
+and optional initScript, playwrightModule, browserLaunch.{executablePath,args}, providerBaseUrl,
+sourceKeyRules and vectorSources. browserLaunch executablePath may be relative to the config file.
 Provider responses and raw captures remain local. Diagnostics go to stderr; final receipt to stdout.`;
 const { values, positionals } = parseArgs({ allowPositionals: true, options: {
     config: { type: 'string' }, stage: { type: 'string' }, variant: { type: 'string', default: 'candidate' },
@@ -75,6 +77,7 @@ if (scenario.mode === 'rail' && !['lat', 'lon', 'headingDeg'].every(key => Numbe
 const viewport = config.viewport;
 if (!viewport || !['width', 'height', 'deviceScaleFactor'].every(key => Number.isFinite(viewport[key]) && viewport[key] > 0)) throw new Error('Explicit viewport required');
 if (!['high', 'medium', 'low'].includes(config.quality)) throw new Error('Use a fixed quality for a paired comparison');
+const browserLaunch = resolvePerfBrowserLaunch(config.browserLaunch === undefined ? {} : config.browserLaunch, configRoot, viewport);
 const engine = config.engines?.[variant];
 const engineDist = pathOf(engine?.dist), hostRoot = pathOf(config.hostRoot), outputDir = pathOf(config.outputDir);
 const hostExcludes = [(config.engineUrlPrefix || '/vendor/station3d/').replace(/^\/+|\/+$/g, '')];
@@ -95,7 +98,7 @@ const observer = acceptanceObserverSource(observerConfig);
 const toolRoot = dirname(fileURLToPath(import.meta.url));
 // Include the collector and all acceptance helpers, not just the page observer.
 const toolingFiles = ['perf-acceptance.mjs', ...readdirSync(resolve(toolRoot, 'lib'))
-    .filter(name => /^perf-(acceptance|source-|replay-server|native-host|world-drain|probe-summary)/.test(name))
+    .filter(name => /^perf-(acceptance|source-|replay-server|native-|world-drain|probe-summary)/.test(name))
     .sort().map(name => `lib/${name}`)];
 const toolingHash = sha256(JSON.stringify(toolingFiles.map(file => [file, sha256(readFileSync(resolve(toolRoot, file)))])));
 const identity = { variant, engineHash: fingerprints.engine.hash, hostHash: fingerprints.host.hash,
@@ -103,7 +106,8 @@ const identity = { variant, engineHash: fingerprints.engine.hash, hostHash: fing
     scenarioHash: sha256(JSON.stringify({ scenario, quality: config.quality, viewport,
         engineUrlPrefix: config.engineUrlPrefix || '/vendor/station3d/', apiPrefix: config.apiPrefix || '/api/',
         expectedResponses: config.expectedResponses || [], externalOrigins,
-        diagnosticSeconds, diagnosticCpuProfile: config.diagnosticCpuProfile === true })), viewport };
+        browserLaunch, diagnosticSeconds, diagnosticCpuProfile: config.diagnosticCpuProfile === true })),
+    browserLaunch, viewport };
 if (stage === 'inspect') {
     console.log(JSON.stringify({ stage, identity, sourceEntries: archive.size, sealed: archive.sealed,
         vectorSources: vectorSources.identities,
@@ -233,11 +237,7 @@ try {
         engineUrlPrefix: config.engineUrlPrefix || '/vendor/station3d/', expectedResponses: config.expectedResponses,
         externalOrigins, vectorSources, fingerprints, log });
     collectHost(); hostTimer = setInterval(collectHost, 2000);
-    browser = await chromium.launch({ channel: 'chrome', headless: false, args: [
-        '--no-first-run', '--no-default-browser-check', '--disable-search-engine-choice-screen',
-        '--disable-background-timer-throttling', '--disable-backgrounding-occluded-windows',
-        '--disable-renderer-backgrounding', '--window-position=40,40', `--window-size=${viewport.width},${viewport.height}`,
-    ] });
+    browser = await chromium.launch(browserLaunch);
     result.identity.browser = browser.version();
     page = await browser.newPage({ viewport: { width: viewport.width, height: viewport.height },
         deviceScaleFactor: viewport.deviceScaleFactor, serviceWorkers: 'block' });
@@ -282,7 +282,7 @@ try {
         const gl = window.__st3dDebug.renderer.getContext(), extension = gl.getExtension('WEBGL_debug_renderer_info');
         return extension ? gl.getParameter(extension.UNMASKED_RENDERER_WEBGL) : null;
     });
-    if (/swiftshader|llvmpipe|software/i.test(result.identity.gpu || '')) throw new Error('Software rendering is not a timing target');
+    result.identity.renderer = classifyPerfRenderer(result.identity.gpu);
     if (preflight) {
         const mismatch = assertComparablePreflight(preflight, result.identity);
         if (mismatch.length) throw new Error(`Runtime differs from preflight: ${mismatch.join('; ')}`);

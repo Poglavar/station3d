@@ -32,7 +32,9 @@ The npm package uses the allowlist in `assets.manifest.json`, enforced by
 generic audio, seven generic road-fleet JSON models—hatchback, sedan, SUV, van,
 box truck, city bus and pickup—and the UTVA runtime GLB. The project creator
 confirmed authorship of these assets and of the procedural TMK 2400 and HŽ 7022
-models, and released them under MIT.
+models, and released them under MIT. It also includes the crowd-face atlas,
+generated from the existing MIT-licensed procedural rasterizer; its source and
+regeneration command are recorded in `assets/people/PROVENANCE.md`.
 
 ## Source history
 

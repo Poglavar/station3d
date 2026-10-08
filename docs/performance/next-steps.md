@@ -124,6 +124,20 @@ diagnostic, not benchmarks. Proportions and counts are the durable findings.
    bounded recovery and close/reopen. Repeat at DPR 1 and the high-DPI cap.
    Both builds must include the identical material cleanup patch. Keep stack
    capture for the old `isReady` exception; it has not recurred in these runs.
+   The `prod-de` capability probe verified usable headed Chromium with llvmpipe
+   software rendering, and its CPU fixture checks passed. Use it for controlled
+   CPU/loading/memory and software-rendered frame-time comparisons once source
+   coverage is complete. Match browser, renderer, flags, viewport and workload;
+   record host load, CPU steal and cgroup throttling during each run. Keep CPU
+   phase timings separate from renderer CPU work. Scope these results to this
+   host/backend; measure representative GPU-equipped clients separately before
+   claiming their frame-time gains. Keep fixture work counts distinct from
+   repeated timing evidence. Enabled WebGL flags alone do not identify hardware.
+   Daytime fixes now allow an explicit Chromium binary and software renderer,
+   and detect Linux CPU steal and cgroup throttling. The missing procedural
+   crowd-face atlas is restored to the package. Apply that asset repair to
+   both packaged variants before the existing alpha.6 comparison and retain
+   new package/source identities; do not substitute it into sealed old runs.
 3. **Re-profile ground construction on alpha.6, then choose one G2 family.**
    Genuine new-road compilation and curb draping remain candidates. The newer
    paint/curb changes alter the old phase ranking, so do not assume that the
@@ -194,6 +208,24 @@ fresh native controller through the host opener. Reusing an advanced pose
 callback while pinning it back to the original anchor creates an invalid
 reopen. The observer rejects a reused callback, records each initial correction,
 and leaves subsequent poses native. Verify the resolved route on every host open.
+
+The default launch uses installed headed Chrome. To use a specific Chromium
+installation, add `browserLaunch: { executablePath: "./chromium/chrome", args:
+["--use-gl=angle", "--use-angle=gl"] }`. The executable path is relative to the
+configuration file. Extra flags cannot override headed mode, window geometry
+or browser control. The resolved launch options are recorded and hashed into
+the scenario identity. Software renderers can run every stage; comparisons
+still require an identical browser and renderer, and receipts label their
+scope as the software-rendered host. A GPU timer extension remains optional.
+
+Linux host admission reads `/proc/stat` CPU steal and the unified cgroup v2
+hierarchy, including ancestor quotas and throttling counters. Any observed
+CPU throttling or more than 1% CPU steal in an interval rejects timing; missing
+counter evidence, quota changes and hidden ancestor hierarchies also reject
+it. Effective CPU capacity must match across measured phases and the ABBA
+set. These checks supplement host load and swap activity. Linux cgroup v1 is
+currently unsupported for timing admission. Correctness captures can retain
+host failures, and the macOS load/swap checks keep their existing behavior.
 
 Only explicitly configured `externalOrigins` may be recorded outside the
 provider, for example basemap images requested when closing the 3D view.

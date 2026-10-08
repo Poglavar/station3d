@@ -43,6 +43,7 @@ try {
         'website/station-3d/dist/terrain-tools.js',
         'website/station-3d/dist/voice-tools.js',
         'website/station-3d/dist/models/vehicles/utva-liaison.glb',
+        'website/station-3d/dist/assets/people/crowd-faces.png',
         'website/station-3d/dist/station3d.css',
         'website/station-3d/dist/build-manifest.json',
     ];
@@ -86,6 +87,11 @@ try {
         || !existsSync(resolve(vendorTarget, 'voice-tools.js'))
         || !existsSync(resolve(vendorTarget, 'draco/draco_decoder.wasm'))) {
         throw new Error('Installed package did not vendor a complete browser distribution');
+    }
+    const crowdAtlas = 'assets/people/crowd-faces.png';
+    if (!readFileSync(resolve(vendorTarget, crowdAtlas)).equals(
+        readFileSync(resolve(repoRoot, 'website/station-3d', crowdAtlas)))) {
+        throw new Error('Installed package did not preserve the crowd-face atlas when vendoring');
     }
     const overlayManifest = resolve(fixtureRoot, 'empty-content.json');
     const contentTarget = resolve(fixtureRoot, 'public/station3d-content');
