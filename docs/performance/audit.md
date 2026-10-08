@@ -1,17 +1,36 @@
 # Station3D performance audit
 
-Updated 28 September 2026. This and [next-steps.md](next-steps.md) are the only
+Updated 8 October 2026. This and [next-steps.md](next-steps.md) are the only
 current performance documents. Update them in place; keep dated measurements in
 machine-readable receipts, not another audit or delivery tracker.
 
 ## Verdict
 
-The engine already has substantial batching, cooperative construction, shared
-streaming and coherent ground publication. Reimplementing those mechanisms is
-not the next step. The highest-priority findings are **loading failures in GTA
-ground/collision preparation and city-flight terrain evidence**. Next come
-long frames and delayed completion of streamed world replacements. Open-water
-flight is cheap to render; that does not establish city-flight performance.
+The current engine is `v0.1.0-alpha.6` (`3ee0002`). The stationary delivery and
+car/city-flight startup fixes landed in alpha.3, road read-evidence invalidation
+in alpha.5, and paint reuse plus curb-query pruning in alpha.6. Local
+`perf-next` and `paint-perf` commits are already contained in `main`.
+
+**September's deterministic probes verify work reduction; complete-world
+movement performance acceptance is still open.** The first task is a
+reproducible walk/tram comparison of the
+pre-paint/curb runtime (`fc1e89b`) and alpha.6. Complete source coverage, a quiet
+host, normal readiness and finite post-stop recovery precede any timing claim.
+Then re-profile ground construction and the remaining building draw tail.
+
+The loading failures and frame-anatomy tables below describe their dated
+alpha.2/early-alpha.3 captures. Preserve them as failure evidence; they are not
+an assertion that the subsequently fixed starts remain broken in alpha.6.
+The 26–27 September fixed-detail-terrain patch remains parked: reducing
+recompilation counts did not establish a generation-CPU or frame-pacing win.
+
+The new full-route recorder exposed a separate close/reopen defect: cached
+shared greenery materials retained their disposed ground-paint receiver.
+The local fix releases material bindings and shader hooks when the owning
+state closes, while preserving exclusive ownership between live receivers.
+Retiring a binding also evicts the renderer's cached material uniforms; changing
+hooks and setting `needsUpdate` alone can reuse the previous receiver's table.
+The original failure is retained; this cleanup is not a frame-time claim.
 
 This is a measured diagnostic audit, **not a controlled release benchmark**.
 The shared Mac had substantial paging and varying native load. All measured
@@ -19,6 +38,136 @@ values below describe these exact runs; none establishes a general FPS promise,
 a before/after speedup, or mobile readiness. The small relative CPU probe often
 reported 100% clean coverage while native paging was active. That is insufficient
 evidence of an uncontended machine.
+
+## Acceptance tooling, 8 October
+
+`tools/perf-acceptance.mjs` consolidates the former local paint comparison
+server/observer into explicit record, seal, preflight, measure and ABBA-check
+stages. The consumer root, complete packaged distributions, provider, native
+route setup and output/archive locations are configuration inputs. Regional
+route templates remain in the consumer; the engine tooling has no sibling-path
+or regional-service dependency.
+
+A sealed manifest means immutable bytes, not complete route coverage. The
+preflight must replay the full stationary/moving/reopen workload without a live
+provider fallback, missing response or failed drain. Spatial query parameters
+are exact: this tool does not round bbox coordinates or substitute a nearby
+terrain response. Declared volatile query keys and expected optional HTTP
+statuses are part of the archive identity. New responses require a separate
+recording stage and invalidate previous preflight identities.
+
+Timing checks include actual renderer DPR and dimensions, source/host/engine
+and observer hashes, page visibility, route distance, at least three minutes of
+movement, lifecycle errors, and native load plus swap-in **and swap-out**.
+Recordings and rejected runs are retained. A valid timing receipt alone does
+not certify appearance, support or selection; those checks remain explicit.
+Execution results are retained in the local capture directory; the compact
+[acceptance receipt](../../performance/station3d/acceptance-2026-10-08.summary.json)
+records their dispositions and the remaining acceptance gates.
+
+The unmodified alpha.6 walk completed 60 seconds stationary and 180 seconds
+of native movement, then failed its first reopen with
+`A material already belongs to a paint receiver` in the greenery producer.
+An actual shared-material/two-session Node test reproduced that error before
+the fix. The binding state now owns and releases its material leases; a
+material's disposal releases only its lease when the state is shared. Cleanup
+restores only hooks still owned by that binding and leaves later owners alone.
+This avoids retaining every retired streamed material until the world closes.
+The renderer persists across sessions, so explicit binding retirement sends
+the material's normal disposal event to release cached program/uniform data.
+Handling an existing disposal event never recursively sends another one.
+After each drain, the collector compares actual compiled uniforms with the
+current receiver hook, outside the timed phases.
+
+The pre-paint baseline contains the same binding defect. Both isolated builds
+now carry the identical cleanup, with the patch and tarball hashes recorded.
+A comparison must use those matched builds or retain the original baseline
+as lifecycle-rejected.
+The original tarballs and failed captures remain unchanged. The older
+`isReady` exception has not been reproduced in these captures.
+
+The final runtime fix completed a sealed walk replay: 60 seconds stationary,
+180 seconds of native explorer movement and three fully drained reopens.
+All 1,133 source requests replayed, with no missing response or engine error.
+At initial drain, post-stop drain and each reopen, all 18 compiled paint
+materials referenced the current receiver's uniforms, with zero mismatches.
+Native paging still peaked at 118 MiB/s stationary and 227 MiB/s moving, so
+these are correctness observations, not an accepted timing comparison.
+Later collector changes invalidate that preflight for future measurement;
+the full workload must be replayed with the final tool identity.
+
+The fixed candidate tram then completed the full stationary/moving workload
+and three drained reopens, with zero errors and no stale paint uniforms.
+Its 1,735 requests added 97 responses to a new archive, sealed at 1,855 entries;
+the previous archive remains sealed and unchanged. Post-stop work drained in
+about 30 seconds on this contended host. This recording establishes lifecycle
+correctness, not replay coverage or a speedup.
+
+Frozen tram replay subsequently rejected 15 exact water requests. The water
+layer fetches a 1,500 m bounding box around the current pose after moving
+600 m from its previous fetch center (`world/water.js`). Those unsnapped
+centers vary with native frame timing even when the initial anchor and route
+are fixed. The responses contain actual geometry, so an overlapping archived
+box cannot be substituted. More route recording alone does not make this
+request family deterministic. This exposed a source-coverage requirement;
+the exact-response archive's strict matching remains unchanged.
+
+The follow-up adds explicit frozen vector datasets to the acceptance server.
+A read-only provider database snapshot captured all 258 water rows in the
+route envelope, plus original database bounds and the count/query evidence.
+All 11 archived response feature sets match that source. A further 378 SQL
+comparisons passed, including the 15 previously missing requests and 288
+boundary cases; a simultaneous re-read confirmed unchanged source rows.
+The local database copy was rejected because it lacked recorded features;
+its failed comparison remains separate evidence.
+
+The resolver selects whole, unchanged features using the provider's bounding
+box predicate. Requested coordinates remain exact; the predicate reproduces
+PostGIS's outward float32 envelopes instead of deriving bounds from rounded
+GeoJSON. Results have deterministic id order. Incomplete snapshots, changed
+files, unsupported queries, out-of-area requests and truncated results fail.
+Both builds receive the same frozen source, and water runtime/shoreline code
+is unchanged. The dataset, coverage and semantics are included in run identity.
+
+The [water follow-up receipt](../../performance/station3d/acceptance-water-2026-10-08.summary.json)
+records this proof and the subsequent rejected tram preflight. That run reached
+normal readiness, drained and completed the stationary minute. Both water
+requests were served from the frozen dataset; movement then stopped on two
+missing curb responses and one missing terrain-grid request. Source, host and
+engine hashes remained unchanged. The incomplete route did not reach its
+reopen checks, and host paging still invalidated timing.
+
+The provider's terrain SQL anchors each output raster at the exact requested
+west/north coordinates and bilinearly transforms its source rasters onto that
+grid. A nearby archived response or one enclosing resampled grid cannot
+reproduce a shifted origin exactly. Complete replay requires either the
+relevant immutable source rasters, overview and water-mask inputs with the
+matching sampling pipeline, or a separately validated deterministic request
+contract. No terrain substitution or runtime change was made in this pass.
+The user selected correctness checks only while the host remains contended.
+
+The standalone packed walking fixture also exposed an existing extraction
+gap: facade-spec JSON, the voice manifest and the crowd-face atlas are not
+supplied by the package. Initial synthetic-provider attempts returned the
+wrong terrain, binary-road and road-label formats and were rejected. With
+those formats corrected, the empty fixture still released through `timeout`,
+not normal readiness; its ground published six generations and retained four
+tile deliveries. This is retained separately from the compatible recorded-data
+consumer check. Optional asset failures remain recorded separately from engine
+readiness, and a clean standalone asset check remains open.
+
+The final minimal consumer used the actual installed tarball, the complete
+vendored directory and only the public world/host/open/close APIs. With a
+compatible HTTP provider and mesh-building profile, both opens reached normal
+readiness and rendered roads, rails and facades, with zero JavaScript errors.
+It requires no original regional application code. The three optional asset
+404s keep its overall check failed; this short integration check does not
+replace the fully drained lifecycle runs or establish appearance parity.
+
+Current checks on Node 22.23.2 / npm 10.9.8 pass all 548 tests, the build with
+zero review-required inputs, the release asset audit and actual tarball
+install/vendor verification. These checks do not erase the browser failures
+or close quiet-host ABBA, high-DPI, support, appearance and selection gates.
 
 ## Ground-paint and curb-query release, 28 September
 

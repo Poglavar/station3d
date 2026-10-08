@@ -1,0 +1,2002 @@
+{
+  "schema": "station3d-performance-acceptance-summary-v1",
+  "recordedDate": "2026-10-08",
+  "disposition": "measurement-tooling-and-lifecycle-fix-uncommitted-performance-acceptance-open",
+  "baselineCommit": "fc1e89b8b5e2af7a4105f154bebeb87fdf511475",
+  "candidateBaseCommit": "3ee0002509c6e1b4874a3e76ee68d92143045e20",
+  "changes": [
+    "Engine-local explicit import, record, seal, full preflight, measurement and ABBA comparison stages.",
+    "Exact provider queries and response byte hashes; no live fallback, bbox rounding or nearby terrain substitution in replay.",
+    "Native paging, full world drains, movement distance, visibility, renderer context and close/reopen gates.",
+    "Shared ground-paint material leases release on state close or material disposal; renderer cached programs/uniforms retire with the lease.",
+    "Each fresh native rail controller receives one fixed initial anchor; subsequent movement remains native and a reused callback is rejected."
+  ],
+  "runtimePatchSha256": "a6ec8835eeb38c3428898c11f9ee384762a5b88ce6ab8f86fd3a1669d6ba8aed",
+  "currentToolingHash": "7dc8a8bb25987ea3dd6a000b8b4cbe3e3df3b4a0b22647ab391c570c865dff3e",
+  "packages": {
+    "baselineWithCleanup": {
+      "packageSha256": "a466ec06d11fb89b6845a7300875ae9bb6fcd30918da538a12045303362dfc95",
+      "runtimePatchSha256": "a6ec8835eeb38c3428898c11f9ee384762a5b88ce6ab8f86fd3a1669d6ba8aed",
+      "revision": "fc1e89b8b5e2af7a4105f154bebeb87fdf511475+paint-binding-disposal"
+    },
+    "candidateWithCleanup": {
+      "packageSha256": "973b3f57806d6575767da2e58d33962578dd8743d4c7bee2b1a2b43de7acd898",
+      "runtimePatchSha256": "a6ec8835eeb38c3428898c11f9ee384762a5b88ce6ab8f86fd3a1669d6ba8aed",
+      "revision": "3ee0002509c6e1b4874a3e76ee68d92143045e20+paint-binding-disposal"
+    }
+  },
+  "sourceArchives": [
+    {
+      "path": "results/acceptance-2026-10-08/sources",
+      "sealed": true,
+      "entries": 1758,
+      "sourceHash": "33828128286d7bf06285d539389b3cb95dc83262b2f35def79bc846faf768c1c",
+      "manifestFileSha256": "4b20c19a36c0f2f7a0eb8d53d6962cb5163523f85ee550b6db06665b5f7353be"
+    },
+    {
+      "path": "results/acceptance-2026-10-08/sources-expanded-1",
+      "sealed": true,
+      "entries": 1855,
+      "sourceHash": "b20db444bd363b253dac6e0c39ddc2b778a27e9b35f17cfd907ec2843f311ce2",
+      "manifestFileSha256": "8786d3a182a4ad2baadfca9944dacfdbea95da2c05c060a0bee83d5820ed8233"
+    }
+  ],
+  "scope": {
+    "stationarySeconds": 60,
+    "movementSeconds": 180,
+    "lifecycleReopens": 3,
+    "walk": "Native 25 m/s explorer input reversing along a 55 m corridor; not human-speed walking.",
+    "rail": "Fixed native route and initial anchor; normal pause/resume and movement.",
+    "quality": "high",
+    "requestedViewport": {
+      "width": 1600,
+      "height": 1000,
+      "deviceScaleFactor": 1
+    },
+    "frameTimingClaim": null,
+    "rawArtifacts": "Local ignored results retain source bodies, errors, frame extremes, host counters, diagnostics and screenshots."
+  },
+  "validation": {
+    "node": "22.23.2",
+    "npm": "10.9.8",
+    "engineTests": {
+      "passed": 538,
+      "failed": 0
+    },
+    "build": "passed",
+    "reviewRequiredInputs": 0,
+    "releaseAssetAudit": "passed",
+    "packedInstallAndVendor": "passed",
+    "diffCheck": "passed",
+    "lifecycleRedGreen": {
+      "originalSharedMaterialReopen": "reproduced before fix; passes with fix",
+      "rendererUniformEviction": "disposal-event regression failed before eviction; passes after fix",
+      "focusedLifecycleTests": 5
+    },
+    "performanceAcceptance": "not-passed",
+    "crossModeAppearanceSupportSelection": "not-passed"
+  },
+  "runs": [
+    {
+      "label": "tram-record-base-1",
+      "stage": "record",
+      "disposition": "rejected",
+      "note": "Original baseline record; external weather/map requests were blocked and the collector reused an advanced native rail controller for reopen. This is a harness failure, not evidence of an engine terrain defect.",
+      "rawReceipt": "results/acceptance-2026-10-08/tram-record-base-1.json",
+      "receiptSha256": "1aefffded044dddc5abba1d6b68499092a7d177a6af948615a0b8b6a55a1d0de",
+      "startedAt": "2026-10-07T23:19:09.213Z",
+      "finishedAt": "2026-10-07T23:28:06.284Z",
+      "complete": false,
+      "verdict": {
+        "accepted": false,
+        "readyForTiming": false,
+        "reasons": [
+          "run is incomplete",
+          "run contains errors",
+          "source set is not sealed",
+          "source set changed during the run"
+        ]
+      },
+      "identity": {
+        "variant": "baseline",
+        "engineHash": "8ae56d26be3973bb99b722641d9c5d5b4dffc0ac1c64dfa0cab6d49ecacd0333",
+        "hostHash": "7a7b0a8b0ca73d7ec13551b8bde7c4def5670a9e0f4c45019b8d07a6dfc7b1f4",
+        "sourceHash": "4644e283b1d3d370dc4f77afd7137aaea1b5f2907903cf3fa9c1ce5cffcdad18",
+        "observerHash": "e272551d9f04b014fa9293709d83591150194e605de8943311e12e4a15c8af3b",
+        "scenarioHash": "8a3b5399ed513818584a2ef6a845b046f5a5089faad928cfa5ac50d946545a2b",
+        "viewport": {
+          "width": 1600,
+          "height": 1000,
+          "deviceScaleFactor": 1
+        },
+        "browser": "154.0.8037.98",
+        "renderContext": {
+          "dpr": 1,
+          "width": 1600,
+          "height": 946,
+          "antialias": true,
+          "shadows": true,
+          "quality": "high",
+          "terrainActive": true
+        },
+        "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M1 Pro, Unspecified Version)"
+      },
+      "engine": {
+        "revision": "fc1e89b8b5e2af7a4105f154bebeb87fdf511475",
+        "packageSha256": "f2ffe160e593a12d4c06d5a2101ce911696ee01fe81a163b1fd3cb728f06644d"
+      },
+      "toolingHash": "3f2e9de3caba87096147a2018b1d77f30d9e8853ab590e58236f350648dced17",
+      "ready": {
+        "reason": "ready",
+        "blockers": null,
+        "elapsedMs": 34509.3,
+        "observation": "first normal-ready browser sample"
+      },
+      "sources": {
+        "sealed": false,
+        "requestCount": 982,
+        "changed": true,
+        "finalHash": "58a1db530d59ee27ed45ea38fd58f3b2362178b36461cbd8a967421e8f2cc5c9",
+        "missingCount": 0,
+        "unexpectedResponseCount": 0
+      },
+      "errorCount": 105,
+      "filesChanged": null,
+      "phases": {
+        "stationary": {
+          "requestedMs": 60000,
+          "durationMs": 60007.19999998808,
+          "distanceM": 0,
+          "turns": 0,
+          "visible": true,
+          "renderContextStable": null,
+          "frames": {
+            "n": 4139,
+            "meanMs": 14.498260449383913,
+            "p50Ms": 16.5,
+            "p95Ms": 17.5,
+            "p99Ms": 25.10000000000582,
+            "maxMs": 240.69999999998254,
+            "over50": 9,
+            "over100": 2,
+            "over250": 0
+          },
+          "observation": null,
+          "nativeHost": {
+            "clean": false,
+            "elapsedMs": 60032,
+            "swapInBytes": 585220096,
+            "swapOutBytes": 398852096,
+            "peakSwapMiBPerSecond": 131.13449050949052,
+            "peakLoadPerCpu": 2.74462890625
+          },
+          "timingsAccepted": false
+        },
+        "movement": {
+          "requestedMs": 180000,
+          "durationMs": 180002,
+          "distanceM": 1478.0213356799966,
+          "turns": 0,
+          "visible": true,
+          "renderContextStable": null,
+          "frames": {
+            "n": 10932,
+            "meanMs": 16.464315770215883,
+            "p50Ms": 16.599999999976717,
+            "p95Ms": 25.29999999998836,
+            "p99Ms": 41.90000000002328,
+            "maxMs": 882.5,
+            "over50": 90,
+            "over100": 31,
+            "over250": 5
+          },
+          "observation": null,
+          "nativeHost": {
+            "clean": false,
+            "elapsedMs": 180078,
+            "swapInBytes": 1861206016,
+            "swapOutBytes": 2248278016,
+            "peakSwapMiBPerSecond": 152.77517491254375,
+            "peakLoadPerCpu": 2.04913330078125
+          },
+          "timingsAccepted": false
+        }
+      },
+      "initialDrain": {
+        "state": "drained",
+        "elapsedMs": 150661,
+        "render": {
+          "dpr": 1,
+          "width": 1600,
+          "height": 946,
+          "antialias": true,
+          "shadows": true,
+          "quality": "high",
+          "terrainActive": true,
+          "calls": 1272,
+          "triangles": 1894155,
+          "geometries": 2457,
+          "textures": 377,
+          "programs": 89
+        },
+        "heap": {
+          "used": 2258261958,
+          "total": 2362559750
+        },
+        "paintBindings": null
+      },
+      "finalDrain": {
+        "state": "drained",
+        "elapsedMs": 107741,
+        "render": {
+          "dpr": 1,
+          "width": 1600,
+          "height": 946,
+          "antialias": true,
+          "shadows": true,
+          "quality": "high",
+          "terrainActive": true,
+          "calls": 931,
+          "triangles": 1693554,
+          "geometries": 2919,
+          "textures": 430,
+          "programs": 95
+        },
+        "heap": {
+          "used": 1583394774,
+          "total": 1892321774
+        },
+        "paintBindings": null
+      },
+      "lifecycle": {
+        "cycles": 0,
+        "errorCount": 0,
+        "observations": []
+      },
+      "railOrigins": [],
+      "matchesFinalTooling": false
+    },
+    {
+      "label": "walk-record-candidate-1",
+      "stage": "record",
+      "disposition": "rejected",
+      "note": "Collector treated the legitimate nullable paint pending job as missing evidence. The owned browser was closed and the failed capture retained.",
+      "rawReceipt": "results/acceptance-2026-10-08/walk-record-candidate-1.json",
+      "receiptSha256": "dc138c5f22d22b5f07c916d3295c1d2730973d6842e5adc30fdc6222bfb2d951",
+      "startedAt": "2026-10-07T23:37:07.401Z",
+      "finishedAt": "2026-10-07T23:39:53.378Z",
+      "complete": false,
+      "verdict": {
+        "accepted": false,
+        "readyForTiming": false,
+        "reasons": [
+          "run is incomplete",
+          "identity.renderContext is missing",
+          "run contains errors",
+          "source set is not sealed",
+          "source set changed during the run",
+          "readiness result is missing",
+          "initialDrain result is missing",
+          "finalDrain result is missing"
+        ]
+      },
+      "identity": {
+        "variant": "candidate",
+        "engineHash": "eba97ee4d95e80009dca1e5d1ef32ce61472e151fec491b20f191a318a54a02a",
+        "hostHash": "77b7607be38354dd506af789757b969c551fd9c6ea33c9c991b81e4fb83122d0",
+        "sourceHash": "58a1db530d59ee27ed45ea38fd58f3b2362178b36461cbd8a967421e8f2cc5c9",
+        "observerHash": "549534f942a0a284f826d4a443256996d708822d72082a3254f9b757f1afa9e3",
+        "scenarioHash": "bd735a0c09ea4a8e06355ddb18939a9cfd7f8f16c094016ccdb6b56d86bdf631",
+        "viewport": {
+          "width": 1600,
+          "height": 1000,
+          "deviceScaleFactor": 1
+        },
+        "browser": "154.0.8037.98"
+      },
+      "engine": {
+        "revision": "3ee0002509c6e1b4874a3e76ee68d92143045e20",
+        "packageSha256": "989f81209c68573e81578af60bff09143280cad72dbacba1c413dfe0edb9e04f"
+      },
+      "toolingHash": "d1659b34da46bd30a41c0186d88d334909635bae4c7e4b4433110c49a669ee74",
+      "ready": null,
+      "sources": {
+        "sealed": false,
+        "requestCount": 274,
+        "changed": true,
+        "finalHash": "bc5820fd83f8365d96dab9728533a90569aefb68b72285c6fd9075832dea8463",
+        "missingCount": 0,
+        "unexpectedResponseCount": 0
+      },
+      "errorCount": 2,
+      "filesChanged": false,
+      "phases": {},
+      "initialDrain": null,
+      "finalDrain": null,
+      "lifecycle": {
+        "cycles": 0,
+        "errorCount": 0,
+        "observations": []
+      },
+      "railOrigins": [],
+      "matchesFinalTooling": false
+    },
+    {
+      "label": "walk-record-candidate-2",
+      "stage": "record",
+      "disposition": "rejected-engine-lifecycle",
+      "note": "Unmodified alpha.6 completed the route, then greenery failed on first reopen: A material already belongs to a paint receiver.",
+      "rawReceipt": "results/acceptance-2026-10-08/walk-record-candidate-2.json",
+      "receiptSha256": "e98cb11b20fc15ed9b2a355103588f9cd935a9aff7941d619993215430e2287c",
+      "startedAt": "2026-10-07T23:40:02.603Z",
+      "finishedAt": "2026-10-07T23:46:19.891Z",
+      "complete": false,
+      "verdict": {
+        "accepted": false,
+        "readyForTiming": false,
+        "reasons": [
+          "run is incomplete",
+          "run contains errors",
+          "source set is not sealed",
+          "source set changed during the run"
+        ]
+      },
+      "identity": {
+        "variant": "candidate",
+        "engineHash": "eba97ee4d95e80009dca1e5d1ef32ce61472e151fec491b20f191a318a54a02a",
+        "hostHash": "77b7607be38354dd506af789757b969c551fd9c6ea33c9c991b81e4fb83122d0",
+        "sourceHash": "bc5820fd83f8365d96dab9728533a90569aefb68b72285c6fd9075832dea8463",
+        "observerHash": "b5591822c27ebcda29e9983608d3e4eab6397ce6222a5f4665c7b2c0854e0088",
+        "scenarioHash": "bd735a0c09ea4a8e06355ddb18939a9cfd7f8f16c094016ccdb6b56d86bdf631",
+        "viewport": {
+          "width": 1600,
+          "height": 1000,
+          "deviceScaleFactor": 1
+        },
+        "browser": "154.0.8037.98",
+        "renderContext": {
+          "dpr": 1,
+          "width": 1600,
+          "height": 946,
+          "antialias": true,
+          "shadows": true,
+          "quality": "high",
+          "terrainActive": true
+        },
+        "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M1 Pro, Unspecified Version)"
+      },
+      "engine": {
+        "revision": "3ee0002509c6e1b4874a3e76ee68d92143045e20",
+        "packageSha256": "989f81209c68573e81578af60bff09143280cad72dbacba1c413dfe0edb9e04f"
+      },
+      "toolingHash": "e3e8aa88fb57592ca87bad3a6418b02a5b45da3ebf3663706062d7c7068b4052",
+      "ready": {
+        "reason": "ready",
+        "blockers": null,
+        "elapsedMs": 16271.9,
+        "observation": "first normal-ready browser sample"
+      },
+      "sources": {
+        "sealed": false,
+        "requestCount": 600,
+        "changed": true,
+        "finalHash": "33828128286d7bf06285d539389b3cb95dc83262b2f35def79bc846faf768c1c",
+        "missingCount": 0,
+        "unexpectedResponseCount": 0
+      },
+      "errorCount": 1,
+      "filesChanged": false,
+      "phases": {
+        "stationary": {
+          "requestedMs": 60000,
+          "durationMs": 60005.39999997616,
+          "distanceM": 0,
+          "turns": 0,
+          "visible": true,
+          "renderContextStable": true,
+          "frames": {
+            "n": 5360,
+            "meanMs": 11.19402985074627,
+            "p50Ms": 8.700000000004366,
+            "p95Ms": 16.89999999999418,
+            "p99Ms": 17.90000000000873,
+            "maxMs": 34.900000000001455,
+            "over50": 0,
+            "over100": 0,
+            "over250": 0
+          },
+          "observation": {
+            "rawFrames": 5360,
+            "invalidFrames": 0,
+            "coveredMs": 60000.00000000001
+          },
+          "nativeHost": {
+            "clean": false,
+            "elapsedMs": 60039,
+            "swapInBytes": 160743424,
+            "swapOutBytes": 0,
+            "peakSwapMiBPerSecond": 21.88749375312344,
+            "peakLoadPerCpu": 0.859130859375
+          },
+          "timingsAccepted": false
+        },
+        "movement": {
+          "requestedMs": 180000,
+          "durationMs": 180003.19999998808,
+          "distanceM": 4492.720286446998,
+          "turns": 84,
+          "visible": true,
+          "renderContextStable": true,
+          "frames": {
+            "n": 16188,
+            "meanMs": 11.119347664937004,
+            "p50Ms": 8.699999999982538,
+            "p95Ms": 17.10000000000582,
+            "p99Ms": 23.5,
+            "maxMs": 276.3000000000029,
+            "over50": 8,
+            "over100": 5,
+            "over250": 1
+          },
+          "observation": {
+            "rawFrames": 16188,
+            "invalidFrames": 0,
+            "coveredMs": 180000
+          },
+          "nativeHost": {
+            "clean": false,
+            "elapsedMs": 180022,
+            "swapInBytes": 807829504,
+            "swapOutBytes": 615972864,
+            "peakSwapMiBPerSecond": 239.0679660169915,
+            "peakLoadPerCpu": 1.0416259765625
+          },
+          "timingsAccepted": false
+        }
+      },
+      "initialDrain": {
+        "state": "drained",
+        "elapsedMs": 56300,
+        "render": {
+          "dpr": 1,
+          "width": 1600,
+          "height": 946,
+          "antialias": true,
+          "shadows": true,
+          "quality": "high",
+          "terrainActive": true,
+          "calls": 624,
+          "triangles": 1621022,
+          "geometries": 728,
+          "textures": 167,
+          "programs": 83
+        },
+        "heap": {
+          "used": 1012355449,
+          "total": 1086003213
+        },
+        "paintBindings": null
+      },
+      "finalDrain": {
+        "state": "drained",
+        "elapsedMs": 6196,
+        "render": {
+          "dpr": 1,
+          "width": 1600,
+          "height": 946,
+          "antialias": true,
+          "shadows": true,
+          "quality": "high",
+          "terrainActive": true,
+          "calls": 650,
+          "triangles": 1601855,
+          "geometries": 796,
+          "textures": 179,
+          "programs": 84
+        },
+        "heap": {
+          "used": 818469399,
+          "total": 980930979
+        },
+        "paintBindings": null
+      },
+      "lifecycle": {
+        "cycles": 0,
+        "errorCount": 0,
+        "observations": []
+      },
+      "railOrigins": [],
+      "matchesFinalTooling": false
+    },
+    {
+      "label": "walk-record-fixed-1",
+      "stage": "record",
+      "disposition": "superseded",
+      "note": "Binding ownership cleanup allowed three reopens; superseded because renderer program/uniform eviction was still missing from this first fix.",
+      "rawReceipt": "results/acceptance-2026-10-08/walk-record-fixed-1.json",
+      "receiptSha256": "926313a00b781736208ed878b4d7b050a772eb16e40b0c332b36e8723a037c7e",
+      "startedAt": "2026-10-07T23:57:46.113Z",
+      "finishedAt": "2026-10-08T00:06:07.892Z",
+      "complete": true,
+      "verdict": {
+        "accepted": false,
+        "readyForTiming": false,
+        "reasons": [
+          "source set is not sealed"
+        ]
+      },
+      "identity": {
+        "variant": "candidate",
+        "engineHash": "48b53bb8ab41aaf0c40dd3d19186a292e0f8d75a6693889aa9fa5c8501d79798",
+        "hostHash": "77b7607be38354dd506af789757b969c551fd9c6ea33c9c991b81e4fb83122d0",
+        "sourceHash": "33828128286d7bf06285d539389b3cb95dc83262b2f35def79bc846faf768c1c",
+        "observerHash": "d683c79e89443f9e1a49b9bd272aec611a761fcaefdbed5530ba9e995af59d7b",
+        "scenarioHash": "bd735a0c09ea4a8e06355ddb18939a9cfd7f8f16c094016ccdb6b56d86bdf631",
+        "viewport": {
+          "width": 1600,
+          "height": 1000,
+          "deviceScaleFactor": 1
+        },
+        "browser": "154.0.8037.98",
+        "renderContext": {
+          "dpr": 1,
+          "width": 1600,
+          "height": 946,
+          "antialias": true,
+          "shadows": true,
+          "quality": "high",
+          "terrainActive": true
+        },
+        "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M1 Pro, Unspecified Version)"
+      },
+      "engine": {
+        "revision": "3ee0002509c6e1b4874a3e76ee68d92143045e20+paint-binding-disposal",
+        "packageSha256": "f59e9777f551672f3facdf342ee8f3dc601799f26f19f5ebf759d6a62fbb1461"
+      },
+      "toolingHash": "0eec831b883ec17c0292d3012b0f7aa6762119b2845a6becd48ccfc028a403f5",
+      "ready": {
+        "reason": "ready",
+        "blockers": null,
+        "elapsedMs": 16239.9,
+        "observation": "first normal-ready browser sample"
+      },
+      "sources": {
+        "sealed": false,
+        "requestCount": 1136,
+        "changed": false,
+        "finalHash": "33828128286d7bf06285d539389b3cb95dc83262b2f35def79bc846faf768c1c",
+        "missingCount": 0,
+        "unexpectedResponseCount": 0
+      },
+      "errorCount": 0,
+      "filesChanged": false,
+      "phases": {
+        "stationary": {
+          "requestedMs": 60000,
+          "durationMs": 60001.10000002384,
+          "distanceM": 0,
+          "turns": 0,
+          "visible": true,
+          "renderContextStable": true,
+          "frames": {
+            "n": 6068,
+            "meanMs": 9.889271588661833,
+            "p50Ms": 8.39999999999418,
+            "p95Ms": 16.69999999999709,
+            "p99Ms": 17.39999999999418,
+            "maxMs": 24,
+            "over50": 0,
+            "over100": 0,
+            "over250": 0
+          },
+          "observation": {
+            "rawFrames": 6068,
+            "invalidFrames": 0,
+            "coveredMs": 60008.100000000006
+          },
+          "nativeHost": {
+            "clean": false,
+            "elapsedMs": 60015,
+            "swapInBytes": 137461760,
+            "swapOutBytes": 849018880,
+            "peakSwapMiBPerSecond": 284.08310439560444,
+            "peakLoadPerCpu": 1.0445556640625
+          },
+          "timingsAccepted": false
+        },
+        "movement": {
+          "requestedMs": 180000,
+          "durationMs": 180008.30000001192,
+          "distanceM": 4491.563987137275,
+          "turns": 84,
+          "visible": true,
+          "renderContextStable": true,
+          "frames": {
+            "n": 16766,
+            "meanMs": 10.736442800906607,
+            "p50Ms": 8.5,
+            "p95Ms": 17.099999999976717,
+            "p99Ms": 18.60000000000582,
+            "maxMs": 458.3000000000029,
+            "over50": 8,
+            "over100": 5,
+            "over250": 1
+          },
+          "observation": {
+            "rawFrames": 16766,
+            "invalidFrames": 0,
+            "coveredMs": 180007.19999999998
+          },
+          "nativeHost": {
+            "clean": false,
+            "elapsedMs": 180011,
+            "swapInBytes": 895844352,
+            "swapOutBytes": 68943872,
+            "peakSwapMiBPerSecond": 111.0078125,
+            "peakLoadPerCpu": 1.04327392578125
+          },
+          "timingsAccepted": false
+        }
+      },
+      "initialDrain": {
+        "state": "drained",
+        "elapsedMs": 57280,
+        "render": {
+          "dpr": 1,
+          "width": 1600,
+          "height": 946,
+          "antialias": true,
+          "shadows": true,
+          "quality": "high",
+          "terrainActive": true,
+          "calls": 636,
+          "triangles": 1626524,
+          "geometries": 753,
+          "textures": 224,
+          "programs": 83
+        },
+        "heap": {
+          "used": 969530134,
+          "total": 1030934114
+        },
+        "paintBindings": null
+      },
+      "finalDrain": {
+        "state": "drained",
+        "elapsedMs": 6039,
+        "render": {
+          "dpr": 1,
+          "width": 1600,
+          "height": 946,
+          "antialias": true,
+          "shadows": true,
+          "quality": "high",
+          "terrainActive": true,
+          "calls": 651,
+          "triangles": 1608267,
+          "geometries": 809,
+          "textures": 237,
+          "programs": 83
+        },
+        "heap": {
+          "used": 822475146,
+          "total": 991581150
+        },
+        "paintBindings": null
+      },
+      "lifecycle": {
+        "cycles": 3,
+        "errorCount": 0,
+        "observations": [
+          {
+            "state": "drained",
+            "elapsedMs": 58121,
+            "render": {
+              "dpr": 1,
+              "width": 1600,
+              "height": 946,
+              "antialias": true,
+              "shadows": true,
+              "quality": "high",
+              "terrainActive": true,
+              "calls": 633,
+              "triangles": 1622131,
+              "geometries": 749,
+              "textures": 217,
+              "programs": 85
+            },
+            "heap": {
+              "used": 1385045802,
+              "total": 1721887490
+            },
+            "paintBindings": null
+          },
+          {
+            "state": "drained",
+            "elapsedMs": 59081,
+            "render": {
+              "dpr": 1,
+              "width": 1600,
+              "height": 946,
+              "antialias": true,
+              "shadows": true,
+              "quality": "high",
+              "terrainActive": true,
+              "calls": 642,
+              "triangles": 1632630,
+              "geometries": 755,
+              "textures": 218,
+              "programs": 85
+            },
+            "heap": {
+              "used": 1127513377,
+              "total": 1599189193
+            },
+            "paintBindings": null
+          },
+          {
+            "state": "drained",
+            "elapsedMs": 58184,
+            "render": {
+              "dpr": 1,
+              "width": 1600,
+              "height": 946,
+              "antialias": true,
+              "shadows": true,
+              "quality": "high",
+              "terrainActive": true,
+              "calls": 624,
+              "triangles": 1622103,
+              "geometries": 758,
+              "textures": 217,
+              "programs": 85
+            },
+            "heap": {
+              "used": 1446893768,
+              "total": 1890505236
+            },
+            "paintBindings": null
+          }
+        ]
+      },
+      "railOrigins": [],
+      "matchesFinalTooling": false
+    },
+    {
+      "label": "walk-preflight-final-1",
+      "stage": "preflight",
+      "disposition": "correctness-only",
+      "note": "Final runtime cleanup completed sealed walk replay and three reopens. Native paging invalidates timings; later collector fixes require a fresh preflight before measurement.",
+      "rawReceipt": "results/acceptance-2026-10-08/walk-preflight-final-1.json",
+      "receiptSha256": "c9ca8ba19c6d50b72589e8e5d3745db285e13042d2a7373f651ead7cdce2a8b3",
+      "startedAt": "2026-10-08T00:16:25.053Z",
+      "finishedAt": "2026-10-08T00:24:43.035Z",
+      "complete": true,
+      "verdict": {
+        "accepted": false,
+        "readyForTiming": true,
+        "reasons": []
+      },
+      "identity": {
+        "variant": "candidate",
+        "engineHash": "835b439e276701c3de7a752444ce30d3acaff1b121f43b7857a66d76b4f5a4be",
+        "hostHash": "77b7607be38354dd506af789757b969c551fd9c6ea33c9c991b81e4fb83122d0",
+        "sourceHash": "33828128286d7bf06285d539389b3cb95dc83262b2f35def79bc846faf768c1c",
+        "observerHash": "824231b53e76c85ade42d7efff9646ff3411bd1ad3739a5da3dd60b32d15ee61",
+        "scenarioHash": "bd735a0c09ea4a8e06355ddb18939a9cfd7f8f16c094016ccdb6b56d86bdf631",
+        "viewport": {
+          "width": 1600,
+          "height": 1000,
+          "deviceScaleFactor": 1
+        },
+        "browser": "154.0.8037.98",
+        "renderContext": {
+          "dpr": 1,
+          "width": 1600,
+          "height": 946,
+          "antialias": true,
+          "shadows": true,
+          "quality": "high",
+          "terrainActive": true
+        },
+        "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M1 Pro, Unspecified Version)"
+      },
+      "engine": {
+        "revision": "3ee0002509c6e1b4874a3e76ee68d92143045e20+paint-binding-disposal",
+        "packageSha256": "973b3f57806d6575767da2e58d33962578dd8743d4c7bee2b1a2b43de7acd898",
+        "runtimePatchSha256": "a6ec8835eeb38c3428898c11f9ee384762a5b88ce6ab8f86fd3a1669d6ba8aed"
+      },
+      "toolingHash": "da5fcc8115269fefcb1db2093a059cf56c280666dbfbe15031ac6e31661708a5",
+      "ready": {
+        "reason": "ready",
+        "blockers": null,
+        "elapsedMs": 15261.5,
+        "observation": "first normal-ready browser sample"
+      },
+      "sources": {
+        "sealed": true,
+        "requestCount": 1133,
+        "changed": false,
+        "finalHash": "33828128286d7bf06285d539389b3cb95dc83262b2f35def79bc846faf768c1c",
+        "missingCount": 0,
+        "unexpectedResponseCount": 0
+      },
+      "errorCount": 0,
+      "filesChanged": false,
+      "phases": {
+        "stationary": {
+          "requestedMs": 60000,
+          "durationMs": 60010.89999997616,
+          "distanceM": 0,
+          "turns": 0,
+          "visible": true,
+          "renderContextStable": true,
+          "frames": {
+            "n": 5035,
+            "meanMs": 11.91853028798411,
+            "p50Ms": 9.400000000008731,
+            "p95Ms": 17.39999999999418,
+            "p99Ms": 18.19999999999709,
+            "maxMs": 25.799999999995634,
+            "over50": 0,
+            "over100": 0,
+            "over250": 0
+          },
+          "observation": {
+            "rawFrames": 5035,
+            "invalidFrames": 0,
+            "coveredMs": 60009.799999999996
+          },
+          "nativeHost": {
+            "clean": false,
+            "elapsedMs": 60020,
+            "swapInBytes": 229736448,
+            "swapOutBytes": 606928896,
+            "peakSwapMiBPerSecond": 117.62868565717142,
+            "peakLoadPerCpu": 0.9908447265625
+          },
+          "timingsAccepted": false
+        },
+        "movement": {
+          "requestedMs": 180000,
+          "durationMs": 180001,
+          "distanceM": 4498.421692344162,
+          "turns": 84,
+          "visible": true,
+          "renderContextStable": true,
+          "frames": {
+            "n": 15624,
+            "meanMs": 11.52016129032258,
+            "p50Ms": 9.099999999976717,
+            "p95Ms": 17.400000000023283,
+            "p99Ms": 24.60000000000582,
+            "maxMs": 301.6000000000058,
+            "over50": 6,
+            "over100": 4,
+            "over250": 1
+          },
+          "observation": {
+            "rawFrames": 15624,
+            "invalidFrames": 0,
+            "coveredMs": 179991
+          },
+          "nativeHost": {
+            "clean": false,
+            "elapsedMs": 180020,
+            "swapInBytes": 264519680,
+            "swapOutBytes": 761921536,
+            "peakSwapMiBPerSecond": 226.9609375,
+            "peakLoadPerCpu": 1.26806640625
+          },
+          "timingsAccepted": false
+        }
+      },
+      "initialDrain": {
+        "state": "drained",
+        "elapsedMs": 56344,
+        "render": {
+          "dpr": 1,
+          "width": 1600,
+          "height": 946,
+          "antialias": true,
+          "shadows": true,
+          "quality": "high",
+          "terrainActive": true,
+          "calls": 660,
+          "triangles": 1625982,
+          "geometries": 766,
+          "textures": 281,
+          "programs": 83
+        },
+        "heap": {
+          "used": 865321459,
+          "total": 1009324759
+        },
+        "paintBindings": {
+          "available": true,
+          "receiver": "ordinary-ground:1",
+          "boundMaterials": 19,
+          "compiledMaterials": 18,
+          "tables": [
+            "976c27e2-e3cd-4e62-9a71-b0b46719c877"
+          ],
+          "mismatches": []
+        }
+      },
+      "finalDrain": {
+        "state": "drained",
+        "elapsedMs": 6128,
+        "render": {
+          "dpr": 1,
+          "width": 1600,
+          "height": 946,
+          "antialias": true,
+          "shadows": true,
+          "quality": "high",
+          "terrainActive": true,
+          "calls": 678,
+          "triangles": 1596572,
+          "geometries": 831,
+          "textures": 292,
+          "programs": 83
+        },
+        "heap": {
+          "used": 814807597,
+          "total": 968641213
+        },
+        "paintBindings": {
+          "available": true,
+          "receiver": "ordinary-ground:1",
+          "boundMaterials": 19,
+          "compiledMaterials": 18,
+          "tables": [
+            "976c27e2-e3cd-4e62-9a71-b0b46719c877"
+          ],
+          "mismatches": []
+        }
+      },
+      "lifecycle": {
+        "cycles": 3,
+        "errorCount": 0,
+        "observations": [
+          {
+            "state": "drained",
+            "elapsedMs": 57120,
+            "render": {
+              "dpr": 1,
+              "width": 1600,
+              "height": 946,
+              "antialias": true,
+              "shadows": true,
+              "quality": "high",
+              "terrainActive": true,
+              "calls": 624,
+              "triangles": 1620560,
+              "geometries": 754,
+              "textures": 216,
+              "programs": 85
+            },
+            "heap": {
+              "used": 1379429651,
+              "total": 1689396219
+            },
+            "paintBindings": {
+              "available": true,
+              "receiver": "ordinary-ground:2",
+              "boundMaterials": 19,
+              "compiledMaterials": 18,
+              "tables": [
+                "280a39bb-6373-4e23-b0ee-be938626a0b6"
+              ],
+              "mismatches": []
+            }
+          },
+          {
+            "state": "drained",
+            "elapsedMs": 58303,
+            "render": {
+              "dpr": 1,
+              "width": 1600,
+              "height": 946,
+              "antialias": true,
+              "shadows": true,
+              "quality": "high",
+              "terrainActive": true,
+              "calls": 622,
+              "triangles": 1620547,
+              "geometries": 752,
+              "textures": 216,
+              "programs": 85
+            },
+            "heap": {
+              "used": 1141212774,
+              "total": 1588660294
+            },
+            "paintBindings": {
+              "available": true,
+              "receiver": "ordinary-ground:3",
+              "boundMaterials": 19,
+              "compiledMaterials": 18,
+              "tables": [
+                "bdda649e-e6c4-4c3d-8fa3-c9bf4df17c0e"
+              ],
+              "mismatches": []
+            }
+          },
+          {
+            "state": "drained",
+            "elapsedMs": 58236,
+            "render": {
+              "dpr": 1,
+              "width": 1600,
+              "height": 946,
+              "antialias": true,
+              "shadows": true,
+              "quality": "high",
+              "terrainActive": true,
+              "calls": 629,
+              "triangles": 1621856,
+              "geometries": 749,
+              "textures": 216,
+              "programs": 85
+            },
+            "heap": {
+              "used": 1430927003,
+              "total": 1866667783
+            },
+            "paintBindings": {
+              "available": true,
+              "receiver": "ordinary-ground:4",
+              "boundMaterials": 19,
+              "compiledMaterials": 18,
+              "tables": [
+                "177689f1-ebc0-48bd-ba93-62d82fb88254"
+              ],
+              "mismatches": []
+            }
+          }
+        ]
+      },
+      "railOrigins": [],
+      "matchesFinalTooling": false
+    },
+    {
+      "label": "tram-preflight-final-1",
+      "stage": "preflight",
+      "disposition": "rejected-collector",
+      "note": "A pending asynchronous source-body verification was mistaken for a replay miss. All 323 final source rows have valid hashes; the collector race is regression tested.",
+      "rawReceipt": "results/acceptance-2026-10-08/tram-preflight-final-1.json",
+      "receiptSha256": "66e7b8858d7f3dba3e62969d1dbc96779e1560e404bfb06e63627765cdc60341",
+      "startedAt": "2026-10-08T00:25:13.819Z",
+      "finishedAt": "2026-10-08T00:27:40.661Z",
+      "complete": false,
+      "verdict": {
+        "accepted": false,
+        "readyForTiming": false,
+        "reasons": [
+          "run is incomplete",
+          "run contains errors",
+          "finalDrain result is missing",
+          "movement phase is missing",
+          "lifecycle cycle count is below the required threshold"
+        ]
+      },
+      "identity": {
+        "variant": "candidate",
+        "engineHash": "835b439e276701c3de7a752444ce30d3acaff1b121f43b7857a66d76b4f5a4be",
+        "hostHash": "77b7607be38354dd506af789757b969c551fd9c6ea33c9c991b81e4fb83122d0",
+        "sourceHash": "33828128286d7bf06285d539389b3cb95dc83262b2f35def79bc846faf768c1c",
+        "observerHash": "1760b0d0efc71deb84d0c3966868ddb4da9395ca3ddd8bee93751fb27ddc3ab4",
+        "scenarioHash": "b0a053cb6c5edbdeeb1a564a033dcd781862634253e0888cf5c68fc85d667fac",
+        "viewport": {
+          "width": 1600,
+          "height": 1000,
+          "deviceScaleFactor": 1
+        },
+        "browser": "154.0.8037.98",
+        "renderContext": {
+          "dpr": 1,
+          "width": 1600,
+          "height": 946,
+          "antialias": true,
+          "shadows": true,
+          "quality": "high",
+          "terrainActive": true
+        },
+        "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M1 Pro, Unspecified Version)"
+      },
+      "engine": {
+        "revision": "3ee0002509c6e1b4874a3e76ee68d92143045e20+paint-binding-disposal",
+        "packageSha256": "973b3f57806d6575767da2e58d33962578dd8743d4c7bee2b1a2b43de7acd898",
+        "runtimePatchSha256": "a6ec8835eeb38c3428898c11f9ee384762a5b88ce6ab8f86fd3a1669d6ba8aed"
+      },
+      "toolingHash": "da5fcc8115269fefcb1db2093a059cf56c280666dbfbe15031ac6e31661708a5",
+      "ready": {
+        "reason": "ready",
+        "blockers": null,
+        "elapsedMs": 16247.8,
+        "observation": "first normal-ready browser sample"
+      },
+      "sources": {
+        "sealed": true,
+        "requestCount": 323,
+        "changed": false,
+        "finalHash": "33828128286d7bf06285d539389b3cb95dc83262b2f35def79bc846faf768c1c",
+        "missingCount": 0,
+        "unexpectedResponseCount": 0
+      },
+      "errorCount": 1,
+      "filesChanged": false,
+      "phases": {
+        "stationary": {
+          "requestedMs": 60000,
+          "durationMs": 60008.90000003576,
+          "distanceM": 0,
+          "turns": 0,
+          "visible": true,
+          "renderContextStable": true,
+          "frames": {
+            "n": 4357,
+            "meanMs": 13.772641725958227,
+            "p50Ms": 16,
+            "p95Ms": 17.89999999999418,
+            "p99Ms": 23.10000000000582,
+            "maxMs": 26.90000000000873,
+            "over50": 0,
+            "over100": 0,
+            "over250": 0
+          },
+          "observation": {
+            "rawFrames": 4357,
+            "invalidFrames": 0,
+            "coveredMs": 60007.399999999994
+          },
+          "nativeHost": {
+            "clean": false,
+            "elapsedMs": 60036,
+            "swapInBytes": 111280128,
+            "swapOutBytes": 0,
+            "peakSwapMiBPerSecond": 13.4765625,
+            "peakLoadPerCpu": 0.86383056640625
+          },
+          "timingsAccepted": false
+        }
+      },
+      "initialDrain": {
+        "state": "drained",
+        "elapsedMs": 75572,
+        "render": {
+          "dpr": 1,
+          "width": 1600,
+          "height": 946,
+          "antialias": true,
+          "shadows": true,
+          "quality": "high",
+          "terrainActive": true,
+          "calls": 1262,
+          "triangles": 1895680,
+          "geometries": 2439,
+          "textures": 319,
+          "programs": 90
+        },
+        "heap": {
+          "used": 1570278063,
+          "total": 1790610515
+        },
+        "paintBindings": {
+          "available": true,
+          "receiver": "ordinary-ground:1",
+          "boundMaterials": 19,
+          "compiledMaterials": 18,
+          "tables": [
+            "346725ad-7fe0-4a29-a1bf-221728b2202e"
+          ],
+          "mismatches": []
+        }
+      },
+      "finalDrain": null,
+      "lifecycle": {
+        "cycles": 0,
+        "errorCount": 0,
+        "observations": []
+      },
+      "railOrigins": [],
+      "matchesFinalTooling": false
+    },
+    {
+      "label": "tram-preflight-final-2",
+      "stage": "preflight",
+      "disposition": "rejected-coverage",
+      "note": "The corrected collector found a genuine missing exact curb tile during movement. A separate unsealed copy was created for additional recording.",
+      "rawReceipt": "results/acceptance-2026-10-08/tram-preflight-final-2.json",
+      "receiptSha256": "d9d0ea0628b6e1c5ee05d6b151928ded22bf88c20a3b721c89e35153cc7f6d51",
+      "startedAt": "2026-10-08T00:32:05.490Z",
+      "finishedAt": "2026-10-08T00:34:46.325Z",
+      "complete": false,
+      "verdict": {
+        "accepted": false,
+        "readyForTiming": false,
+        "reasons": [
+          "run is incomplete",
+          "run contains errors",
+          "sources.missing is not empty",
+          "sources.unexpectedResponses is not empty",
+          "finalDrain result is missing",
+          "movement phase is missing",
+          "lifecycle cycle count is below the required threshold"
+        ]
+      },
+      "identity": {
+        "variant": "candidate",
+        "engineHash": "835b439e276701c3de7a752444ce30d3acaff1b121f43b7857a66d76b4f5a4be",
+        "hostHash": "77b7607be38354dd506af789757b969c551fd9c6ea33c9c991b81e4fb83122d0",
+        "sourceHash": "33828128286d7bf06285d539389b3cb95dc83262b2f35def79bc846faf768c1c",
+        "observerHash": "d6f41ad72c95e4baa5b6e4293114146c90359386387e3f822f9b64c4775efa4f",
+        "scenarioHash": "b0a053cb6c5edbdeeb1a564a033dcd781862634253e0888cf5c68fc85d667fac",
+        "viewport": {
+          "width": 1600,
+          "height": 1000,
+          "deviceScaleFactor": 1
+        },
+        "browser": "154.0.8037.98",
+        "renderContext": {
+          "dpr": 1,
+          "width": 1600,
+          "height": 946,
+          "antialias": true,
+          "shadows": true,
+          "quality": "high",
+          "terrainActive": true
+        },
+        "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M1 Pro, Unspecified Version)"
+      },
+      "engine": {
+        "revision": "3ee0002509c6e1b4874a3e76ee68d92143045e20+paint-binding-disposal",
+        "packageSha256": "973b3f57806d6575767da2e58d33962578dd8743d4c7bee2b1a2b43de7acd898",
+        "runtimePatchSha256": "a6ec8835eeb38c3428898c11f9ee384762a5b88ce6ab8f86fd3a1669d6ba8aed"
+      },
+      "toolingHash": "aafe638daea8d51f26838f360c19e2e449536704351dc51f8c4ac1f4d7b0088c",
+      "ready": {
+        "reason": "ready",
+        "blockers": null,
+        "elapsedMs": 16252.7,
+        "observation": "first normal-ready browser sample"
+      },
+      "sources": {
+        "sealed": true,
+        "requestCount": 403,
+        "changed": false,
+        "finalHash": "33828128286d7bf06285d539389b3cb95dc83262b2f35def79bc846faf768c1c",
+        "missingCount": 1,
+        "unexpectedResponseCount": 2
+      },
+      "errorCount": 3,
+      "filesChanged": false,
+      "phases": {
+        "stationary": {
+          "requestedMs": 60000,
+          "durationMs": 60000.69999998808,
+          "distanceM": 0,
+          "turns": 0,
+          "visible": true,
+          "renderContextStable": true,
+          "frames": {
+            "n": 4440,
+            "meanMs": 13.513693693693691,
+            "p50Ms": 15.89999999999418,
+            "p95Ms": 17.80000000000291,
+            "p99Ms": 18.5,
+            "maxMs": 42,
+            "over50": 0,
+            "over100": 0,
+            "over250": 0
+          },
+          "observation": {
+            "rawFrames": 4440,
+            "invalidFrames": 0,
+            "coveredMs": 60000.79999999999
+          },
+          "nativeHost": {
+            "clean": false,
+            "elapsedMs": 60099,
+            "swapInBytes": 92422144,
+            "swapOutBytes": 175833088,
+            "peakSwapMiBPerSecond": 81.3125,
+            "peakLoadPerCpu": 1.73883056640625
+          },
+          "timingsAccepted": false
+        }
+      },
+      "initialDrain": {
+        "state": "drained",
+        "elapsedMs": 77462,
+        "render": {
+          "dpr": 1,
+          "width": 1600,
+          "height": 946,
+          "antialias": true,
+          "shadows": true,
+          "quality": "high",
+          "terrainActive": true,
+          "calls": 1254,
+          "triangles": 1890584,
+          "geometries": 2429,
+          "textures": 318,
+          "programs": 87
+        },
+        "heap": {
+          "used": 1697107518,
+          "total": 1884992794
+        },
+        "paintBindings": {
+          "available": true,
+          "receiver": "ordinary-ground:1",
+          "boundMaterials": 19,
+          "compiledMaterials": 18,
+          "tables": [
+            "59263172-7a3a-4be9-a2be-c5c77ae7af20"
+          ],
+          "mismatches": []
+        }
+      },
+      "finalDrain": null,
+      "lifecycle": {
+        "cycles": 0,
+        "errorCount": 0,
+        "observations": []
+      },
+      "railOrigins": [],
+      "matchesFinalTooling": false
+    },
+    {
+      "label": "tram-record-fixed-1",
+      "stage": "record",
+      "disposition": "source-recording-only",
+      "note": "Full candidate rail envelope collected separately; the original sealed archive and rejected captures remain unchanged.",
+      "rawReceipt": "results/acceptance-2026-10-08/tram-record-fixed-1.json",
+      "receiptSha256": "4a713058bc5f35b5aa12b952d108c23f70681151392bf10592681b57a098cb27",
+      "startedAt": "2026-10-08T00:39:30.807Z",
+      "finishedAt": "2026-10-08T00:50:08.421Z",
+      "complete": true,
+      "verdict": {
+        "accepted": false,
+        "readyForTiming": false,
+        "reasons": [
+          "source set is not sealed",
+          "source set changed during the run"
+        ]
+      },
+      "identity": {
+        "variant": "candidate",
+        "engineHash": "835b439e276701c3de7a752444ce30d3acaff1b121f43b7857a66d76b4f5a4be",
+        "hostHash": "77b7607be38354dd506af789757b969c551fd9c6ea33c9c991b81e4fb83122d0",
+        "sourceHash": "33828128286d7bf06285d539389b3cb95dc83262b2f35def79bc846faf768c1c",
+        "observerHash": "06f5c2796a8a6a345e755207efd92af17d85a6937ec72d3d417e91d1b4c136b8",
+        "scenarioHash": "b0a053cb6c5edbdeeb1a564a033dcd781862634253e0888cf5c68fc85d667fac",
+        "viewport": {
+          "width": 1600,
+          "height": 1000,
+          "deviceScaleFactor": 1
+        },
+        "browser": "154.0.8037.98",
+        "renderContext": {
+          "dpr": 1,
+          "width": 1600,
+          "height": 946,
+          "antialias": true,
+          "shadows": true,
+          "quality": "high",
+          "terrainActive": true
+        },
+        "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M1 Pro, Unspecified Version)"
+      },
+      "engine": {
+        "revision": "3ee0002509c6e1b4874a3e76ee68d92143045e20+paint-binding-disposal",
+        "packageSha256": "973b3f57806d6575767da2e58d33962578dd8743d4c7bee2b1a2b43de7acd898",
+        "runtimePatchSha256": "a6ec8835eeb38c3428898c11f9ee384762a5b88ce6ab8f86fd3a1669d6ba8aed"
+      },
+      "toolingHash": "7dc8a8bb25987ea3dd6a000b8b4cbe3e3df3b4a0b22647ab391c570c865dff3e",
+      "ready": {
+        "reason": "ready",
+        "blockers": null,
+        "elapsedMs": 16240.6,
+        "observation": "first normal-ready browser sample"
+      },
+      "sources": {
+        "sealed": false,
+        "requestCount": 1735,
+        "changed": true,
+        "finalHash": "b20db444bd363b253dac6e0c39ddc2b778a27e9b35f17cfd907ec2843f311ce2",
+        "missingCount": 0,
+        "unexpectedResponseCount": 0
+      },
+      "errorCount": 0,
+      "filesChanged": false,
+      "phases": {
+        "stationary": {
+          "requestedMs": 60000,
+          "durationMs": 60008.5,
+          "distanceM": 0,
+          "turns": 0,
+          "visible": true,
+          "renderContextStable": true,
+          "frames": {
+            "n": 4493,
+            "meanMs": 13.355820164700647,
+            "p50Ms": 15.700000000011642,
+            "p95Ms": 17.90000000000873,
+            "p99Ms": 23.39999999999418,
+            "maxMs": 26.60000000000582,
+            "over50": 0,
+            "over100": 0,
+            "over250": 0
+          },
+          "observation": {
+            "rawFrames": 4493,
+            "invalidFrames": 0,
+            "coveredMs": 60007.70000000001
+          },
+          "nativeHost": {
+            "clean": false,
+            "elapsedMs": 60031,
+            "swapInBytes": 54755328,
+            "swapOutBytes": 0,
+            "peakSwapMiBPerSecond": 4.118821767348976,
+            "peakLoadPerCpu": 0.73236083984375
+          },
+          "timingsAccepted": false
+        },
+        "movement": {
+          "requestedMs": 180000,
+          "durationMs": 180006,
+          "distanceM": 1485.8352323507975,
+          "turns": 0,
+          "visible": true,
+          "renderContextStable": true,
+          "frames": {
+            "n": 11927,
+            "meanMs": 15.091699505324053,
+            "p50Ms": 16.39999999999418,
+            "p95Ms": 25,
+            "p99Ms": 33.39999999999418,
+            "maxMs": 748.3000000000175,
+            "over50": 28,
+            "over100": 8,
+            "over250": 1
+          },
+          "observation": {
+            "rawFrames": 11927,
+            "invalidFrames": 0,
+            "coveredMs": 179998.69999999998
+          },
+          "nativeHost": {
+            "clean": false,
+            "elapsedMs": 180040,
+            "swapInBytes": 355090432,
+            "swapOutBytes": 1215823872,
+            "peakSwapMiBPerSecond": 85.53125,
+            "peakLoadPerCpu": 1.52313232421875
+          },
+          "timingsAccepted": false
+        }
+      },
+      "initialDrain": {
+        "state": "drained",
+        "elapsedMs": 75565,
+        "render": {
+          "dpr": 1,
+          "width": 1600,
+          "height": 946,
+          "antialias": true,
+          "shadows": true,
+          "quality": "high",
+          "terrainActive": true,
+          "calls": 1261,
+          "triangles": 1896531,
+          "geometries": 2442,
+          "textures": 321,
+          "programs": 90
+        },
+        "heap": {
+          "used": 1729912877,
+          "total": 1856766797
+        },
+        "paintBindings": {
+          "available": true,
+          "receiver": "ordinary-ground:1",
+          "boundMaterials": 19,
+          "compiledMaterials": 18,
+          "tables": [
+            "29a68bb7-04ca-4a95-9cfd-1773419045d9"
+          ],
+          "mismatches": []
+        }
+      },
+      "finalDrain": {
+        "state": "drained",
+        "elapsedMs": 30131,
+        "render": {
+          "dpr": 1,
+          "width": 1600,
+          "height": 946,
+          "antialias": true,
+          "shadows": true,
+          "quality": "high",
+          "terrainActive": true,
+          "calls": 926,
+          "triangles": 1702897,
+          "geometries": 2898,
+          "textures": 377,
+          "programs": 96
+        },
+        "heap": {
+          "used": 3010035949,
+          "total": 3183102809
+        },
+        "paintBindings": {
+          "available": true,
+          "receiver": "ordinary-ground:1",
+          "boundMaterials": 13,
+          "compiledMaterials": 12,
+          "tables": [
+            "29a68bb7-04ca-4a95-9cfd-1773419045d9"
+          ],
+          "mismatches": []
+        }
+      },
+      "lifecycle": {
+        "cycles": 3,
+        "errorCount": 0,
+        "observations": [
+          {
+            "state": "drained",
+            "elapsedMs": 97137,
+            "render": {
+              "dpr": 1,
+              "width": 1600,
+              "height": 946,
+              "antialias": true,
+              "shadows": true,
+              "quality": "high",
+              "terrainActive": true,
+              "calls": 1269,
+              "triangles": 1892637,
+              "geometries": 2456,
+              "textures": 370,
+              "programs": 94
+            },
+            "heap": {
+              "used": 2474202308,
+              "total": 2619177800
+            },
+            "paintBindings": {
+              "available": true,
+              "receiver": "ordinary-ground:2",
+              "boundMaterials": 19,
+              "compiledMaterials": 18,
+              "tables": [
+                "7fa72abd-ba07-4412-a39f-9d9545550ce2"
+              ],
+              "mismatches": []
+            }
+          },
+          {
+            "state": "drained",
+            "elapsedMs": 83653,
+            "render": {
+              "dpr": 1,
+              "width": 1600,
+              "height": 946,
+              "antialias": true,
+              "shadows": true,
+              "quality": "high",
+              "terrainActive": true,
+              "calls": 1264,
+              "triangles": 1894180,
+              "geometries": 2440,
+              "textures": 312,
+              "programs": 94
+            },
+            "heap": {
+              "used": 2819813451,
+              "total": 3901416307
+            },
+            "paintBindings": {
+              "available": true,
+              "receiver": "ordinary-ground:3",
+              "boundMaterials": 19,
+              "compiledMaterials": 18,
+              "tables": [
+                "b4a32e24-dc70-4f7f-a90d-4a76fd23fe87"
+              ],
+              "mismatches": []
+            }
+          },
+          {
+            "state": "drained",
+            "elapsedMs": 86978,
+            "render": {
+              "dpr": 1,
+              "width": 1600,
+              "height": 946,
+              "antialias": true,
+              "shadows": true,
+              "quality": "high",
+              "terrainActive": true,
+              "calls": 1254,
+              "triangles": 1892157,
+              "geometries": 2433,
+              "textures": 312,
+              "programs": 92
+            },
+            "heap": {
+              "used": 3042364909,
+              "total": 3569632661
+            },
+            "paintBindings": {
+              "available": true,
+              "receiver": "ordinary-ground:4",
+              "boundMaterials": 19,
+              "compiledMaterials": 18,
+              "tables": [
+                "a75ffdcd-6da1-4ebd-b3b1-aec09ed85acc"
+              ],
+              "mismatches": []
+            }
+          }
+        ]
+      },
+      "railOrigins": [
+        {
+          "native": {
+            "lat": 45.81286599912113,
+            "lon": 15.9772820061521,
+            "headingDeg": 128.25615994997486
+          },
+          "fixed": {
+            "lat": 45.81286597184228,
+            "lon": 15.977282197104037,
+            "headingDeg": 128.28535352225333
+          }
+        },
+        {
+          "native": {
+            "lat": 45.8128659999948,
+            "lon": 15.977282000036404,
+            "headingDeg": 128.25522497265064
+          },
+          "fixed": {
+            "lat": 45.81286597184228,
+            "lon": 15.977282197104037,
+            "headingDeg": 128.28535352225333
+          }
+        },
+        {
+          "native": {
+            "lat": 45.812865999999424,
+            "lon": 15.977282000004045,
+            "headingDeg": 128.25522002629816
+          },
+          "fixed": {
+            "lat": 45.81286597184228,
+            "lon": 15.977282197104037,
+            "headingDeg": 128.28535352225333
+          }
+        },
+        {
+          "native": {
+            "lat": 45.81286599999986,
+            "lon": 15.977282000001011,
+            "headingDeg": 128.25521956243563
+          },
+          "fixed": {
+            "lat": 45.81286597184228,
+            "lon": 15.977282197104037,
+            "headingDeg": 128.28535352225333
+          }
+        }
+      ],
+      "matchesFinalTooling": true
+    },
+    {
+      "label": "tram-preflight-expanded-1",
+      "stage": "preflight",
+      "disposition": "rejected-water-query-drift",
+      "note": "After 97 additional responses were recorded, frozen rail replay still failed: continuously centered water bbox requests differ across native runs. Exact misses are retained; no overlapping-response substitution is allowed.",
+      "rawReceipt": "results/acceptance-2026-10-08/tram-preflight-expanded-1.json",
+      "receiptSha256": "c07ac2a0b24464fb284e7ad1352cf596224d78af49462455108fd64cc4d6a885",
+      "startedAt": "2026-10-08T00:53:47.119Z",
+      "finishedAt": "2026-10-08T00:57:25.232Z",
+      "complete": false,
+      "verdict": {
+        "accepted": false,
+        "readyForTiming": false,
+        "reasons": [
+          "run is incomplete",
+          "run contains errors",
+          "sources.missing is not empty",
+          "sources.unexpectedResponses is not empty",
+          "finalDrain result is missing",
+          "movement phase is missing",
+          "lifecycle cycle count is below the required threshold"
+        ]
+      },
+      "identity": {
+        "variant": "candidate",
+        "engineHash": "835b439e276701c3de7a752444ce30d3acaff1b121f43b7857a66d76b4f5a4be",
+        "hostHash": "77b7607be38354dd506af789757b969c551fd9c6ea33c9c991b81e4fb83122d0",
+        "sourceHash": "b20db444bd363b253dac6e0c39ddc2b778a27e9b35f17cfd907ec2843f311ce2",
+        "observerHash": "06f5c2796a8a6a345e755207efd92af17d85a6937ec72d3d417e91d1b4c136b8",
+        "scenarioHash": "b0a053cb6c5edbdeeb1a564a033dcd781862634253e0888cf5c68fc85d667fac",
+        "viewport": {
+          "width": 1600,
+          "height": 1000,
+          "deviceScaleFactor": 1
+        },
+        "browser": "154.0.8037.98",
+        "renderContext": {
+          "dpr": 1,
+          "width": 1600,
+          "height": 946,
+          "antialias": true,
+          "shadows": true,
+          "quality": "high",
+          "terrainActive": true
+        },
+        "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M1 Pro, Unspecified Version)"
+      },
+      "engine": {
+        "revision": "3ee0002509c6e1b4874a3e76ee68d92143045e20+paint-binding-disposal",
+        "packageSha256": "973b3f57806d6575767da2e58d33962578dd8743d4c7bee2b1a2b43de7acd898",
+        "runtimePatchSha256": "a6ec8835eeb38c3428898c11f9ee384762a5b88ce6ab8f86fd3a1669d6ba8aed"
+      },
+      "toolingHash": "7dc8a8bb25987ea3dd6a000b8b4cbe3e3df3b4a0b22647ab391c570c865dff3e",
+      "ready": {
+        "reason": "ready",
+        "blockers": null,
+        "elapsedMs": 16189.8,
+        "observation": "first normal-ready browser sample"
+      },
+      "sources": {
+        "sealed": true,
+        "requestCount": 568,
+        "changed": false,
+        "finalHash": "b20db444bd363b253dac6e0c39ddc2b778a27e9b35f17cfd907ec2843f311ce2",
+        "missingCount": 15,
+        "unexpectedResponseCount": 14
+      },
+      "errorCount": 16,
+      "filesChanged": false,
+      "phases": {
+        "stationary": {
+          "requestedMs": 60000,
+          "durationMs": 60004.299999952316,
+          "distanceM": 0,
+          "turns": 0,
+          "visible": true,
+          "renderContextStable": true,
+          "frames": {
+            "n": 4442,
+            "meanMs": 13.508982440342187,
+            "p50Ms": 15.900000000008731,
+            "p95Ms": 17.69999999999709,
+            "p99Ms": 18.599999999976717,
+            "maxMs": 26.90000000000873,
+            "over50": 0,
+            "over100": 0,
+            "over250": 0
+          },
+          "observation": {
+            "rawFrames": 4442,
+            "invalidFrames": 0,
+            "coveredMs": 60006.899999999994
+          },
+          "nativeHost": {
+            "clean": false,
+            "elapsedMs": 60028,
+            "swapInBytes": 41418752,
+            "swapOutBytes": 0,
+            "peakSwapMiBPerSecond": 6.559220389805098,
+            "peakLoadPerCpu": 0.86676025390625
+          },
+          "timingsAccepted": false
+        }
+      },
+      "initialDrain": {
+        "state": "drained",
+        "elapsedMs": 74584,
+        "render": {
+          "dpr": 1,
+          "width": 1600,
+          "height": 946,
+          "antialias": true,
+          "shadows": true,
+          "quality": "high",
+          "terrainActive": true,
+          "calls": 1252,
+          "triangles": 1889882,
+          "geometries": 2429,
+          "textures": 318,
+          "programs": 87
+        },
+        "heap": {
+          "used": 1677790346,
+          "total": 1826044434
+        },
+        "paintBindings": {
+          "available": true,
+          "receiver": "ordinary-ground:1",
+          "boundMaterials": 19,
+          "compiledMaterials": 18,
+          "tables": [
+            "e86bfba7-10e9-4822-8b57-976f95d932c3"
+          ],
+          "mismatches": []
+        }
+      },
+      "finalDrain": null,
+      "lifecycle": {
+        "cycles": 0,
+        "errorCount": 0,
+        "observations": []
+      },
+      "railOrigins": [
+        {
+          "native": {
+            "lat": 45.81286599905222,
+            "lon": 15.97728200663444,
+            "headingDeg": 128.25623369060162
+          },
+          "fixed": {
+            "lat": 45.81286597184228,
+            "lon": 15.977282197104037,
+            "headingDeg": 128.28535352225333
+          }
+        }
+      ],
+      "matchesFinalTooling": true
+    }
+  ],
+  "standaloneConsumer": [
+    {
+      "rawReceipt": "results/acceptance-2026-10-08/packed-consumer-smoke-diagnostic.json",
+      "receiptSha256": "fbc087cc6ac0301b8421d5628d243a9182dd590cad1d04039c77a9227fb5343e",
+      "note": "Diagnostic attempt of the empty fixture; normal readiness was not observed.",
+      "complete": false,
+      "openClosePassed": false,
+      "opens": 0,
+      "readyReasons": [],
+      "pageErrorCount": 0,
+      "missingAssetPaths": [
+        "json/facade-specs.json",
+        "station-3d/audio/manifest.json",
+        "station3d/assets/people/crowd-faces.png"
+      ],
+      "provider404Count": 0,
+      "provider404Note": "Building-facade 404s are declared optional in the provider archive; they are distinct from missing package/host assets.",
+      "regionalHostRequired": false,
+      "provider": "synthetic-empty-http"
+    },
+    {
+      "rawReceipt": "results/acceptance-2026-10-08/packed-consumer-smoke-final.json",
+      "receiptSha256": "255cb0aedbae629156744d2a0abb889f496dd4c0f6bd39acfde536685ed05cac",
+      "note": "Correctly shaped empty fixture released through timeout and retained four held deliveries; liveness remains open.",
+      "complete": false,
+      "openClosePassed": false,
+      "opens": 0,
+      "readyReasons": [],
+      "pageErrorCount": 0,
+      "missingAssetPaths": [
+        "json/facade-specs.json",
+        "station-3d/audio/manifest.json",
+        "station3d/assets/people/crowd-faces.png"
+      ],
+      "provider404Count": 0,
+      "provider404Note": "Building-facade 404s are declared optional in the provider archive; they are distinct from missing package/host assets.",
+      "regionalHostRequired": false,
+      "provider": "synthetic-empty-http"
+    },
+    {
+      "rawReceipt": "results/acceptance-2026-10-08/packed-consumer-smoke-flat.json",
+      "receiptSha256": "b4ed2d99f2819eba1d9c8b6bb57cdd6846950d8a2d4bd55465c310a74e499328",
+      "note": "Rejected synthetic fixture: road binary and label endpoint formats were not yet correct.",
+      "complete": false,
+      "openClosePassed": false,
+      "opens": 0,
+      "readyReasons": [],
+      "pageErrorCount": 0,
+      "missingAssetPaths": [
+        "json/facade-specs.json",
+        "station-3d/audio/manifest.json",
+        "station3d/assets/people/crowd-faces.png"
+      ],
+      "provider404Count": 0,
+      "provider404Note": "Building-facade 404s are declared optional in the provider archive; they are distinct from missing package/host assets.",
+      "regionalHostRequired": false,
+      "provider": "synthetic-empty-http"
+    },
+    {
+      "rawReceipt": "results/acceptance-2026-10-08/packed-consumer-smoke-live-2.json",
+      "receiptSha256": "234a0c852da1939da13813613ec35737b3d0874a105ced5bd5715cc27ba10056",
+      "note": "Two public open/close cycles reached normal ready with zero JavaScript errors in a minimal consumer using a compatible HTTP provider. Optional asset 404s keep the overall check failed; this is not a sealed replay or a full-drain acceptance run.",
+      "complete": false,
+      "openClosePassed": true,
+      "opens": 2,
+      "readyReasons": [
+        "ready",
+        "ready"
+      ],
+      "pageErrorCount": 0,
+      "missingAssetPaths": [
+        "json/facade-specs.json",
+        "station-3d/audio/manifest.json",
+        "station3d/assets/people/crowd-faces.png"
+      ],
+      "provider404Count": 20,
+      "provider404Note": "Building-facade 404s are declared optional in the provider archive; they are distinct from missing package/host assets.",
+      "regionalHostRequired": false,
+      "provider": "compatible-http-provider-recording"
+    },
+    {
+      "rawReceipt": "results/acceptance-2026-10-08/packed-consumer-smoke-recorded-2.json",
+      "receiptSha256": "f59cb36adc544923b050b632b8089cdae90dc4d7a931a183a01664de1a20c277",
+      "note": "Rejected fixture configuration: the default building profile requested sources outside the mesh archive.",
+      "complete": false,
+      "openClosePassed": false,
+      "opens": 0,
+      "readyReasons": [],
+      "pageErrorCount": 0,
+      "missingAssetPaths": [
+        "json/facade-specs.json",
+        "station-3d/audio/manifest.json",
+        "station3d/assets/people/crowd-faces.png"
+      ],
+      "provider404Count": 0,
+      "provider404Note": "Building-facade 404s are declared optional in the provider archive; they are distinct from missing package/host assets.",
+      "regionalHostRequired": false,
+      "provider": "sealed-recorded-data"
+    },
+    {
+      "rawReceipt": "results/acceptance-2026-10-08/packed-consumer-smoke-recorded.json",
+      "receiptSha256": "d186cc2893b1b2ddb30223efaad1777380ed1240f3cf9237b0d9d8c5b0d5e2d0",
+      "note": "Rejected fixture navigation: requested / instead of /index.html, so no consumer page loaded.",
+      "complete": false,
+      "openClosePassed": false,
+      "opens": 0,
+      "readyReasons": [],
+      "pageErrorCount": 1,
+      "missingAssetPaths": [],
+      "provider404Count": 0,
+      "provider404Note": "Building-facade 404s are declared optional in the provider archive; they are distinct from missing package/host assets.",
+      "regionalHostRequired": false,
+      "provider": "sealed-recorded-data"
+    },
+    {
+      "rawReceipt": "results/acceptance-2026-10-08/packed-consumer-smoke.json",
+      "receiptSha256": "2f65dd4870c65c4053abd6cf3fd541b9e5052407ead1acaa0036f91968ffe063",
+      "note": "Rejected synthetic fixture: terrain endpoint returned GeoJSON instead of terrain-grid data.",
+      "complete": false,
+      "openClosePassed": false,
+      "opens": 0,
+      "readyReasons": [],
+      "pageErrorCount": 8,
+      "missingAssetPaths": [
+        "json/facade-specs.json",
+        "station-3d/audio/manifest.json",
+        "station3d/assets/people/crowd-faces.png"
+      ],
+      "provider404Count": 0,
+      "provider404Note": "Building-facade 404s are declared optional in the provider archive; they are distinct from missing package/host assets.",
+      "regionalHostRequired": false,
+      "provider": "synthetic-empty-http"
+    }
+  ],
+  "openGates": [
+    "Water requests recenter an unsnapped 1500 m bbox after 600 m of native movement; source-query identity varies between runs. Resolve deterministic source coverage without rounding or nearby-response substitution, then rerun both full preflights.",
+    "Quiet-host ABBA at DPR 1 and the high-DPI cap; current captures have native paging and are not performance evidence.",
+    "Appearance, support and selection parity across affected modes remain unverified; inspected screenshots do not close this gate.",
+    "Standalone optional facade-spec, voice-manifest and crowd-face assets are missing. The fully shaped empty provider also releases through timeout; retain its diagnostic capture separately from the known-data consumer check.",
+    "Re-profile final alpha.6 only after acceptance, then select one ground-worker family and the remaining building draw tail.",
+    "The previously reported isReady exception has not been reproduced."
+  ]
+}

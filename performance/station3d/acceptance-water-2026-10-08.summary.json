@@ -1,0 +1,310 @@
+{
+  "schema": "station3d-perf-vector-followup-summary-v1",
+  "date": "2026-10-08",
+  "scope": {
+    "correctnessOnly": true,
+    "performanceAccepted": false,
+    "userDecision": "Continue with correctness checks only while the host remains contended."
+  },
+  "previousReceipt": {
+    "file": "acceptance-2026-10-08.summary.json",
+    "sha256": "78c75a45dc80ae4fcf20fe99b17252ad74c6963da410977904f6b2037b8a11dd",
+    "retainedUnchanged": true
+  },
+  "runtime": {
+    "revision": "3ee0002509c6e1b4874a3e76ee68d92143045e20+paint-binding-disposal",
+    "packageSha256": "973b3f57806d6575767da2e58d33962578dd8743d4c7bee2b1a2b43de7acd898",
+    "runtimePatchSha256": "a6ec8835eeb38c3428898c11f9ee384762a5b88ce6ab8f86fd3a1669d6ba8aed",
+    "waterAndTerrainCodeChanged": false,
+    "materialLifecyclePatchUnchanged": true
+  },
+  "source": {
+    "httpArchive": {
+      "entries": 1855,
+      "sealed": true,
+      "sha256": "b20db444bd363b253dac6e0c39ddc2b778a27e9b35f17cfd907ec2843f311ce2"
+    },
+    "vector": {
+      "file": "water-vector-source-1.json",
+      "sha256": "ad969f307a0ffbb69069d78a9e2cad311f8a4ab711fa737ac0313323b663335e",
+      "bytes": 262558,
+      "schema": "station3d-perf-vector-source-v1",
+      "id": "water-provider-2026-10-08",
+      "pathname": "/api/water",
+      "crs": "EPSG:4326",
+      "query": {
+        "parameter": "bbox",
+        "selection": "postgis-box2df-overlap-v1",
+        "maxSpanDegrees": 0.12,
+        "maxFeatures": 2000
+      },
+      "coverage": {
+        "bbox": [
+          15.91,
+          45.77,
+          16.03,
+          45.87
+        ],
+        "complete": true,
+        "rowCount": 258,
+        "scope": "provider-visible-rows"
+      },
+      "provenance": {
+        "capturedAt": "2026-10-08T04:57:34.472Z",
+        "sourceRevision": "77ed6b49e911dbe96a391ff2dc8ec2bf3f569be5",
+        "querySha256": "cdaa24013e0aa6fee9aed6ebca20f67e5b446e54caa9a29d2b0b866f8e9bff91",
+        "transactionSnapshot": "368734187:368734187:",
+        "rawSnapshotSha256": "bc71a47e03cbd2db2af690fc20e18b7c95a9a8bb233d97ad9f7a7a965f246759",
+        "routeFileSha256": "36ea6a932d60931afba559dc6c62af521bb053766f266744e93b2ee33fa0d86b",
+        "postgisVersion": "3.5.2",
+        "countProof": {
+          "count": 258,
+          "selectedRows": 258,
+          "guardMaxRows": 5000,
+          "passed": true
+        },
+        "bounds": "outward float32 envelope of original database Box2D bounds; not rounded GeoJSON coordinates",
+        "ordering": "stable feature id; provider SQL has no ORDER BY"
+      }
+    },
+    "combinedSourceHash": "ba83936b36b8d4276a7808673aa78a0c033409f299c2d3282b3c450caa3c6400",
+    "unchangedAfterReplayAndFinalInspection": true
+  },
+  "waterEvidence": {
+    "acceptedProviderSnapshot": {
+      "file": "water-source-provider.raw.json",
+      "sha256": "bc71a47e03cbd2db2af690fc20e18b7c95a9a8bb233d97ad9f7a7a965f246759",
+      "bytes": 258417,
+      "readOnly": true,
+      "isolation": "REPEATABLE READ",
+      "sourceRevision": "77ed6b49e911dbe96a391ff2dc8ec2bf3f569be5",
+      "countProof": {
+        "count": 258,
+        "selectedRows": 258,
+        "guardMaxRows": 5000,
+        "passed": true
+      },
+      "archivedComparisons": {
+        "count": 11,
+        "allMatch": true
+      }
+    },
+    "rejectedLocalSnapshot": {
+      "file": "water-source-db.raw.json",
+      "sha256": "30ba5f829ebb3953a2f29626e93d002437a45851ba6583867d20675f6756e756",
+      "bytes": 217073,
+      "rowCount": 168,
+      "compared": 11,
+      "mismatches": 11,
+      "usedForReplay": false,
+      "reason": "Local copy lacks features present in recorded provider responses."
+    },
+    "exactFeatureProof": {
+      "file": "water-vector-source-1-verification.json",
+      "sha256": "4f97598b0db4c1ae5c442221ad55ac92e4ed5a6d24a78a464c0e050985d97eb4",
+      "bytes": 3465,
+      "queries": 11,
+      "allFeatureContentsEqual": true
+    },
+    "sqlParity": {
+      "file": "water-vector-sql-parity.json",
+      "sha256": "80fa68bfa43d66e6596164fecedf399333ed1e89698b72100d512505c9c5dd10",
+      "bytes": 119696,
+      "caseCounts": {
+        "archived": 11,
+        "missedRequests": 15,
+        "seededInterior": 64,
+        "tightBounds": 288,
+        "total": 378
+      },
+      "mismatchCount": 0,
+      "sourceIdentity": {
+        "unchanged": true,
+        "baselineCount": 258,
+        "currentCount": 258,
+        "baselineSha256": "85e3ff3bb95fad3e6e6c582837c15986afe8b807ae9966d6291ab283baa888fd",
+        "currentSha256": "85e3ff3bb95fad3e6e6c582837c15986afe8b807ae9966d6291ab283baa888fd",
+        "missingIds": [],
+        "extraIds": []
+      },
+      "passed": true
+    },
+    "semantics": [
+      "Select whole stored features with outward float32 BOX2DF overlap; preserve exact query bbox in response metadata.",
+      "Stable feature-id order; geometry and properties remain unchanged.",
+      "Registered vector endpoints cannot fall back to old archived responses or live data.",
+      "Coverage, source bytes and query semantics are hash-pinned; unsupported or out-of-coverage requests fail."
+    ]
+  },
+  "preflight": {
+    "file": "tram-preflight-vector-1.json",
+    "sha256": "76f47ecc7a8c84592b98fe2282dee171f6717503927adb2c40e268bd609bd2cc",
+    "bytes": 15593450,
+    "label": "tram-preflight-vector-1",
+    "stage": "preflight",
+    "startedAt": "2026-10-08T05:03:10.469Z",
+    "finishedAt": "2026-10-08T05:07:31.999Z",
+    "complete": false,
+    "verdict": {
+      "accepted": false,
+      "readyForTiming": false,
+      "reasons": [
+        "run is incomplete",
+        "run contains errors",
+        "sources.missing is not empty",
+        "sources.unexpectedResponses is not empty",
+        "finalDrain result is missing",
+        "movement phase is missing",
+        "lifecycle cycle count is below the required threshold"
+      ]
+    },
+    "identity": {
+      "variant": "candidate",
+      "engineHash": "835b439e276701c3de7a752444ce30d3acaff1b121f43b7857a66d76b4f5a4be",
+      "hostHash": "77b7607be38354dd506af789757b969c551fd9c6ea33c9c991b81e4fb83122d0",
+      "sourceHash": "ba83936b36b8d4276a7808673aa78a0c033409f299c2d3282b3c450caa3c6400",
+      "observerHash": "6ea08adafda50f9555887984c37258ec92f7b716f59350f10067893782d20185",
+      "scenarioHash": "b0a053cb6c5edbdeeb1a564a033dcd781862634253e0888cf5c68fc85d667fac",
+      "viewport": {
+        "width": 1600,
+        "height": 1000,
+        "deviceScaleFactor": 1
+      },
+      "browser": "154.0.8037.98",
+      "renderContext": {
+        "dpr": 1,
+        "width": 1600,
+        "height": 946,
+        "antialias": true,
+        "shadows": true,
+        "quality": "high",
+        "terrainActive": true
+      },
+      "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M1 Pro, Unspecified Version)"
+    },
+    "toolingHash": "ed13133339bdc55354274ac73243c2e52779a793fcdbda4d2c2b731ef7a074b7",
+    "ready": {
+      "reason": "ready",
+      "blockers": null,
+      "elapsedMs": 22229.7,
+      "observation": "first normal-ready browser sample"
+    },
+    "initialDrain": {
+      "state": "drained",
+      "elapsedMs": 99936,
+      "paintBindings": {
+        "available": true,
+        "receiver": "ordinary-ground:1",
+        "boundMaterials": 19,
+        "compiledMaterials": 18,
+        "tables": [
+          "f137fd09-c0da-4e86-9a67-9c8323365f9d"
+        ],
+        "mismatches": []
+      }
+    },
+    "stationary": {
+      "complete": true,
+      "durationMs": 60010.09999990463,
+      "hostClean": false,
+      "peakSwapMiBPerSecond": 94.78073463268366,
+      "peakLoadPerCpu": 1.74468994140625
+    },
+    "movement": {
+      "complete": false,
+      "lastObservedElapsedMs": 91117.69999992847,
+      "distanceM": 862.5382158792926
+    },
+    "lifecycle": {
+      "cycles": 0,
+      "status": "Not reached because replay rejected missing source coverage."
+    },
+    "sourceRequests": 550,
+    "derivedWaterRequests": [
+      {
+        "key": "/api/water?bbox=15.957928187450124,45.7993761477535,15.99663620675795,45.82635579593106",
+        "hash": "3b23209d50585b380552603c9447afad860255742e67fa698e44b383f3b785ba",
+        "outcome": "derived",
+        "fixtureHash": "ad969f307a0ffbb69069d78a9e2cad311f8a4ab711fa737ac0313323b663335e",
+        "featureCount": 47
+      },
+      {
+        "key": "/api/water?bbox=15.958551946070779,45.793996160689034,15.997259965378605,45.82097580886659",
+        "hash": "c422f1ae5d2599e143d7b02ae6cd6608d5da55af40fb90c221d8686ceca54365",
+        "outcome": "derived",
+        "fixtureHash": "ad969f307a0ffbb69069d78a9e2cad311f8a4ab711fa737ac0313323b663335e",
+        "featureCount": 54
+      }
+    ],
+    "missingSources": [
+      "/api/roads/curbs?bbox=15.982437467636425,45.79849299304242,15.985015102902617,45.8002896153924",
+      "/api/roads/curbs?bbox=15.982437467636425,45.79669637069244,15.985015102902617,45.79849299304242",
+      "/api/terrain/grid?bbox=15.970946,45.800389,15.985122,45.810271&res=0.0002&source=best-available"
+    ],
+    "sourceChanged": false,
+    "servedFilesChanged": false,
+    "errors": [
+      {
+        "type": "capture",
+        "message": "Frozen-source coverage failed; measurement is invalid"
+      },
+      {
+        "type": "server",
+        "message": "Missing frozen source: /api/roads/curbs?bbox=15.982437467636425,45.79849299304242,15.985015102902617,45.8002896153924"
+      },
+      {
+        "type": "server",
+        "message": "Missing frozen source: /api/roads/curbs?bbox=15.982437467636425,45.79669637069244,15.985015102902617,45.79849299304242"
+      },
+      {
+        "type": "server",
+        "message": "Missing frozen source: /api/terrain/grid?bbox=15.970946,45.800389,15.985122,45.810271&res=0.0002&source=best-available"
+      }
+    ],
+    "disposition": "Rejected: two curb responses and one terrain-grid response missing. Water replay succeeded; full route and lifecycle were not completed."
+  },
+  "terrainReplayBoundary": {
+    "evidence": "Read-only provider source inspection, api/src/domains/terrain/routes.js buildGridSql and grid handler.",
+    "targetOrigin": "Exact requested west and north; dimensions ceil bbox span / resolution.",
+    "resampling": "Source rasters are clipped and bilinearly transformed onto the request grid before source composition and quantization.",
+    "remainingRequirement": "Pin relevant source rasters, overviews and water-mask inputs plus the matching sampling pipeline, or separately validate a deterministic request contract.",
+    "unsupportedSubstitutions": [
+      "Nearest archived terrain response",
+      "Cropping an enclosing already-resampled grid",
+      "Rounding archive query keys"
+    ]
+  },
+  "validation": {
+    "node": "22.23.2",
+    "npm": "10.9.8",
+    "ci": {
+      "file": "checks/water-ci.log",
+      "sha256": "04f27de63612fe1a554a51ffec8238f63da81610026076a5ba4cc635adc4d0d3",
+      "bytes": 123731,
+      "tests": 548,
+      "passed": 548,
+      "failed": 0,
+      "reviewRequiredBundleInputs": 0,
+      "tarballInstallVendor": "passed"
+    },
+    "releaseAssets": {
+      "file": "checks/water-assets-release.log",
+      "sha256": "98acbc7a75d4390089a77c51af44c2c9a7dc0bebe1ef26b659abb3d1f2f303fc",
+      "bytes": 196,
+      "passed": true
+    },
+    "finalSourceInspection": {
+      "file": "water-final-inspect.json",
+      "sha256": "bf50db26af1790457fcd80c0b3870ed80af2c8e35d9187b8fd1777f6c20c3c07",
+      "bytes": 2127
+    }
+  },
+  "openGates": [
+    "Complete terrain/curb source coverage and current-tool preflights for both builds in walk and rail.",
+    "Quiet-host ABBA comparisons and high-DPI coverage remain deferred.",
+    "Support, appearance and selection parity across the remaining modes.",
+    "Standalone optional assets and empty-provider readiness timeout recorded in the previous receipt.",
+    "Ground/building optimization requires accepted baseline evidence first."
+  ],
+  "artifactPolicy": "Raw snapshots, provider data, scripts, logs and screenshots remain local ignored evidence; no provider dataset is added to the engine package."
+}

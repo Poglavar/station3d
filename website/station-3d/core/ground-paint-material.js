@@ -50,6 +50,7 @@ export function createGroundPaintMaterialState({ receiver }) {
         uReceiverPaintInvalidBounds: { value: Array.from({ length: MAX_PAGES }, () => new THREE.Vector4()) },
         uReceiverPaintInvalid: { value: new THREE.Vector3() },
     };
+    const releases = new Set();
     let current = Object.freeze([]), currentInvalid = [], closed = false;
     let originX = NaN, originZ = NaN;
     function syncRenderOrigin() {
@@ -122,10 +123,16 @@ export function createGroundPaintMaterialState({ receiver }) {
         textureBytes: data.byteLength,
         dispose() {
             if (closed) return false;
-            replacePages([]); closed = true; table.dispose(); return true;
+            replacePages([]); closed = true;
+            // Shared decor materials outlive a world session. Retire their
+            // receiver hooks with the state so the next session can bind them.
+            for (const release of releases) release();
+            states.delete(state);
+            table.dispose();
+            return true;
         },
     });
-    states.set(state, uniforms);
+    states.set(state, { uniforms, releases });
     return state;
 }
 
@@ -225,8 +232,9 @@ export function bindGroundPaintMaterial(material, { receiver, page = null, state
     if (bindings.has(material)) throw new Error('A material already belongs to a paint receiver');
     const ownsState = !state;
     state ||= createGroundPaintMaterialState({ receiver });
-    const uniforms = states.get(state);
-    if (!uniforms || state.disposed) throw new TypeError('Invalid ground paint material state');
+    const entry = states.get(state);
+    if (!entry || state.disposed) throw new TypeError('Invalid ground paint material state');
+    const { uniforms, releases } = entry;
     if (page) {
         try { state.replacePages([page]); } catch (error) { if (ownsState) state.dispose(); throw error; }
     }
@@ -289,11 +297,36 @@ normal = normalize(mix(nonPerturbedNormal, normal, 1.0 - receiverPaint.color.a +
     );
     material.userData.groundPaintReceiver = state.receiver;
     material.needsUpdate = true;
-    if (ownsState) material.addEventListener('dispose', () => state.dispose());
+    const installedCompile = material.onBeforeCompile;
+    const installedCacheKey = material.customProgramCacheKey;
+    const installedRender = material.onBeforeRender;
+    let released = false;
+    function release(disposeMaterial = true) {
+        if (released) return false;
+        released = true;
+        releases.delete(release);
+        material.removeEventListener('dispose', onMaterialDispose);
+        if (material.onBeforeCompile === installedCompile) material.onBeforeCompile = previousCompile;
+        if (material.customProgramCacheKey === installedCacheKey) material.customProgramCacheKey = previousCacheKey;
+        if (material.onBeforeRender === installedRender) material.onBeforeRender = previousRender;
+        if (material.userData.groundPaintReceiver === state.receiver) delete material.userData.groundPaintReceiver;
+        if (bindings.get(material) === handle) bindings.delete(material);
+        material.needsUpdate = true;
+        // needsUpdate alone can reuse this material's cached program uniforms.
+        // Retire those renderer properties too; the material and textures remain
+        // reusable. An external dispose event is already doing this cleanup.
+        if (disposeMaterial) material.dispose();
+        if (ownsState) state.dispose();
+        return true;
+    }
+    const onMaterialDispose = () => release(false);
     const handle = Object.freeze({ receiver: state.receiver, state,
         replace: next => state.replacePages(next ? [next] : [])[0] || null,
         replacePages: state.replacePages, clear: () => state.clear()[0] || null,
-        get page() { return state.pages[0] || null; }, get pages() { return state.pages; } });
+        get page() { return state.pages[0] || null; }, get pages() { return state.pages; },
+        get disposed() { return released; }, dispose: release });
     bindings.set(material, handle);
+    releases.add(release);
+    material.addEventListener('dispose', onMaterialDispose);
     return handle;
 }

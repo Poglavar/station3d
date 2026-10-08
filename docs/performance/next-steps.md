@@ -1,8 +1,13 @@
 # Station3D performance next steps
 
-Updated 28 September 2026. Read [audit.md](audit.md) for measurements, completed
+Updated 8 October 2026. Read [audit.md](audit.md) for measurements, completed
 work, scope and limitations. This is the single active performance backlog.
-S1–S3 and R1–R3 are implemented (see the status table). The ground-paint candidate below is implemented but has not passed the quiet-host performance gate; other remaining items are proposals.
+S1/S2, the S3 diagnostic probe, larger facade atlas pages, shadow reuse, opaque
+sorting, lamp packing and road triangulation landed in alpha.3. Road read
+evidence landed in alpha.5; paint and curb-query work landed in alpha.6.
+Remaining portions of R1/R3/R4 and the quiet-host performance gate are open.
+The current queue is below; the dated diagnostic tables preserve the original
+findings and must not be read as a list of still-unfixed alpha.6 failures.
 
 The 23 September revision re-measured the 22 September claims against the same
 served bundles (`cdd475cb…` standard, `d6ba6799…` Sloboda) and added frame-anatomy,
@@ -96,20 +101,212 @@ diagnostic, not benchmarks. Proportions and counts are the durable findings.
 
 ## Order of work
 
-1. **Unblock correctness first:** S1 (stationary delivery deadlock) and S2
-   (collider capacity / city-flight evidence). Both are loading failures, and
-   S1 also corrupts every "drain" measurement.
-2. **Make measurement trustworthy in parallel:** S3. It is small and stops the
-   rest of the list being judged on noise.
-3. **Take the cheap render wins:** R1 (building material/draw collapse), R2
-   (static shadow caching), R3 (per-draw CPU hygiene). These are local changes
-   with measurable counts.
-4. **Attack the dominant streaming cost:** G1 (narrow road recompilation), then
-   G2 (move ground compilation off the main thread). G2 is the largest potential
-   moving-FPS and hitch win, and the largest project.
-5. **Fix high-DPI fragment cost:** R4. It decides whether laptops reach 60 fps
-   at all in dense views.
-6. Later: lifecycle, readiness/lookahead policy and the small items.
+1. **Finish source coverage and preflights.** The consolidated tool, actual
+   tarball installs, complete vendored directories and native route controls
+   are in place. The recorder found and fixed a shared-material reopen defect;
+   the sealed candidate walk then completed its route and three reopens.
+   The candidate tram also completed three reopens and expanded the archive.
+   Frozen water coverage now uses complete provider rows and passed 378 SQL
+   parity cases. Its follow-up replay stopped on two missing curb responses
+   and a terrain grid whose sampling origin shifts with the requested bbox.
+   Close those source gaps, then rerun both variants with the final collector.
+   Terrain needs immutable source rasters and matching sampling semantics, or
+   a validated deterministic query contract; nearby or enclosing resampled
+   responses are not interchangeable. Keep this pass on correctness checks
+   while the host remains contended, as requested.
+   Sealing alone is not coverage. Each replay-only preflight must finish the
+   route and lifecycle work without a missing source or failed drain.
+   Retain the standalone optional-asset gaps and empty-provider timeout in the
+   receipt until the packed consumer also passes those checks.
+2. **Finish alpha.6 walk/tram acceptance.** Compare `fc1e89b` and `3ee0002` in
+   baseline/candidate/candidate/baseline order, on a quiet host. Include cold
+   startup, a stationary start that drains, three minutes of native movement,
+   bounded recovery and close/reopen. Repeat at DPR 1 and the high-DPI cap.
+   Both builds must include the identical material cleanup patch. Keep stack
+   capture for the old `isReady` exception; it has not recurred in these runs.
+3. **Re-profile ground construction on alpha.6, then choose one G2 family.**
+   Genuine new-road compilation and curb draping remain candidates. The newer
+   paint/curb changes alter the old phase ranking, so do not assume that the
+   September 23 road-first worker order is still optimal. Preserve bounded
+   snapshots/transfers, cancellation and atomic publication. Keep the terrain
+   tiling and curb read-evidence experiments parked unless new evidence changes
+   their timing verdict.
+4. **Finish the specific R1/R3 building tail.** Regionalize contact AO and roof
+   drainage, then the remaining per-entity meshes, preserving picking and
+   passages. Measure independently of ground work. The larger atlas and opaque
+   sort are already present; do not implement them again.
+5. **Close the wider matrix and remaining R4 questions.** Human/explorer walk,
+   rail seams and turnouts, road/curb driving, shore/boat transitions, land
+   flight/landing and memory-limited hardware. Verify the existing GPU-driven
+   auto-DPR governor before changing quality policy. Inspect support,
+   appearance and interaction for every affected mode.
+
+### Running the walk/rail acceptance tool
+
+Build each revision with the pinned toolchain, pack it, install the tarball in
+an isolated consumer, and run its installed `station3d-vendor` command. Point
+the configuration at the entire resulting vendored directory. Record the
+revision and SHA-256 of each tarball; the tool independently hashes every
+served engine file and every regular file in the consumer's public tree.
+The mounted engine subtree is excluded from the host hash. Symlinked public
+files are refused, and served bytes must match the startup fingerprints.
+
+Paths in this local JSON configuration are relative to the configuration file:
+
+```json
+{
+  "hostRoot": "./consumer/public",
+  "engines": {
+    "baseline": { "dist": "./baseline/public/station3d" },
+    "candidate": { "dist": "./candidate/public/station3d" }
+  },
+  "engineUrlPrefix": "/vendor/station3d/",
+  "providerBaseUrl": "https://provider.example/api",
+  "sourceArchive": "./sources",
+  "outputDir": "./captures",
+  "playwrightModule": "./consumer/node_modules/playwright",
+  "initScript": "./host-scenario.js",
+  "quality": "high",
+  "viewport": { "width": 1600, "height": 1000, "deviceScaleFactor": 1 },
+  "scenario": {
+    "id": "walk-dense-dpr1",
+    "url": "/walk.html?stats=0&perfAttribution=0&telemetry=0&weather=clear",
+    "mode": "walk",
+    "headingDeg": 0,
+    "corridorM": 55,
+    "stationarySeconds": 60,
+    "movementSeconds": 180,
+    "readyTimeoutSeconds": 240,
+    "drainTimeoutSeconds": 180,
+    "minDistanceM": 100,
+    "lifecycleCycles": 3
+  }
+}
+```
+
+The host script configures its HTTP provider at `/api` before opening the
+session. It owns any regional route selection. Walk uses native W/S input
+along the configured heading, with at least two corridor turns required.
+Rail uses the host's native pose provider and P pause control; configure
+`initialPose: { lat, lon, headingDeg }` for the first pose of each fresh controller. For rail lifecycle,
+the host script must define `window.__station3dAcceptanceReopen` to create a
+fresh native controller through the host opener. Reusing an advanced pose
+callback while pinning it back to the original anchor creates an invalid
+reopen. The observer rejects a reused callback, records each initial correction,
+and leaves subsequent poses native. Verify the resolved route on every host open.
+
+Only explicitly configured `externalOrigins` may be recorded outside the
+provider, for example basemap images requested when closing the 3D view.
+Their complete original URLs, including origin and query, are archived;
+frozen replay never fetches them live. Other external requests fail the run.
+Optional `sourceKeyRules` may drop declared volatile metadata parameters;
+spatial coordinates must retain exact identity. `expectedResponses` declares
+any legitimate optional HTTP errors and is part of the archive identity.
+
+For a continuously centered vector query, an explicitly exported complete
+dataset can answer exact requests without changing the runtime or finding a
+nearby recorded response. Configure each frozen dataset by file and SHA-256:
+
+```json
+{
+  "vectorSources": [
+    { "file": "./water-vector-source.json", "sha256": "<64 lowercase hexadecimal characters>" }
+  ]
+}
+```
+
+`station3d-perf-vector-source-v1` supports one defined query contract: a
+positive WGS84 bbox selects whole features by PostGIS `BOX2DF` overlap. Its
+export must include:
+
+- `id`, `pathname`, `crs: "EPSG:4326"` and a `query` object with
+  `parameter: "bbox"`, `selection: "postgis-box2df-overlap-v1"`,
+  `maxSpanDegrees` and `maxFeatures` matching the provider.
+- `coverage: { bbox, complete: true, rowCount, scope: "provider-visible-rows" }`.
+  Establish the row count and export in the same read-only database snapshot,
+  without a result limit. This attests the provider-visible dataset in that
+  area, not completeness of the underlying real-world map.
+- `provenance` containing `capturedAt`, `sourceRevision`, `querySha256` and
+  `transactionSnapshot`, with retained export/count evidence.
+- `features: [{ id, bounds, feature }]`, where `feature` is the original full
+  GeoJSON feature and `bounds` is its authoritative outward-float32 database
+  envelope. Do not infer it from coordinates rounded for GeoJSON delivery.
+
+The resolver reproduces the provider's
+[bounding-box overlap predicate](https://postgis.net/docs/geometry_overlaps.html),
+orders features by stable id, and echoes the original exact query bbox with
+`feature_count` and `truncated: false`. Unknown parameters, queries outside the
+complete area, and results reaching the provider's truncation limit fail.
+Clipped-response APIs and other query contracts are unsupported by this format.
+Verify selected IDs and untouched feature contents against the provider,
+including edge cases, before using a dataset for acceptance.
+
+A registered dataset owns every request to its endpoint, including requests
+already present in the exact-response archive. It cannot fall back to older
+responses or a live provider. Each request records both the derived response
+hash and dataset hash; the file is reverified before serving. Dataset bytes,
+coverage and query semantics join the archive in the overall source identity.
+`--stage seal` seals the HTTP archive; `--stage inspect` reports the combined
+identity and the separately hash-pinned vector datasets.
+
+With a configuration named `acceptance.json` in the current directory:
+
+```sh
+# Optional: clone an earlier archive without modifying its original.
+node tools/perf-acceptance.mjs --config acceptance.json --stage import --seed ./earlier-sources
+node tools/perf-acceptance.mjs --config acceptance.json --stage record --variant baseline --label record-a --run
+node tools/perf-acceptance.mjs --config acceptance.json --stage record --variant candidate --label record-b --run
+node tools/perf-acceptance.mjs --config acceptance.json --stage seal
+node tools/perf-acceptance.mjs --config acceptance.json --stage preflight --variant baseline --label preflight-a --run
+node tools/perf-acceptance.mjs --config acceptance.json --stage preflight --variant candidate --label preflight-b --run
+node tools/perf-acceptance.mjs --config acceptance.json --stage measure --variant baseline --label a1 --preflight captures/preflight-a.json --run
+node tools/perf-acceptance.mjs --config acceptance.json --stage measure --variant candidate --label b1 --preflight captures/preflight-b.json --run
+node tools/perf-acceptance.mjs --config acceptance.json --stage measure --variant candidate --label b2 --preflight captures/preflight-b.json --run
+node tools/perf-acceptance.mjs --config acceptance.json --stage measure --variant baseline --label a2 --preflight captures/preflight-a.json --run
+node tools/perf-acceptance.mjs --compare captures/a1.json captures/b1.json captures/b2.json captures/a2.json
+```
+
+Run one headed browser at a time. Every label must be new; failures retain
+their receipts. Sealing does not establish coverage: both full preflights
+must pass before timing. For families served from exact-response archives, a
+missing request requires a new unsealed archive copy, additional recording and
+new preflights. Do not patch a sealed
+archive, round its queries or substitute nearby terrain. Changed tooling,
+host files, sources, engine bytes or renderer context invalidate preflights.
+
+Each run records native load and swap-in plus swap-out at two-second
+intervals. Measurement fails with missing/reset counters, gaps over 7.5 s,
+load above 1.5 per CPU or paging above 0.5 MiB/s in any interval. Readiness,
+all world/building/paint/decor drains, route distance, render-context stability,
+visibility and lifecycle evidence must also pass. These thresholds are fixed
+by the tool, not adjustable per candidate.
+Held tile deliveries count as pending even when networking is idle. At initial
+drain, post-stop drain and every reopen, a separate material inspection checks
+that compiled ground-paint uniforms belong to the current receiver; retained
+uniforms from a closed session reject the run.
+
+The ABBA report computes comparisons only from valid, matching measurements.
+The four receipts must have positive, non-overlapping chronological intervals
+with at most five minutes between adjacent runs; duplicate or reordered runs
+cannot establish a back-to-back comparison.
+It rejects a pair-average p50 **or** p95 regression above 10% in either phase,
+and new recurring aggregate long tasks above 50 ms when both baseline runs
+had none. This aggregate check cannot identify individual recurring functions:
+review profiles and generation/queue evidence before approving an optimization.
+Support, appearance and selection still require their explicit cross-mode
+checks; automatic timing acceptance alone does not close those gates.
+
+After post-stop drain, a separate ten-second stationary diagnostic records
+GPU query-window medians, render CPU and CDP task time. Unsupported GPU timers
+remain unknown. Set `diagnosticSeconds` (at most 60) or
+`diagnosticCpuProfile: true` to retain a V8 profile of this separate window.
+Diagnostic timings are never substituted for the stats-off phases.
+Repeat the whole protocol with a distinct high-DPI configuration and observed
+renderer dimensions; a requested device scale alone does not prove the cap.
+
+The following effort/priority table records the September 23 diagnoses and
+original scope. The current order above and each item's release/status notes
+take precedence over its historical priority label.
 
 Effort includes implementation, focused tests and regression verification for one
 experienced maintainer: S = up to one day, M = 2–4 days, L = 5–10 days, XL = a

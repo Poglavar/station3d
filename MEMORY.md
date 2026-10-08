@@ -11,3 +11,4 @@
 - A static/dynamic cached shadow map was rejected: depth restores cost +3–4 ms GPU per frame on ANGLE/Metal; the shadow pass is only skipped when nothing it draws changed (2026-09-23).
 - Performance timings are judged by tools/perf-probe.mjs windows without host paging; GPU timer values under vsync are distorted by GPU clock scaling (2026-09-23).
 - Performance work may rethink shared engine architecture; remove demonstrably repeated work before larger rewrites, and keep predicted savings separate from quiet-host acceptance evidence (2026-09-28).
+- Complete-source walk/rail replay and quiet-host alpha.6 acceptance precede the next worker or building-batching optimization; sealing response bytes alone does not prove route coverage (2026-10-08).
