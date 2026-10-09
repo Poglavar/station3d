@@ -12,6 +12,26 @@ const stationRoot = resolve(repoRoot, 'website/station-3d');
 const outdir = resolve(stationRoot, 'dist');
 rmSync(outdir, { recursive: true, force: true });
 
+function filesBelow(path, relativeBase = '') {
+    if (!statSync(path).isDirectory()) return [relativeBase];
+    return readdirSync(path).flatMap(name => filesBelow(
+        resolve(path, name),
+        relativeBase ? `${relativeBase}/${name}` : name,
+    ));
+}
+
+const assetManifest = JSON.parse(readFileSync(resolve(repoRoot, 'assets.manifest.json'), 'utf8'));
+const copiedAssetRoots = (assetManifest.groups || []).filter(group => group.includeInCandidate === true)
+    .flatMap(group => group.paths || []);
+// The optional-media lookup and copied files use the same audited inventory.
+const runtimeAssets = copiedAssetRoots.flatMap(relativePath => filesBelow(
+    resolve(stationRoot, relativePath), relativePath,
+).map(file => ({
+    file,
+    bytes: statSync(resolve(stationRoot, file)).size,
+    sha256: createHash('sha256').update(readFileSync(resolve(stationRoot, file))).digest('hex'),
+}))).sort((a, b) => a.file.localeCompare(b.file));
+
 const result = await build({
     absWorkingDir: repoRoot,
     entryPoints: {
@@ -41,6 +61,7 @@ const result = await build({
     assetNames: 'assets/[name]-[hash]',
     define: {
         'process.env.NODE_ENV': '"production"',
+        __STATION3D_PACKAGED_ASSETS__: JSON.stringify(runtimeAssets.map(asset => asset.file)),
     },
 });
 
@@ -66,35 +87,12 @@ const publicShellCss = readFileSync(resolve(stationRoot, 'ui/shell.css'), 'utf8'
 writeFileSync(resolve(outdir, 'station3d.css'), publicShellCss);
 writeFileSync(resolve(outdir, 'loader.js'), `// Loads the versioned Station3D browser bundle and installs its shell stylesheet.\n(function loadStation3D() {\n    const script = document.currentScript;\n    const baseUrl = new URL('./', script && script.src ? script.src : document.baseURI);\n    const styleUrl = new URL('station3d.css', baseUrl).href;\n    if (!document.querySelector('link[data-station3d-shell]')) {\n        const link = document.createElement('link');\n        link.rel = 'stylesheet';\n        link.href = styleUrl;\n        link.dataset.station3dShell = '';\n        document.head.appendChild(link);\n    }\n    // Vendoring intentionally changes the directory name, so production mode\n    // is a loader contract rather than a brittle pathname convention.\n    window.__station3DProductionBundle = true;\n    window.__station3DReady = import(new URL('index.js', baseUrl).href).then(() => window.Station3D);\n    window.dispatchEvent(new Event('station3d:loader-ready'));\n}());\n`);
 
-const assetManifest = JSON.parse(readFileSync(resolve(repoRoot, 'assets.manifest.json'), 'utf8'));
-const copiedAssetRoots = [];
-for (const group of assetManifest.groups || []) {
-    if (group.includeInCandidate !== true) continue;
-    for (const relativePath of group.paths || []) {
-        const sourcePath = resolve(stationRoot, relativePath);
-        const targetPath = resolve(outdir, relativePath);
-        mkdirSync(dirname(targetPath), { recursive: true });
-        cpSync(sourcePath, targetPath, { recursive: true });
-        copiedAssetRoots.push(relativePath);
-    }
-}
-
-function filesBelow(path, relativeBase = '') {
-    if (!statSync(path).isDirectory()) return [relativeBase];
-    return readdirSync(path).flatMap(name => filesBelow(
-        resolve(path, name),
-        relativeBase ? `${relativeBase}/${name}` : name,
-    ));
-}
-
-const runtimeAssets = copiedAssetRoots.flatMap(relativePath => {
+for (const relativePath of copiedAssetRoots) {
     const sourcePath = resolve(stationRoot, relativePath);
-    return filesBelow(sourcePath, relativePath).map(file => ({
-        file,
-        bytes: statSync(resolve(stationRoot, file)).size,
-        sha256: createHash('sha256').update(readFileSync(resolve(stationRoot, file))).digest('hex'),
-    }));
-}).sort((a, b) => a.file.localeCompare(b.file));
+    const targetPath = resolve(outdir, relativePath);
+    mkdirSync(dirname(targetPath), { recursive: true });
+    cpSync(sourcePath, targetPath, { recursive: true });
+}
 
 const outputs = Object.entries(result.metafile.outputs).map(([file, meta]) => ({
     file: file.replace(`${repoRoot}/`, ''),

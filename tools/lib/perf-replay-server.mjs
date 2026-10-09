@@ -84,10 +84,14 @@ function externalArchiveUrl(apiPrefix, target) {
 
 export async function startPerfReplayServer({ hostRoot, engineDist, engineUrlPrefix = '/vendor/station3d/',
     apiPrefix = '/api/', providerBaseUrl, archive, recording = false, expectedResponses = [], log = () => {}, fingerprints,
-    externalOrigins = [], vectorSources = null }) {
+    externalOrigins = [], vectorSources = null, snapshotSources = null }) {
     if (!engineUrlPrefix.startsWith('/') || !engineUrlPrefix.endsWith('/')
         || !apiPrefix.startsWith('/') || !apiPrefix.endsWith('/')) throw new Error('URL prefixes must start and end with /');
     const permittedExternalOrigins = normalizeExternalOrigins(externalOrigins);
+    const vectorPaths = new Set((vectorSources?.identities || []).map(source => source.pathname));
+    if ((snapshotSources?.identities || []).some(source => source.pathnames.some(path => vectorPaths.has(path)))) {
+        throw new Error('Frozen source endpoints must have exactly one owner');
+    }
     if (recording && ((!providerBaseUrl && !permittedExternalOrigins.size) || archive.sealed)) {
         throw new Error('Recording needs a provider URL or external origins and an unsealed archive');
     }
@@ -128,12 +132,14 @@ export async function startPerfReplayServer({ hostRoot, engineDist, engineUrlPre
                         throw new Error(`External origin is not allowed: ${target.origin}`);
                     }
                 }
-                // An explicitly configured vector source owns its endpoint for
+                // An explicitly configured frozen source owns its endpoint for
                 // every query. Never mix a new snapshot with old exact responses,
                 // or fall back to a provider when its coverage check fails.
-                const vector = !isExternal && vectorSources ? await vectorSources.resolve(archiveUrl) : null;
-                let source = vector || archive.lookup(archiveUrl);
-                let outcome = vector ? 'derived' : 'replayed', providerStatus = null;
+                const derived = !isExternal
+                    ? await vectorSources?.resolve(archiveUrl) || await snapshotSources?.resolve(archiveUrl)
+                    : null;
+                let source = derived || archive.lookup(archiveUrl);
+                let outcome = derived ? 'derived' : 'replayed', providerStatus = null;
                 if (!source && recording) {
                     outcome = 'recorded';
                     const key = archiveUrl;
@@ -166,17 +172,17 @@ export async function startPerfReplayServer({ hostRoot, engineDist, engineUrlPre
                 }
                 // Verify exactly the bytes sent, including changes after archive open.
                 // Do not retain a process-wide body cache for a large provider archive.
-                const body = vector ? vector.body : await readFile(source.bodyPath);
+                const body = derived ? derived.body : await readFile(source.bodyPath);
                 if (body.length !== source.entry.bytes || sha256(body) !== source.entry.hash) {
                     throw new Error(`Corrupt source blob: ${source.entry.hash}`);
                 }
                 requestRow.hash = source.entry.hash;
                 requestRow.outcome = outcome;
-                if (vector) {
-                    requestRow.fixtureHash = vector.fixtureHash;
-                    requestRow.fixtureId = vector.fixtureId;
-                    requestRow.featureCount = vector.featureCount;
-                    res.setHeader('X-Source-Dataset-SHA256', vector.fixtureHash);
+                if (derived) {
+                    requestRow.fixtureHash = derived.fixtureHash;
+                    requestRow.fixtureId = derived.fixtureId;
+                    if (derived.featureCount !== undefined) requestRow.featureCount = derived.featureCount;
+                    res.setHeader('X-Source-Dataset-SHA256', derived.fixtureHash);
                 }
                 res.writeHead(source.entry.status, { 'Content-Type': source.entry.contentType,
                     'X-Source-SHA256': source.entry.hash });

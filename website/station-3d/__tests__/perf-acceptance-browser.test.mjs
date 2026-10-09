@@ -159,6 +159,29 @@ test('walk movement releases the held key on the exact phase-end frame', () => {
     assert.equal(env.capture.phases.movement.durationMs, 1000);
     assert.deepEqual(plain(env.capture.held), []);
     assert.deepEqual(env.events.filter(event => event.key === 'w').map(event => [event.type, event.at]), [['keydown', 999], ['keyup', 1000]]);
+    const route = plain(env.capture.phases.movement.route);
+    assert.equal(route.length, 2, 'sub-two-metre endpoint is retained even without a periodic waypoint');
+    assert.equal(route[0].distanceM, 0);
+    assert.equal(route[1].lat, 45 + 0.5 / 111320);
+    assert.equal(route[1].distanceM, env.capture.phases.movement.distanceM);
+});
+
+test('movement records absolute travelled distance through turns, including the final partial segment', () => {
+    const env = createObserver({ mode: 'walk', corridorM: 100 });
+    env.capture.start('movement', 1000);
+    env.setPose({ lat: 45 + 3 / 111320, lon: 15, headingDeg: 0 });
+    env.step(400);
+    env.setPose({ lat: 45, lon: 15, headingDeg: 180 });
+    env.step(800);
+    env.setPose({ lat: 45 + 0.5 / 111320, lon: 15, headingDeg: 0 });
+    env.step(1000);
+    const phase = env.capture.phases.movement, route = plain(phase.route);
+    assert.equal(route.length, 4);
+    assert.ok(Math.abs(route[1].distanceM - 3) < 0.001);
+    assert.ok(Math.abs(route[2].distanceM - 6) < 0.001);
+    assert.ok(Math.abs(route[3].distanceM - 6.5) < 0.001);
+    assert.equal(route[2].lat, route[0].lat, 'returning to the origin does not erase travelled distance');
+    assert.equal(route.at(-1).distanceM, phase.distanceM);
 });
 
 test('rail movement unpauses at start and pauses exactly at phase end', () => {

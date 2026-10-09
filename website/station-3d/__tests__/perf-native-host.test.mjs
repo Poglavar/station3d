@@ -27,6 +27,8 @@ test('zero swap across a quiet window is accepted and retains interval measureme
     const result = summarizeNativeHostWindow(pair());
     assert.equal(result.clean, true);
     assert.deepEqual(result.reasons, []);
+    assert.equal(result.evidenceValid, true);
+    assert.deepEqual(result.evidenceReasons, []);
     assert.equal(result.samples, 2);
     assert.equal(result.elapsedMs, 1000);
     assert.equal(result.swapInBytes, 0);
@@ -40,6 +42,8 @@ test('zero swap across a quiet window is accepted and retains interval measureme
         ] }]);
     assert.equal(result.effectiveCpuCapacity, 4);
     assert.equal(result.linuxContentionKnown, true);
+    assert.equal(result.platform, 'linux');
+    assert.equal(result.cpus, 8);
 });
 
 test('unknown and reset counters fail closed and keep the interval with null deltas', () => {
@@ -73,6 +77,25 @@ test('rejects inconsistent page sizes or CPU counts', () => {
     const cpus = summarizeNativeHostWindow(pair({}, { cpus: 4 }));
     assert.equal(cpus.clean, false);
     assert.ok(cpus.reasons.includes('host samples use inconsistent CPU counts'));
+});
+
+test('requires a supported native platform and exposes platform and CPU identity', () => {
+    for (const platform of [undefined, 'windows', '']) {
+        const result = summarizeNativeHostWindow(pair({ platform }, { platform }));
+        assert.equal(result.clean, false);
+        assert.equal(result.evidenceValid, false);
+        assert.ok(result.evidenceReasons.some(reason => /platform is missing or unsupported/.test(reason)));
+    }
+
+    const macSamples = [
+        sample({ platform: 'darwin', cgroupV2: undefined, procStatTotalTicks: undefined, stealTicks: undefined }),
+        sample({ at: 2000, platform: 'darwin', cgroupV2: undefined, procStatTotalTicks: undefined, stealTicks: undefined }),
+    ];
+    const mac = summarizeNativeHostWindow(macSamples);
+    assert.equal(mac.clean, true);
+    assert.equal(mac.evidenceValid, true);
+    assert.equal(mac.platform, 'darwin');
+    assert.equal(mac.cpus, 8);
 });
 
 test('rejects high per-CPU load and combined swap-in plus swap-out rate', () => {
@@ -177,15 +200,21 @@ test('cgroup throttling, steal, counter resets, path changes and quota changes f
     assert.equal(throttled.clean, false);
     assert.equal(throttled.observedCgroupThrottle, true);
     assert.ok(throttled.reasons.some(reason => /cgroup CPU throttling observed/.test(reason)));
+    assert.equal(throttled.evidenceValid, true);
+    assert.deepEqual(throttled.evidenceReasons, []);
 
     const steal = summarizeNativeHostWindow(pair({}, { procStatTotalTicks: 1100, stealTicks: 12 }));
     assert.equal(steal.clean, false);
     assert.equal(steal.peakStealRatio, 0.02);
     assert.ok(steal.reasons.some(reason => /host CPU steal 2\.000% exceeds 1\.000%/.test(reason)));
+    assert.equal(steal.evidenceValid, true);
+    assert.deepEqual(steal.evidenceReasons, []);
 
     const reset = summarizeNativeHostWindow(pair({}, { stealTicks: 9 }));
     assert.equal(reset.clean, false);
     assert.ok(reset.reasons.some(reason => /CPU or steal counters reset/.test(reason)));
+    assert.equal(reset.evidenceValid, false);
+    assert.ok(reset.evidenceReasons.some(reason => /CPU or steal counters reset/.test(reason)));
 
     const throttleReset = summarizeNativeHostWindow(pair({ cgroupV2: cgroup({ nrThrottled: 2, throttledUsec: 30 }) }, {
         cgroupV2: cgroup({ nrThrottled: 1, throttledUsec: 20 }),
@@ -196,16 +225,29 @@ test('cgroup throttling, steal, counter resets, path changes and quota changes f
     const moved = summarizeNativeHostWindow(pair({}, { cgroupV2: cgroup({ path: '/other.scope' }) }));
     assert.equal(moved.clean, false);
     assert.ok(moved.reasons.some(reason => /path or CPU quota changed/.test(reason)));
+    assert.equal(moved.evidenceValid, false);
 
     const changedQuota = summarizeNativeHostWindow(pair({}, { cgroupV2: cgroup({ quota: 2 }), effectiveCpuCapacity: 2 }));
     assert.equal(changedQuota.clean, false);
     assert.ok(changedQuota.reasons.some(reason => /path or CPU quota changed/.test(reason)));
+    assert.equal(changedQuota.evidenceValid, false);
 
     const equivalentCapacity = cgroup();
     equivalentCapacity.ancestors[0].cpuMaxSetting = '400000 200000';
     const changedPeriod = summarizeNativeHostWindow(pair({}, { cgroupV2: equivalentCapacity }));
     assert.equal(changedPeriod.clean, false);
     assert.ok(changedPeriod.reasons.some(reason => /path or CPU quota changed/.test(reason)));
+});
+
+test('native pressure makes admission dirty without invalidating otherwise sound evidence', () => {
+    for (const result of [
+        summarizeNativeHostWindow(pair({}, { load1: 16 })),
+        summarizeNativeHostWindow(pair({}, { swapins: 101, swapouts: 51 }), { maxSwapMiBPerSecond: 0.005 }),
+    ]) {
+        assert.equal(result.clean, false);
+        assert.equal(result.evidenceValid, true);
+        assert.deepEqual(result.evidenceReasons, []);
+    }
 });
 
 test('rejects invalid Linux steal thresholds instead of silently using them', () => {
@@ -216,9 +258,10 @@ test('rejects invalid Linux steal thresholds instead of silently using them', ()
     }
 });
 
-test('missing Linux contention evidence fails closed while macOS summary keeps its prior shape', () => {
+test('missing Linux contention evidence fails closed while macOS summary retains generic metrics', () => {
     const missing = summarizeNativeHostWindow(pair({}, { cgroupV2: null, procStatTotalTicks: null, stealTicks: null }));
     assert.equal(missing.clean, false);
+    assert.equal(missing.evidenceValid, false);
     assert.equal(missing.linuxContentionKnown, false);
     assert.ok(missing.reasons.some(reason => /cgroup v2 contention evidence is missing/.test(reason)));
 
@@ -247,6 +290,9 @@ test('missing Linux contention evidence fails closed while macOS summary keeps i
         procStatTotalTicks: 1100, stealTicks: undefined })];
     const mac = summarizeNativeHostWindow(macPair);
     assert.equal(mac.clean, true);
+    assert.equal(mac.evidenceValid, true);
+    assert.equal(mac.platform, 'darwin');
+    assert.equal(mac.cpus, 8);
     assert.equal('peakStealRatio' in mac, false);
     assert.deepEqual(mac.intervals, [{ elapsedMs: 1000, swapInBytes: 0, swapOutBytes: 0, swapMiBPerSecond: 0 }]);
 });

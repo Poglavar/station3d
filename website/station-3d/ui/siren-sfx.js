@@ -17,12 +17,13 @@ import {
     resumeUnlockedAudioContext,
     whenAudioUnlocked,
 } from '../core/audio-unlock.js';
-import { station3dAssetUrl } from '../core/asset-url.js';
+import { station3dOptionalAssetUrl } from '../core/asset-url.js';
 
-const SIREN_URLS = {
-    police: station3dAssetUrl('audio/sfx/siren/police.mp3'),
-    ambulance: station3dAssetUrl('audio/sfx/siren/ambulance.mp3'),
-};
+const SIREN_URLS = Object.fromEntries(Object.entries({
+    police: station3dOptionalAssetUrl('audio/sfx/siren/police.mp3'),
+    ambulance: station3dOptionalAssetUrl('audio/sfx/siren/ambulance.mp3'),
+}).filter(([, url]) => url));
+const SIREN_LIVERIES = Object.keys(SIREN_URLS);
 const AUDIBLE_M    = 280;        // attenuates to 0 past this distance
 const SIREN_REF_M  = 12;         // inverse-square reference distance — gain plateaus below this
 const MAX_VOICES   = 3;          // cap concurrent sirens — prefer closest
@@ -52,6 +53,7 @@ function queueSirenInit() {
 }
 
 function startLoadingBuffers() {
+    if (SIREN_LIVERIES.length === 0) return;
     if (loadStarted) return;
     const c = ensureCtx();
     if (!c) {
@@ -59,7 +61,7 @@ function startLoadingBuffers() {
         return;
     }
     loadStarted = true;
-    for (const livery of Object.keys(SIREN_URLS)) {
+    for (const livery of SIREN_LIVERIES) {
         fetch(SIREN_URLS[livery])
             .then(r => r.ok ? r.arrayBuffer() : Promise.reject(new Error(`siren fetch ${r.status}`)))
             .then(ab => c.decodeAudioData(ab))
@@ -69,6 +71,7 @@ function startLoadingBuffers() {
 }
 
 export function preloadSirens() {
+    if (SIREN_LIVERIES.length === 0) return;
     bindGlobalAudioUnlock();
     startLoadingBuffers();
 }
@@ -105,6 +108,7 @@ function stopVoice(voice) {
 // updated by distance attenuation. Voices beyond MAX_VOICES (sorted by
 // distance) are stopped to keep the mix clean.
 export function updateSirens(activeList) {
+    if (SIREN_LIVERIES.length === 0) return;
     if (!ctx && !ensureCtx()) {
         queueSirenInit();
         return;
@@ -112,7 +116,7 @@ export function updateSirens(activeList) {
 
     // Pick the MAX_VOICES nearest entries — anything further is silent.
     const sorted = activeList
-        .filter(e => e.distanceM <= AUDIBLE_M)
+        .filter(e => SIREN_URLS[e.livery] && e.distanceM <= AUDIBLE_M)
         .sort((a, b) => a.distanceM - b.distanceM)
         .slice(0, MAX_VOICES);
     const wantKeys = new Set(sorted.map(e => e.key));

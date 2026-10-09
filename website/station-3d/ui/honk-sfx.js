@@ -10,15 +10,11 @@ import {
     resumeUnlockedAudioContext,
     whenAudioUnlocked,
 } from '../core/audio-unlock.js';
-import { station3dAssetUrl } from '../core/asset-url.js';
+import { station3dOptionalAssetUrl } from '../core/asset-url.js';
 
-const HONK_FILES = [
-    station3dAssetUrl('audio/sfx/honk/1.mp3'),
-    station3dAssetUrl('audio/sfx/honk/2.mp3'),
-    station3dAssetUrl('audio/sfx/honk/3.mp3'),
-    station3dAssetUrl('audio/sfx/honk/4.mp3'),
-    station3dAssetUrl('audio/sfx/honk/5.mp3'),
-];
+const HONK_FILES = [1, 2, 3, 4, 5]
+    .map(index => station3dOptionalAssetUrl(`audio/sfx/honk/${index}.mp3`))
+    .filter(Boolean);
 
 let ctx = null;
 const buffers = [];      // decoded AudioBuffers, may be sparse during load
@@ -41,6 +37,7 @@ function queueBufferLoadOnUnlock() {
 }
 
 function startLoadingBuffers() {
+    if (HONK_FILES.length === 0) return;
     if (loadStarted) return;
     const c = ensureCtx();
     if (!c) {
@@ -59,6 +56,7 @@ function startLoadingBuffers() {
 
 // Eagerly start fetching + decoding so the first hit doesn't wait on I/O.
 export function preloadHonkSfx() {
+    if (HONK_FILES.length === 0) return;
     bindGlobalAudioUnlock();
     startLoadingBuffers();
 }
@@ -68,6 +66,7 @@ export function preloadHonkSfx() {
 // a different car horn). Drops the call silently if no buffer has decoded
 // yet — better than queuing a delayed honk after the moment has passed.
 export function playHonk({ gain = 1.0, playbackRate = 1.0 } = {}) {
+    if (HONK_FILES.length === 0) return;
     const c = ensureCtx();
     if (!c) return;
     resumeUnlockedAudioContext(c);

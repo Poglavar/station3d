@@ -62,6 +62,63 @@ test('only a complete, clean, sufficiently long visible measurement is accepted'
     assert.equal(evaluatePerfAcceptanceRun(makeRun({ stage: 'preflight' })).readyForTiming, true);
 });
 
+test('loaded-host mode admits evidenced pressure while quiet mode rejects the same host windows', () => {
+    const run = makeRun();
+    for (const phase of ['stationary', 'movement']) {
+        run.phases[phase].host = {
+            clean: false,
+            reasons: ['host CPU steal 2.000% exceeds 1.000%'],
+            evidenceValid: true,
+            evidenceReasons: [],
+            samples: 5,
+            elapsedMs: 30000,
+        };
+    }
+
+    assert.equal(evaluatePerfAcceptanceRun(run, { hostMode: 'loaded' }).accepted, true);
+    const quiet = evaluatePerfAcceptanceRun(run);
+    assert.equal(quiet.accepted, false);
+    reasonMatches(quiet, /host window is not clean/);
+});
+
+test('loaded-host mode rejects missing or reset native evidence and unknown host modes', () => {
+    const missingEvidence = makeRun();
+    for (const phase of ['stationary', 'movement']) {
+        missingEvidence.phases[phase].host = {
+            clean: false, reasons: ['swap pressure'], evidenceValid: false,
+            evidenceReasons: ['swap counter reset'], samples: 5, elapsedMs: 30000,
+        };
+    }
+    const missing = evaluatePerfAcceptanceRun(missingEvidence, { hostMode: 'loaded' });
+    assert.equal(missing.accepted, false);
+    reasonMatches(missing, /native host evidence is invalid or missing/);
+    reasonMatches(missing, /native host evidence has failure reasons/);
+
+    const absent = makeRun();
+    absent.phases.stationary.host = { clean: false, reasons: [], samples: 5, elapsedMs: 30000 };
+    const absentResult = evaluatePerfAcceptanceRun(absent, { hostMode: 'loaded' });
+    assert.equal(absentResult.accepted, false);
+    reasonMatches(absentResult, /stationary native host evidence is invalid or missing/);
+
+    const unknown = evaluatePerfAcceptanceRun(makeRun(), { hostMode: 'busy' });
+    assert.equal(unknown.accepted, false);
+    reasonMatches(unknown, /unknown host comparison mode/);
+});
+
+test('loaded-host mode keeps source-integrity and required-duration gates active', () => {
+    const unsealed = makeRun();
+    unsealed.sources.sealed = false;
+    const sourceResult = evaluatePerfAcceptanceRun(unsealed, { hostMode: 'loaded' });
+    assert.equal(sourceResult.accepted, false);
+    reasonMatches(sourceResult, /source set is not sealed/);
+
+    const shortMovement = makeRun();
+    shortMovement.phases.movement.durationMs = 179999;
+    const durationResult = evaluatePerfAcceptanceRun(shortMovement, { hostMode: 'loaded' });
+    assert.equal(durationResult.accepted, false);
+    reasonMatches(durationResult, /movement observed duration must be at least 180000ms/);
+});
+
 test('walking needs repeated corridor turns and a stable render context throughout each phase', () => {
     const run = makeRun();
     run.scenario.mode = 'walk';

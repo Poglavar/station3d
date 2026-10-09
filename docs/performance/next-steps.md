@@ -5,7 +5,8 @@ work, scope and limitations. This is the single active performance backlog.
 S1/S2, the S3 diagnostic probe, larger facade atlas pages, shadow reuse, opaque
 sorting, lamp packing and road triangulation landed in alpha.3. Road read
 evidence landed in alpha.5; paint and curb-query work landed in alpha.6.
-Remaining portions of R1/R3/R4 and the quiet-host performance gate are open.
+Remaining portions of R1/R3/R4 and the complete-world performance comparison
+are open. The loaded profile supports comparisons during ordinary host use.
 The current queue is below; the dated diagnostic tables preserve the original
 findings and must not be read as a list of still-unfixed alpha.6 failures.
 
@@ -109,17 +110,24 @@ diagnostic, not benchmarks. Proportions and counts are the durable findings.
    Frozen water coverage now uses complete provider rows and passed 378 SQL
    parity cases. Its follow-up replay stopped on two missing curb responses
    and a terrain grid whose sampling origin shifts with the requested bbox.
-   Close those source gaps, then rerun both variants with the final collector.
-   Terrain needs immutable source rasters and matching sampling semantics, or
-   a validated deterministic query contract; nearby or enclosing resampled
-   responses are not interchangeable. Keep this pass on correctness checks
-   while the host remains contended, as requested.
+   Both curb keys are now captured in a separate 2,012-response archive. The
+   terrain snapshot contains complete native rasters, overviews and water
+   masks; its prepared adapter uses the original provider sampling modules.
+   The approved adapter matches 13 of 14 live-provider responses exactly; one
+   height among 2,190,192 cells differs by 0.1 metres. Exact provider parity
+   remains failed, with its cause unproven. All 14 frozen responses repeat
+   byte for byte after reloading the session tables. Use this explicitly new
+   fixed fixture for both variants' fresh preflights, retaining the discrepancy
+   and newly matched package identities. Nearby or enclosing resampled terrain
+   responses are not interchangeable. Finish these correctness checks before beginning
+   either comparison profile; export and transport checks alone are not proof.
    Sealing alone is not coverage. Each replay-only preflight must finish the
    route and lifecycle work without a missing source or failed drain.
    Retain the standalone optional-asset gaps and empty-provider timeout in the
    receipt until the packed consumer also passes those checks.
-2. **Finish alpha.6 walk/tram acceptance.** Compare `fc1e89b` and `3ee0002` in
-   baseline/candidate/candidate/baseline order, on a quiet host. Include cold
+2. **Finish alpha.6 walk/tram acceptance.** Compare `fc1e89b` and `3ee0002` using
+   the predeclared loaded-host series below. Quiet-host
+   baseline/candidate/candidate/baseline remains an optional isolated profile. Include cold
    startup, a stationary start that drains, three minutes of native movement,
    bounded recovery and close/reopen. Repeat at DPR 1 and the high-DPI cap.
    Both builds must include the identical material cleanup patch. Keep stack
@@ -281,7 +289,57 @@ coverage and query semantics join the archive in the overall source identity.
 `--stage seal` seals the HTTP archive; `--stage inspect` reports the combined
 identity and the separately hash-pinned vector datasets.
 
-With a configuration named `acceptance.json` in the current directory:
+For a provider that resamples native rasters or computes geometry for an exact
+request, `snapshotSources` can use an audited offline query service:
+
+```json
+{
+  "snapshotSources": [
+    {
+      "file": "terrain-source/snapshot-manifest.json",
+      "sha256": "<64 lowercase hexadecimal characters>",
+      "origin": "http://127.0.0.1:19491"
+    }
+  ]
+}
+```
+
+This is a performance-fixture transport, not a new engine provider API. The
+manifest must be a regular file within the configuration directory. The
+service must bind to loopback (a local SSH forward is also usable). Its
+`GET /__station3d_snapshot` response must contain the exact pinned manifest
+bytes and `X-Source-Dataset-SHA256` header. The
+`station3d-perf-http-snapshot-v1` manifest declares a unique `id`, owned
+`pathnames`, complete coverage with a geographic `bbox` and `scope`, capture
+provenance (`capturedAt`, `sourceRevision`, `transactionSnapshot`), and a
+nonempty `files` inventory. Each inventory entry has a safe relative `file`,
+`sha256`, `bytes`, and `role` (`code` or `data`). Include query-specific bounds,
+sampling rules, dependencies and GIS runtime versions in the pinned manifest.
+
+The harness forwards the exact path and query with
+`X-Expected-Source-Dataset-SHA256`. Every successful JSON response must return
+the matching dataset header and an `X-Source-SHA256` matching its body bytes.
+Missing coverage, redirects, failed requests, changed manifests or mismatched
+hashes fail the run. An owned endpoint never falls back to the response
+archive or live provider, even during recording. The combined source identity
+uses `station3d-perf-source-set-v2` when HTTP snapshots are present; existing
+archive/vector-only identities are unchanged. Inspection and final capture
+verification both contact the snapshot service, without launching a browser.
+
+These checks establish consistent transport and identity; a service claiming
+to be frozen is not itself proof of immutable inputs. Audit the adapter:
+export complete native rows in one read-only snapshot, retain byte hashes and
+row counts, load only those rows into isolated storage, and reuse the original
+provider query and composition code. Reject requests outside exported support
+including interpolation collars. Verify complete response/height/source bytes
+against the provider for real queries, shifted origins and coverage edges.
+Retain the adapter, dependency versions and parity receipts alongside the
+data. The regional adapter and raw data remain downstream/local; Station3D
+adds no dependency on a regional service, database or sibling checkout.
+
+With a configuration named `acceptance.json` in the current directory, prepare
+sources and both preflights. The last five commands use the strict quiet-host
+profile; for ordinary host use, substitute the loaded series below:
 
 ```sh
 # Optional: clone an earlier archive without modifying its original.
@@ -307,7 +365,7 @@ archive, round its queries or substitute nearby terrain. Changed tooling,
 host files, sources, engine bytes or renderer context invalidate preflights.
 
 Each run records native load and swap-in plus swap-out at two-second
-intervals. Measurement fails with missing/reset counters, gaps over 7.5 s,
+intervals. Strict quiet-host measurement fails with missing/reset counters, gaps over 7.5 s,
 load above 1.5 per CPU or paging above 0.5 MiB/s in any interval. Readiness,
 all world/building/paint/decor drains, route distance, render-context stability,
 visibility and lifecycle evidence must also pass. These thresholds are fixed
@@ -333,6 +391,80 @@ GPU query-window medians, render CPU and CDP task time. Unsupported GPU timers
 remain unknown. Set `diagnosticSeconds` (at most 60) or
 `diagnosticCpuProfile: true` to retain a V8 profile of this separate window.
 Diagnostic timings are never substituted for the stats-off phases.
+
+### Comparisons under ordinary host load
+
+The loaded profile allows measured load, paging, Linux CPU steal and cgroup
+throttling. It preserves their raw evidence. Missing/reset counters, sampling
+gaps over 7.5 seconds, changed CPU capacity and all existing source/readiness/
+drain/visibility/lifecycle failures still reject the capture. It does not
+estimate an idle result by dividing frame times by CPU load or paging rate.
+
+After the two fresh full-route preflights above:
+
+```sh
+# Optional A/A pilot: both roles run the exact baseline package.
+node tools/perf-acceptance-series.mjs plan --config acceptance.json --plan captures/control-plan.json --id control-1 --kind control --pairs 4 --baseline-preflight captures/preflight-a.json
+node tools/perf-acceptance-series.mjs run --plan captures/control-plan.json --run
+node tools/perf-acceptance-series.mjs compare --plan captures/control-plan.json
+
+# Fix the comparison budget before the first capture (default: 12 pairs).
+node tools/perf-acceptance-series.mjs plan --config acceptance.json --plan captures/comparison-plan.json --id comparison-1 --pairs 12 --baseline-preflight captures/preflight-a.json --candidate-preflight captures/preflight-b.json
+node tools/perf-acceptance-series.mjs run --plan captures/comparison-plan.json --run
+node tools/perf-acceptance-series.mjs compare --plan captures/comparison-plan.json
+```
+
+Planning launches no browser. It checks current package/source/observer
+identities against the preflights and writes a new plan with exclusive-create
+semantics. The seed, balanced random AB/BA pair order, identities and tolerances
+are hashed before captures start. Comparison plans allow 8–128 even pairs;
+controls allow 2–128. Twelve pairs mean 24 full runs, including startup, both
+timed phases, drain and reopens; this is a sustained job, not a short probe.
+Run it through the host's job supervisor if it must outlive the shell.
+
+Execution is serial and saves each original collector receipt. `--resume`
+continues only after a valid completed prefix. It cannot replace a failed run
+or skip a hole. A pair's second capture must start within five minutes of its
+first capture ending; breaks are permitted between pairs. Interrupted pairs
+and changed inputs need a new, separately retained experiment. Do not stop
+early because a partial result looks favorable or increase the same experiment's
+sample count after inspecting its result.
+
+Analysis requires every planned slot in chronological order with the exact
+plan binding. Movement distance may differ by at most 5%. Rail paths may differ
+by at most 5 metres at equal absolute travelled distance. Walk plans bind
+`routePolicy: { type: "native-walk-corridor-v1", headingDeg, lengthM, origin }`
+to the configured corridor and baseline preflight start. Both walks must start
+within 5 m of that origin and every waypoint must stay within 5 m of the finite
+corridor. Turn counts may differ by at most 5%; alternating endpoint visits
+must corroborate each recorded count within one final partial leg. Endpoint
+witnesses allow the observer's 2 m recording interval and the native 2 m
+return threshold. Other routes use `distance-aligned-v1`. This preserves the
+native frame-sized turns without mistaking accumulated overshoot for a path
+change. Native platform/CPU
+count, Linux CPU capacity, requested workload, browser/GPU and render settings
+must match. The collector records routes and `measurementProfile: "loaded"`
+with `experiment: { planHash, slot }`; older captures cannot be relabelled.
+The plan and wrapper use `station3d-perf-loaded-plan-v1` and
+`station3d-perf-loaded-series-v1`. New native summaries distinguish
+`evidenceValid`/`evidenceReasons` from the unchanged strict `clean`/`reasons`.
+Per-phase `browserCpu` holds raw CDP counters and scheduled CPU seconds across
+all browser threads, optionally per frame/metre. Process churn or unavailable
+CDP accounting is reported as unknown and does not discard a slow frame run.
+
+Four primary endpoints are stationary/movement p50/p95 frame times. An exact
+binomial sign interval estimates the median paired candidate/baseline ratio
+in log space, targeting at least 95% simultaneous coverage over all four
+endpoints using Bonferroni. Pairs must be independent and representative;
+thousands of frames within a run do not increase the statistical sample count.
+An endpoint with its upper bound below 1 is improved; all four upper bounds
+at or below 1.10 support `within-budget`. A lower bound above 1.10 establishes
+regression; otherwise the result is `inconclusive`. Aggregate new recurring
+long-task counts remain a conservative extra gate. Inspect their profiles
+before assigning cause. A small A/A pilot reports descriptive noise only;
+it does not approve a candidate or prove equivalence. All runs and pair ratios
+remain available for review. Separate support, appearance and selection gates
+still apply.
 Repeat the whole protocol with a distinct high-DPI configuration and observed
 renderer dimensions; a requested device scale alone does not prove the cap.
 

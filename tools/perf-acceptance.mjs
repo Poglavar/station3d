@@ -7,6 +7,7 @@ import { readFile, writeFile, mkdir, access } from 'node:fs/promises';
 import { readdirSync, readFileSync } from 'node:fs';
 import { openPerfSourceArchive, importPerfSourceArchive } from './lib/perf-source-archive.mjs';
 import { openPerfVectorSources, perfReplaySourceHash } from './lib/perf-source-vectors.mjs';
+import { openPerfSnapshotSources } from './lib/perf-source-snapshots.mjs';
 import { fingerprintDirectory, sha256, startPerfReplayServer, hasPerfReplayFailure } from './lib/perf-replay-server.mjs';
 import { acceptanceObserverSource } from './lib/perf-acceptance-browser.mjs';
 import { captureAcceptanceDiagnostic, acceptanceDiagnosticSourceHash, captureGroundPaintBindings } from './lib/perf-acceptance-diagnostic.mjs';
@@ -14,6 +15,8 @@ import { readNativeHostSample, summarizeNativeHostWindow } from './lib/perf-nati
 import { summarizeIntervals } from './lib/perf-probe-summary.mjs';
 import { evaluatePerfAcceptanceRun, comparePerfAcceptanceRuns, assertComparablePreflight } from './lib/perf-acceptance-policy.mjs';
 import { resolvePerfBrowserLaunch, classifyPerfRenderer } from './lib/perf-acceptance-launch.mjs';
+import { readBrowserCpuSnapshot, summarizeBrowserCpuWindow } from './lib/perf-acceptance-cpu.mjs';
+import { readPerfAcceptanceSeries, verifySeriesInputs } from './lib/perf-acceptance-series.mjs';
 
 const usage = `Usage: node tools/perf-acceptance.mjs --config FILE --stage STAGE [options]
   --stage import --seed DIR             clone an existing source archive; original is unchanged
@@ -22,6 +25,7 @@ const usage = `Usage: node tools/perf-acceptance.mjs --config FILE --stage STAGE
   --stage record --run                  collect missing GET responses during the complete route
   --stage preflight --run               replay the complete route with zero live provider access
   --stage measure --run --preflight FILE  time the exact preflight identity on a quiet host
+  --experiment-plan FILE --experiment-slot N  use a predeclared loaded-host series slot
   --variant baseline|candidate          selected complete packaged distribution (default candidate)
   --label NAME                          unique output name (no overwriting previous runs)
   --compare FILE FILE FILE FILE         evaluate retained ABBA run receipts; no browser
@@ -29,11 +33,12 @@ Config requires hostRoot, engines.{baseline,candidate}.dist, sourceArchive, outp
 scenario.{id,url,mode,initialPose?,headingDeg?,corridorM?,stationarySeconds,movementSeconds,
 readyTimeoutSeconds,drainTimeoutSeconds,minDistanceM,lifecycleCycles}, viewport, quality,
 and optional initScript, playwrightModule, browserLaunch.{executablePath,args}, providerBaseUrl,
-sourceKeyRules and vectorSources. browserLaunch executablePath may be relative to the config file.
+sourceKeyRules, vectorSources and snapshotSources. browserLaunch executablePath may be relative to the config file.
 Provider responses and raw captures remain local. Diagnostics go to stderr; final receipt to stdout.`;
 const { values, positionals } = parseArgs({ allowPositionals: true, options: {
     config: { type: 'string' }, stage: { type: 'string' }, variant: { type: 'string', default: 'candidate' },
     label: { type: 'string' }, preflight: { type: 'string' }, seed: { type: 'string' },
+    'experiment-plan': { type: 'string' }, 'experiment-slot': { type: 'string' },
     run: { type: 'boolean' }, help: { type: 'boolean' }, compare: { type: 'boolean' },
 } });
 if (values.help || !values.config && !values.compare) { console.log(usage); process.exit(values.help ? 0 : 2); }
@@ -44,10 +49,15 @@ if (values.compare) {
     process.exit(verdict.accepted ? 0 : 1);
 }
 const configPath = resolve(values.config), configRoot = dirname(configPath);
-const config = JSON.parse(await readFile(configPath, 'utf8'));
+const configBytes = await readFile(configPath);
+const config = JSON.parse(configBytes.toString('utf8'));
 const stage = values.stage, variant = values.variant;
 if (!['import', 'seal', 'inspect', 'record', 'preflight', 'measure'].includes(stage)) throw new Error('Unknown --stage');
 if (!['baseline', 'candidate'].includes(variant)) throw new Error('Unknown --variant');
+if ((values['experiment-plan'] !== undefined || values['experiment-slot'] !== undefined)
+    && (stage !== 'measure' || !values['experiment-plan'] || !/^\d+$/.test(values['experiment-slot'] || ''))) {
+    throw new Error('Loaded measurement requires both --experiment-plan and an integer --experiment-slot with --stage measure');
+}
 const pathOf = key => {
     if (typeof key !== 'string' || !key) throw new Error('An explicit filesystem path is required');
     return resolve(configRoot, key);
@@ -62,6 +72,7 @@ if (stage === 'import') {
 const archive = openPerfSourceArchive(sourceArchive, { ...archiveOptions, mode: ['record', 'seal'].includes(stage) ? 'record' : 'replay' });
 if (stage === 'seal') { console.log(JSON.stringify({ stage, sourceHash: archive.seal(), entries: archive.size, sealed: true })); process.exit(0); }
 const vectorSources = await openPerfVectorSources(config.vectorSources || [], { root: configRoot });
+const snapshotSources = await openPerfSnapshotSources(config.snapshotSources || [], { root: configRoot });
 const scenario = config.scenario;
 if (!scenario || !/^[a-z0-9][a-z0-9-]*$/.test(scenario.id) || !['walk', 'rail'].includes(scenario.mode)
     || typeof scenario.url !== 'string' || !scenario.url.startsWith('/') || scenario.url.startsWith('//')) {
@@ -97,12 +108,12 @@ const observerConfig = { mode: scenario.mode, initialPose: scenario.initialPose 
 const observer = acceptanceObserverSource(observerConfig);
 const toolRoot = dirname(fileURLToPath(import.meta.url));
 // Include the collector and all acceptance helpers, not just the page observer.
-const toolingFiles = ['perf-acceptance.mjs', ...readdirSync(resolve(toolRoot, 'lib'))
+const toolingFiles = ['perf-acceptance.mjs', 'perf-acceptance-series.mjs', ...readdirSync(resolve(toolRoot, 'lib'))
     .filter(name => /^perf-(acceptance|source-|replay-server|native-|world-drain|probe-summary)/.test(name))
     .sort().map(name => `lib/${name}`)];
 const toolingHash = sha256(JSON.stringify(toolingFiles.map(file => [file, sha256(readFileSync(resolve(toolRoot, file)))])));
 const identity = { variant, engineHash: fingerprints.engine.hash, hostHash: fingerprints.host.hash,
-    sourceHash: perfReplaySourceHash(archive.hash(), vectorSources), observerHash: sha256(toolingHash + observer + init + acceptanceDiagnosticSourceHash(diagnosticSeconds)),
+    sourceHash: perfReplaySourceHash(archive.hash(), vectorSources, snapshotSources), observerHash: sha256(toolingHash + observer + init + acceptanceDiagnosticSourceHash(diagnosticSeconds)),
     scenarioHash: sha256(JSON.stringify({ scenario, quality: config.quality, viewport,
         engineUrlPrefix: config.engineUrlPrefix || '/vendor/station3d/', apiPrefix: config.apiPrefix || '/api/',
         expectedResponses: config.expectedResponses || [], externalOrigins,
@@ -111,12 +122,32 @@ const identity = { variant, engineHash: fingerprints.engine.hash, hostHash: fing
 if (stage === 'inspect') {
     console.log(JSON.stringify({ stage, identity, sourceEntries: archive.size, sealed: archive.sealed,
         vectorSources: vectorSources.identities,
+        snapshotSources: snapshotSources.identities,
         files: { host: fingerprints.host.entries.length, engine: fingerprints.engine.entries.length } }, null, 2)); process.exit(0);
 }
 if (!values.run) throw new Error('Browser capture requires --run');
 if (stage !== 'record' && !archive.sealed) throw new Error('Preflight and measurement require sealed sources');
 const label = values.label;
 if (!label || !/^[a-z0-9][a-z0-9-]*$/.test(label)) throw new Error('Unique filename-safe --label required');
+let experiment = null;
+if (values['experiment-plan']) {
+    const { wrapper } = await readPerfAcceptanceSeries(resolve(values['experiment-plan']));
+    const { preflights } = await verifySeriesInputs(wrapper);
+    const index = Number(values['experiment-slot']), slot = wrapper.plan.slots[index];
+    if (!Number.isSafeInteger(index) || !slot || slot.index !== index || slot.label !== label || slot.variant !== variant) {
+        throw new Error('Measurement does not match the planned slot label and physical variant');
+    }
+    if (wrapper.execution.configPath !== configPath || wrapper.execution.configSha256 !== sha256(configBytes)
+        || wrapper.execution.outputDir !== outputDir
+        || wrapper.execution.preflights[variant]?.path !== pathOf(values.preflight)) {
+        throw new Error('Measurement paths differ from the declared series');
+    }
+    const mismatch = assertComparablePreflight(preflights[variant], wrapper.plan.identities[variant]);
+    if (mismatch.length) throw new Error(`Planned preflight rejected: ${mismatch.join('; ')}`);
+    if (Date.parse(wrapper.plan.createdAt) > Date.now()) throw new Error('Experiment plan creation time is in the future');
+    experiment = { planHash: wrapper.plan.hash, slot: index };
+}
+const hostMode = experiment ? 'loaded' : 'quiet';
 await mkdir(outputDir, { recursive: true });
 const resultPath = resolve(outputDir, `${label}.json`);
 await writeFile(resultPath, '{}\n', { flag: 'wx' });
@@ -125,14 +156,15 @@ const required = { stationaryMs: scenario.stationarySeconds * 1000, movementMs: 
     minDistanceM: scenario.minDistanceM, lifecycleCycles: scenario.lifecycleCycles,
     ...(scenario.mode === 'walk' ? { walkTurns: 2 } : {}) };
 const result = { schema: 'station3d-perf-acceptance-run-v1', stage, label, startedAt: new Date().toISOString(),
+    measurementProfile: hostMode, ...(experiment ? { experiment } : {}),
     complete: false, identity, required, errors: [], phases: {}, lifecycle: { cycles: 0, errors: [], observations: [] },
     sources: { sealed: archive.sealed, missing: [], unexpectedResponses: [], changed: false,
-        archiveHash: archive.hash(), vectorSources: vectorSources.identities },
+        archiveHash: archive.hash(), vectorSources: vectorSources.identities, snapshotSources: snapshotSources.identities },
     files: { changed: false },
     engine: { revision: engine.revision || null, packageSha256: engine.packageSha256 || null,
         runtimePatchSha256: engine.runtimePatchSha256 || null },
     toolingHash, hostSamples: [], snapshots: [], scenario };
-let browser, server, page, hostTimer;
+let browser, server, page, hostTimer, browserCdp;
 let interrupted = null;
 for (const signal of ['SIGINT', 'SIGTERM']) process.once(signal, () => { interrupted = signal; });
 const save = () => writeFile(resultPath, JSON.stringify(result, null, 2) + '\n');
@@ -175,6 +207,7 @@ async function waitState(predicate, timeoutSeconds, purpose) {
     }
 }
 async function runPhase(name, durationMs) {
+    const cpuStart = experiment ? await readBrowserCpuSnapshot(browserCdp) : null;
     collectHost();
     const nativeStart = result.hostSamples.length - 1;
     await page.evaluate(({ name, durationMs }) => window.__station3dAcceptance.start(name, durationMs), { name, durationMs });
@@ -197,6 +230,7 @@ async function runPhase(name, durationMs) {
         }
     }
     collectHost();
+    const cpuEnd = experiment ? await readBrowserCpuSnapshot(browserCdp) : null;
     const raw = await page.evaluate(name => {
         const capture = window.__station3dAcceptance, phase = capture.phases[name];
         return { ...phase, longTasks: capture.read().longTasks.filter(row =>
@@ -206,6 +240,12 @@ async function runPhase(name, durationMs) {
     const host = summarizeNativeHostWindow(result.hostSamples.slice(nativeStart));
     const intervals = raw.frames.map(row => row.dt), valid = intervals.filter(value => Number.isFinite(value) && value > 0);
     const phase = { ...raw, frames: summarizeIntervals(valid), host,
+        ...(experiment ? { browserCpu: {
+            ...summarizeBrowserCpuWindow(cpuStart, cpuEnd, { frameCount: valid.length,
+                ...(name === 'movement' && raw.distanceM > 0 ? { distanceM: raw.distanceM } : {}) }),
+            scope: 'browser process CPU across all threads in the enclosing phase window; not GPU time or engine-only CPU',
+            start: cpuStart, end: cpuEnd,
+        } } : {}),
         renderContextStable: [raw.initial, ...raw.states, raw.final].every(row =>
             Object.entries(result.identity.renderContext).every(([key, value]) => row.render?.[key] === value)),
         observation: { rawFrames: intervals.length, invalidFrames: intervals.length - valid.length,
@@ -235,9 +275,15 @@ try {
     server = await startPerfReplayServer({ hostRoot, engineDist, archive, recording: stage === 'record',
         providerBaseUrl: config.providerBaseUrl, apiPrefix: config.apiPrefix || '/api/',
         engineUrlPrefix: config.engineUrlPrefix || '/vendor/station3d/', expectedResponses: config.expectedResponses,
-        externalOrigins, vectorSources, fingerprints, log });
+        externalOrigins, vectorSources, snapshotSources, fingerprints, log });
     collectHost(); hostTimer = setInterval(collectHost, 2000);
     browser = await chromium.launch(browserLaunch);
+    if (experiment) {
+        // Unsupported process accounting is an explicit diagnostic gap, never
+        // an invented zero or a reason to discard an otherwise valid slow run.
+        try { browserCdp = await browser.newBrowserCDPSession(); }
+        catch (error) { result.cpuAccountingError = error.message; }
+    }
     result.identity.browser = browser.version();
     page = await browser.newPage({ viewport: { width: viewport.width, height: viewport.height },
         deviceScaleFactor: viewport.deviceScaleFactor, serviceWorkers: 'block' });
@@ -287,7 +333,9 @@ try {
         const mismatch = assertComparablePreflight(preflight, result.identity);
         if (mismatch.length) throw new Error(`Runtime differs from preflight: ${mismatch.join('; ')}`);
         result.hostAdmission = summarizeNativeHostWindow(result.hostSamples.slice(-4));
-        if (!result.hostAdmission.clean) throw new Error(`Host admission rejected: ${result.hostAdmission.reasons.join('; ')}`);
+        if (!(experiment ? result.hostAdmission.evidenceValid : result.hostAdmission.clean)) {
+            throw new Error(`Host admission rejected: ${(experiment ? result.hostAdmission.evidenceReasons : result.hostAdmission.reasons).join('; ')}`);
+        }
     }
     await runPhase('stationary', required.stationaryMs);
     await waitState(row => row.drainState === 'drained', scenario.drainTimeoutSeconds, 'before movement');
@@ -343,7 +391,8 @@ try {
         // pass merely because the original in-memory manifest still has the same hash.
         const verifiedArchive = openPerfSourceArchive(sourceArchive, { ...archiveOptions, mode: 'replay' });
         const verifiedVectors = await openPerfVectorSources(config.vectorSources || [], { root: configRoot });
-        result.sources.finalHash = perfReplaySourceHash(verifiedArchive.hash(), verifiedVectors);
+        const verifiedSnapshots = await openPerfSnapshotSources(config.snapshotSources || [], { root: configRoot });
+        result.sources.finalHash = perfReplaySourceHash(verifiedArchive.hash(), verifiedVectors, verifiedSnapshots);
         result.sources.changed = result.sources.finalHash !== identity.sourceHash || verifiedArchive.sealed !== result.sources.sealed;
     } catch (error) {
         result.sources.changed = true;
@@ -359,7 +408,7 @@ try {
         result.errors.push({ type: 'file-identity', message: error.message });
     }
     result.finishedAt = new Date().toISOString();
-    result.verdict = evaluatePerfAcceptanceRun(result);
+    result.verdict = evaluatePerfAcceptanceRun(result, { hostMode });
     await save();
     console.log(JSON.stringify({ receipt: resultPath, ...result.verdict }, null, 2));
     if (!(stage === 'record' ? result.complete && !result.errors.length : stage === 'preflight' ? result.verdict.readyForTiming : result.verdict.accepted)) process.exitCode = 1;

@@ -31,6 +31,11 @@ Run this in the consumer's normal build. Deploy the complete destination
 directory; never cherry-pick `index.js` without its chunks, worker scripts,
 Draco files, CSS and assets.
 
+The build embeds its exact audited asset inventory. Optional audio omitted
+from that inventory does not trigger network requests in a normal vendored
+installation. Existing custom media roots remain responsible for their own
+files and licences. Required assets still surface missing-file errors.
+
 ## 3. Load and configure
 
 ```html

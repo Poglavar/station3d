@@ -4,7 +4,7 @@
 
 import * as THREE from 'three';
 import { camera } from '../scene/setup.js';
-import { station3dAssetUrl } from '../core/asset-url.js';
+import { station3dOptionalAssetUrl } from '../core/asset-url.js';
 import {
     bindGlobalAudioUnlock,
     createUnlockedAudioContext,
@@ -14,10 +14,10 @@ import {
 } from '../core/audio-unlock.js';
 
 const TRACKS = [
-    { id: 'bella-ciao', url: station3dAssetUrl('audio/enemy-music/bella-ciao.mp3') },
-    { id: 'soviet-anthem', url: station3dAssetUrl('audio/enemy-music/soviet-anthem.mp3') },
-    { id: 'internationale', url: station3dAssetUrl('audio/enemy-music/internationale.mp3') },
-];
+    { id: 'bella-ciao', url: station3dOptionalAssetUrl('audio/enemy-music/bella-ciao.mp3') },
+    { id: 'soviet-anthem', url: station3dOptionalAssetUrl('audio/enemy-music/soviet-anthem.mp3') },
+    { id: 'internationale', url: station3dOptionalAssetUrl('audio/enemy-music/internationale.mp3') },
+].filter(track => track.url);
 
 const AUDIBLE_RADIUS_M = 260;
 const FULL_VOLUME_RADIUS_M = 22;
@@ -70,6 +70,7 @@ function queueEnemyMusicWarmup() {
 }
 
 async function ensureTrackBuffers() {
+    if (TRACKS.length === 0) return null;
     const ctx = ensureEnemyMusicAudio();
     if (!ctx) return null;
     if (buffers) return buffers;
@@ -188,6 +189,7 @@ function nearestSpeakerForTrack(trackIndex) {
 }
 
 export function bindEnemyMusicUnlock() {
+    if (TRACKS.length === 0) return;
     bindGlobalAudioUnlock();
     const ctx = ensureEnemyMusicAudio();
     if (!ctx) {
@@ -207,6 +209,7 @@ export function resetEnemyMusicFrame() {
 }
 
 export function queueEnemyMusicSpeaker(x, y, z, power = 1, trackIndex = 0) {
+    if (TRACKS.length === 0) return;
     if (!camera) return;
     const dx = x - camera.position.x;
     const dy = y - camera.position.y;
@@ -225,6 +228,10 @@ export function queueEnemyMusicSpeaker(x, y, z, power = 1, trackIndex = 0) {
 }
 
 export function tickEnemyMusic(dt) {
+    if (TRACKS.length === 0) {
+        frameSpeakers.length = 0;
+        return;
+    }
     bindGlobalAudioUnlock();
     updateAccumS += Math.max(0, Math.min(0.25, Number(dt) || 0));
     if (updateAccumS < AUDIO_UPDATE_INTERVAL_S) {

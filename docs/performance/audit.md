@@ -1,6 +1,6 @@
 # Station3D performance audit
 
-Updated 8 October 2026. This and [next-steps.md](next-steps.md) are the only
+Updated 9 October 2026. This and [next-steps.md](next-steps.md) are the only
 current performance documents. Update them in place; keep dated measurements in
 machine-readable receipts, not another audit or delivery tracker.
 
@@ -14,8 +14,11 @@ in alpha.5, and paint reuse plus curb-query pruning in alpha.6. Local
 **September's deterministic probes verify work reduction; complete-world
 movement performance acceptance is still open.** The first task is a
 reproducible walk/tram comparison of the
-pre-paint/curb runtime (`fc1e89b`) and alpha.6. Complete source coverage, a quiet
-host, normal readiness and finite post-stop recovery precede any timing claim.
+pre-paint/curb runtime (`fc1e89b`) and alpha.6. Complete source coverage,
+normal readiness and finite post-stop recovery precede any timing claim.
+Ordinary host activity is supported by a predeclared loaded comparison series;
+an idle Mac is no longer a prerequisite. The strict quiet-host profile remains
+available for isolated measurements.
 Then re-profile ground construction and the remaining building draw tail.
 
 The loading failures and frame-anatomy tables below describe their dated
@@ -38,6 +41,57 @@ values below describe these exact runs; none establishes a general FPS promise,
 a before/after speedup, or mobile readiness. The small relative CPU probe often
 reported 100% clean coverage while native paging was active. That is insufficient
 evidence of an uncontended machine.
+
+## Comparisons under ordinary host load, 9 October
+
+The standalone packed-consumer check reached normal readiness and completed
+two open/close cycles, then failed its network assertions after a trusted Open
+click unlocked audio. The package requested 12 optional clips absent from its
+audited inventory. The runtime now uses the build's exact packaged file set
+for optional audio, preserving supported clips, custom media roots and
+procedural walking sounds. Both comparison packages must include this same
+fix before capture; the failed consumer receipt remains evidence and needs a
+fresh run.
+
+`tools/perf-acceptance-series.mjs` adds an explicit loaded comparison profile.
+It freezes the sample count, balanced randomized AB/BA order, fresh preflight
+identities and source/configuration hashes before launching a browser. The
+default is 12 complete pairs; an identical-build A/A control is available to
+inspect local noise first. One headed browser runs at a time. Capture failures
+remain in place and make the series incomplete; no pressure-based filtering,
+replacement of rejected receipts, early success stopping or post-hoc conversion
+of old captures is supported.
+
+The four primary endpoints are stationary and moving frame-time p50/p95.
+Each uses an exact binomial sign interval for the median paired log ratio,
+with a 95% simultaneous confidence target across all four endpoints
+(Bonferroni). Whole run pairs are the sampling units. Acceptance requires every
+upper bound to stay within the 10% regression budget; unresolved bounds yield
+`inconclusive`. These intervals assume independent, representative pair
+differences. They describe the observed loaded environment, not an inferred
+idle frame rate. A small A/A pilot reports spread without pretending to prove
+equivalence. Slow runs are retained, including pressure the candidate causes.
+
+Native load, swap, Linux steal and throttling remain in every receipt. Missing
+or reset counters, changing CPU capacity and gaps still invalidate evidence.
+Process CPU accounting records actual cumulative scheduled CPU seconds via
+CDP; unavailable/changing process sets produce an explicit unknown, not zero.
+It is an enclosing browser-process window, not pure engine CPU or GPU time.
+Routes must match in travelled distance and sampled position. Rail positions
+are compared at equal travelled distance. Native out-and-back walks instead
+bind a fixed corridor, origin and heading before capture; every sampled point
+must remain within 5 m of that finite corridor, and distance and witnessed turn
+counts may differ by at most 5%. This avoids treating accumulated frame-sized
+turn overshoots as a different street. The original failed distance-alignment
+diagnostic is retained beside the two full walk preflights. Source coverage,
+readiness, drains, duration, visibility, render settings and lifecycle gates
+still apply, as do separate appearance/support/selection checks.
+
+This change implements the measurement workflow; it does not establish an
+alpha.6 speedup. The remaining two curb queries and terrain sampling gap must
+still be resolved before fresh full-world preflights. Historical receipts and
+their original rejection decisions below remain unchanged. Commands and
+receipt contracts are in [next-steps.md](next-steps.md#comparisons-under-ordinary-host-load).
 
 ## Acceptance tooling, 8 October
 
@@ -144,7 +198,7 @@ reproduce a shifted origin exactly. Complete replay requires either the
 relevant immutable source rasters, overview and water-mask inputs with the
 matching sampling pipeline, or a separately validated deterministic request
 contract. No terrain substitution or runtime change was made in this pass.
-The user selected correctness checks only while the host remains contended.
+That replay was a correctness check and did not establish a timing comparison.
 
 The standalone packed walking fixture also exposed an existing extraction
 gap: facade-spec JSON, the voice manifest and the crowd-face atlas are not
@@ -215,6 +269,34 @@ the build with zero review-required inputs, and the release asset audit passed
 on the server. All five temporary test units stopped. No laptop test or browser
 benchmark ran; full-world appearance/lifecycle verification and timing remain
 open, as do the terrain/curb replay gaps and the empty-provider readiness issue.
+
+The [source-preparation receipt](../../performance/station3d/results/fullworld-20261009/source-preparation.summary.json)
+records the next coverage repair. A new 2,012-response archive includes both
+missing curb keys and all 225 tiles in the expanded native tram lattice. The
+previous sealed archive is unchanged. A single repeatable-read, read-only
+database transaction exported 1,520 complete native raster tiles and 54
+water-mask polygons, with hashes, source filenames and GIS versions. Both
+comparison packages were rebuilt, installed from their tarballs and vendored
+with identical material cleanup and crowd-atlas repairs; all 250 vendored
+files were independently verified.
+
+The recorder now supports pinned loopback snapshot services for exact queries
+over frozen inputs. Endpoint ownership, manifest/response integrity and no
+live fallback have deterministic tests. The prepared local terrain adapter
+uses the unchanged provider grid/composition modules and session-temporary
+PostGIS tables. The approved temporary adapter completed 14 provider-parity
+cases: 13 match byte for byte; one differs at a single height among 2,190,192
+cells (114.4 versus 114.5 metres), with identical grid and source-index bytes.
+Exact live-provider parity remains failed, and the cause is not established.
+The frozen output repeats byte for byte across all 14 queries after a separate
+session-table load; three further reads also reproduce the differing response.
+These receipts define a new fixed performance fixture shared by both variants,
+not a claim of exact live-provider compatibility. Fresh browser preflights
+must still establish route, support, appearance and lifecycle coverage. No
+full-world timing result is accepted. The generic tooling passed
+603 tests, the release asset audit and actual tarball install/vendor checks;
+the [validation receipt](../../performance/station3d/results/fullworld-20261009/validation/receipt.json)
+retains the source fingerprints, successful run and earlier wrapper failure.
 
 ## Ground-paint and curb-query release, 28 September
 
@@ -685,8 +767,9 @@ in the table. The later collector times movement and reversals inside the page
 and puts screenshots outside the measured movement phase.
 
 Future candidate comparisons must replay the same recorded source responses,
-same controller/camera/route/quality/DPR, same observer and time-adjacent ABBA
-runs on a suitably quiet host. Keep every run, including failures. Record
+same controller/camera/route/quality/DPR and same observer. Use predeclared
+loaded-host pairs, or time-adjacent ABBA runs on a suitably quiet host. Keep
+every run, including failures. Record
 native memory pressure alongside the CPU probe; do not silently select the
 fastest samples or treat a CPU-only pass as GPU/memory isolation.
 

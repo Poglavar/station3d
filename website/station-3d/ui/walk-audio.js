@@ -24,7 +24,7 @@ import {
     resumeUnlockedAudioContext,
     whenAudioUnlocked,
 } from '../core/audio-unlock.js';
-import { station3dAssetUrl } from '../core/asset-url.js';
+import { station3dOptionalAssetUrl } from '../core/asset-url.js';
 
 const STEP_DISTANCE_M = 1.6;     // one step every 1.6 m of horizontal travel
 // At very high walk speeds the raw distance-based cadence can exceed a
@@ -38,8 +38,10 @@ const WATER_ENTRY_SPLASH_GAIN = 0.34;
 const WATER_WADE_FADE_PER_S = 7;
 const JETPACK_MAX_GAIN = 0.10;
 const JETPACK_FADE_PER_S = 6;    // how fast jetpack gain ramps up/down
-const WATER_WADE_LOOP_URL = station3dAssetUrl('audio/sfx/water-wade/deep-mud-loop.mp3');
-const WATER_ENTRY_SPLASH_URL = station3dAssetUrl('audio/sfx/water-wade/entry-splash.mp3');
+const WATER_WADE_LOOP_URL = station3dOptionalAssetUrl('audio/sfx/water-wade/deep-mud-loop.mp3');
+const WATER_ENTRY_SPLASH_URL = station3dOptionalAssetUrl('audio/sfx/water-wade/entry-splash.mp3');
+const WATER_CLIPS = [['loop', WATER_WADE_LOOP_URL], ['splash', WATER_ENTRY_SPLASH_URL]]
+    .filter(([, url]) => url);
 
 // ─── Footsteps ─────────────────────────────────────────────────────────────
 let footCtx = null;
@@ -153,11 +155,9 @@ function clamp(value, min, max) {
 
 function startLoadingWaterBuffers() {
     if (waterLoadStarted || !footCtx) return;
+    if (WATER_CLIPS.length === 0) return;
     waterLoadStarted = true;
-    [
-        ['loop', WATER_WADE_LOOP_URL],
-        ['splash', WATER_ENTRY_SPLASH_URL],
-    ].forEach(([kind, url]) => {
+    WATER_CLIPS.forEach(([kind, url]) => {
         fetch(url)
             .then(r => r.ok ? r.arrayBuffer() : Promise.reject(new Error(`water audio fetch ${r.status}`)))
             .then(ab => footCtx.decodeAudioData(ab))

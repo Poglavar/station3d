@@ -151,8 +151,11 @@ export async function openPerfVectorSources(specifications = [], { root = '.' } 
         } });
 }
 
-export function perfReplaySourceHash(archiveHash, vectorSources) {
+export function perfReplaySourceHash(archiveHash, vectorSources, snapshotSources = { identities: [] }) {
     if (!SHA256.test(archiveHash)) throw new Error('Invalid archive hash');
+    if (snapshotSources.identities.length) return hash(JSON.stringify({ schema: 'station3d-perf-source-set-v2', archiveHash,
+        vectors: vectorSources.identities.map(source => ({ pathname: source.pathname, hash: source.hash })),
+        snapshots: snapshotSources.identities.map(source => ({ pathnames: source.pathnames, hash: source.hash })) }));
     if (!vectorSources.identities.length) return archiveHash;
     return hash(JSON.stringify({ schema: 'station3d-perf-source-set-v1', archiveHash,
         vectors: vectorSources.identities.map(source => ({ pathname: source.pathname, hash: source.hash })) }));

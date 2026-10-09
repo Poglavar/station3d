@@ -73,8 +73,12 @@ export function summarizeNativeHostWindow(samples, {
 } = {}) {
     const rows = Array.isArray(samples) ? samples : [];
     const reasons = [];
+    const evidenceReasons = [];
     const intervals = [];
-    const addReason = (condition, message) => { if (!condition && !reasons.includes(message)) reasons.push(message); };
+    const addReason = (condition, message, evidence = true) => {
+        if (!condition && !reasons.includes(message)) reasons.push(message);
+        if (!condition && evidence && !evidenceReasons.includes(message)) evidenceReasons.push(message);
+    };
     addReason(Array.isArray(samples), 'samples must be an array');
     addReason(rows.length >= 2, 'at least two host samples are required');
     addReason(finiteNonnegative(maxSwapMiBPerSecond), 'maxSwapMiBPerSecond must be finite and nonnegative');
@@ -114,6 +118,8 @@ export function summarizeNativeHostWindow(samples, {
             }
             continue;
         }
+        addReason(row.platform === 'darwin' || row.platform === 'linux',
+            `sample ${i} platform is missing or unsupported`);
         addReason(finiteNonnegative(row.at), `sample ${i} timestamp is missing or invalid`);
         addReason(positiveInteger(row.pageSizeBytes), `sample ${i} page size is missing or invalid`);
         addReason(Number.isInteger(row.cpus) && row.cpus > 0, `sample ${i} CPU count is missing or invalid`);
@@ -135,7 +141,7 @@ export function summarizeNativeHostWindow(samples, {
         if (finiteNonnegative(row.load1) && Number.isInteger(row.cpus) && row.cpus > 0) {
             const ratio = row.load1 / row.cpus;
             peakLoadPerCpu = peakLoadPerCpu === null ? ratio : Math.max(peakLoadPerCpu, ratio);
-            addReason(ratio <= maxLoadPerCpu, `host load per CPU ${ratio.toFixed(3)} exceeds ${maxLoadPerCpu}`);
+            addReason(ratio <= maxLoadPerCpu, `host load per CPU ${ratio.toFixed(3)} exceeds ${maxLoadPerCpu}`, false);
         }
 
         if (row.platform === 'linux') {
@@ -188,7 +194,7 @@ export function summarizeNativeHostWindow(samples, {
                         addReason(false, 'total host swap byte count overflowed');
                     }
                     if (swapMiBPerSecond !== null) addReason(swapMiBPerSecond <= maxSwapMiBPerSecond,
-                        `host swap rate ${swapMiBPerSecond.toFixed(3)} MiB/s exceeds ${maxSwapMiBPerSecond}`);
+                        `host swap rate ${swapMiBPerSecond.toFixed(3)} MiB/s exceeds ${maxSwapMiBPerSecond}`, false);
                 }
             }
         } else {
@@ -229,7 +235,7 @@ export function summarizeNativeHostWindow(samples, {
                     stealRatio = stealTicks / cpuTotalTicks;
                     peakStealRatio = peakStealRatio === null ? stealRatio : Math.max(peakStealRatio, stealRatio);
                     addReason(stealRatio <= maxStealRatio,
-                        `host CPU steal ${(stealRatio * 100).toFixed(3)}% exceeds ${(maxStealRatio * 100).toFixed(3)}%`);
+                        `host CPU steal ${(stealRatio * 100).toFixed(3)}% exceeds ${(maxStealRatio * 100).toFixed(3)}%`, false);
                 }
             } else {
                 allLinuxContentionKnown = false;
@@ -247,7 +253,7 @@ export function summarizeNativeHostWindow(samples, {
                     }
                     if (nrThrottled > 0 || throttledUsec > 0) {
                         observedCgroupThrottle = true;
-                        addReason(false, `cgroup CPU throttling observed at ${entry.path} in interval ${i - 1}-${i}`);
+                        addReason(false, `cgroup CPU throttling observed at ${entry.path} in interval ${i - 1}-${i}`, false);
                     }
                     return { path: entry.path, nrThrottled, throttledUsec };
                 });
@@ -260,6 +266,8 @@ export function summarizeNativeHostWindow(samples, {
     return {
         clean: reasons.length === 0,
         reasons,
+        evidenceValid: evidenceReasons.length === 0,
+        evidenceReasons,
         samples: rows.length,
         elapsedMs,
         swapInBytes: allSwapDeltasKnown ? swapInTotal : null,
@@ -269,8 +277,10 @@ export function summarizeNativeHostWindow(samples, {
         maxSwapMiBPerSecond,
         peakLoadPerCpu,
         maxLoadPerCpu,
+        platform: platform ?? null,
+        cpus,
         ...(platform === 'linux' ? { effectiveCpuCapacity, peakStealRatio, maxStealRatio,
-            platform: 'linux', observedCgroupThrottle, linuxContentionKnown: allLinuxContentionKnown } : {}),
+            observedCgroupThrottle, linuxContentionKnown: allLinuxContentionKnown } : {}),
         intervals,
     };
 }

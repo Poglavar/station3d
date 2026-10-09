@@ -46,6 +46,10 @@ Station3D is the temporary project name. Original engine code and the generic
 road-fleet models are MIT licensed. Third-party audio keeps the licences listed
 in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
+Production builds load optional sound samples only when those files are in the
+audited package inventory. Omitted clips stay disabled; procedural footsteps
+and other synthesized sounds remain available.
+
 > **Alpha status:** the package and integration boundary are working locally,
 > but `station3d@0.1.0-alpha.1` has not yet been published to npm. Until it is,
 > install an exact Git tag or a tarball produced by `npm pack`. Pin every alpha
@@ -336,6 +340,12 @@ above. GitHub Actions runs `npm ci && npm run ci` on Ubuntu 24.04.
   an isolated consumer fixture.
 
 Do not edit `website/station-3d/dist/` or `node_modules/`; both are generated.
+
+For frame-time comparisons while the host is in ordinary use,
+`tools/perf-acceptance-series.mjs` plans and runs randomized baseline/candidate
+pairs with confidence intervals. It also supports identical-build controls.
+See the [performance workflow](docs/performance/next-steps.md#comparisons-under-ordinary-host-load)
+for frozen-source preflights, capture commands and interpretation.
 
 ## Repository and product boundaries
 

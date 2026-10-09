@@ -106,6 +106,7 @@ function installAcceptanceObserver(config) {
         if (config.mode === 'rail' && !initial.paused) throw new Error('Native rail controller was not held');
         const phase = { name, requestedMs: durationMs, startedAt: now(), wallStartedAt: Date.now(),
             initial, lastPose: initial.pose, distanceM: 0, frames: [], states: [], publications: [],
+            route: initial.pose ? [{ distanceM: 0, lat: initial.pose.lat, lon: initial.pose.lon }] : [],
             publicationGaps: [],
             visible: true, turns: 0, backwards: false, done: false };
         capture.phases[name] = phase; capture.active = name; capture.running = true;
@@ -128,6 +129,9 @@ function installAcceptanceObserver(config) {
             const pose = window.Station3D?.getPose?.();
             if (phase.name === 'movement' && pose && phase.lastPose) {
                 phase.distanceM += distance(pose, phase.lastPose); phase.lastPose = pose;
+                if (phase.distanceM - (phase.route.at(-1)?.distanceM ?? 0) >= 2) {
+                    phase.route.push({ distanceM: phase.distanceM, lat: pose.lat, lon: pose.lon });
+                }
                 if (config.mode === 'walk') {
                     const theta = config.headingDeg * Math.PI / 180;
                     const north = (pose.lat - phase.initial.pose.lat) * 111320;
@@ -156,6 +160,9 @@ function installAcceptanceObserver(config) {
             for (const value of [...capture.held]) key(value, false);
             capture.hold = true; pause(true);
             phase.durationMs = now() - phase.startedAt; phase.final = sample(); phase.done = true;
+            if (phase.final.pose && phase.distanceM > (phase.route.at(-1)?.distanceM ?? -1)) {
+                phase.route.push({ distanceM: phase.distanceM, lat: phase.final.pose.lat, lon: phase.final.pose.lon });
+            }
             phase.finishedAt = now(); capture.active = null; capture.running = false;
         }
         requestAnimationFrame(tick);

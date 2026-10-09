@@ -91,6 +91,7 @@ const contentOverlayPlugin = {
 };
 
 const outdir = resolve(outputArgument);
+const packageBuild = JSON.parse(readFileSync(resolve(packageDist, 'build-manifest.json'), 'utf8'));
 rmSync(outdir, { recursive: true, force: true });
 mkdirSync(outdir, { recursive: true });
 const result = await build({
@@ -118,7 +119,8 @@ const result = await build({
     entryNames: '[name]',
     chunkNames: 'chunks/[name]-[hash]',
     assetNames: 'assets/[name]-[hash]',
-    define: { 'process.env.NODE_ENV': '"production"' },
+    define: { 'process.env.NODE_ENV': '"production"',
+        __STATION3D_PACKAGED_ASSETS__: JSON.stringify((packageBuild.runtimeAssets || []).map(asset => asset.file)) },
     plugins: [contentOverlayPlugin],
 });
 
@@ -126,7 +128,6 @@ cpSync(resolve(packageDist, 'draco'), resolve(outdir, 'draco'), { recursive: tru
 for (const name of ['loader.js', 'station3d.css']) {
     cpSync(resolve(packageDist, name), resolve(outdir, name));
 }
-const packageBuild = JSON.parse(readFileSync(resolve(packageDist, 'build-manifest.json'), 'utf8'));
 for (const asset of packageBuild.runtimeAssets || []) {
     const source = resolve(packageDist, asset.file);
     const target = resolve(outdir, asset.file);

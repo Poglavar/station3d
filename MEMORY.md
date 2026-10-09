@@ -9,6 +9,6 @@
 - A ground generation may only require terrain evidence that is loaded or requested; road owners reaching past it are deferred (with their terrain cut), not failed (2026-09-23).
 - Stationary sessions must wake the next road admission when deliveries are parked behind the handoff barrier; the wake is gated behind reveal so startup still waits only for observer tiles (2026-09-23).
 - A static/dynamic cached shadow map was rejected: depth restores cost +3–4 ms GPU per frame on ANGLE/Metal; the shadow pass is only skipped when nothing it draws changed (2026-09-23).
-- Performance timings are judged by tools/perf-probe.mjs windows without host paging; GPU timer values under vsync are distorted by GPU clock scaling (2026-09-23).
+- Quiet-host timings use tools/perf-probe.mjs or the strict acceptance profile. Loaded-host relative comparisons use predeclared randomized pairs and whole-pair confidence intervals; paging remains recorded, not an automatic rejection. GPU timer values under vsync are distorted by GPU clock scaling (2026-10-09).
 - Performance work may rethink shared engine architecture; remove demonstrably repeated work before larger rewrites, and keep predicted savings separate from quiet-host acceptance evidence (2026-09-28).
-- Complete-source walk/rail replay and quiet-host alpha.6 acceptance precede the next worker or building-batching optimization; sealing response bytes alone does not prove route coverage (2026-10-08).
+- Complete-source walk/rail replay and alpha.6 comparison precede the next worker or building-batching optimization. The loaded comparison profile removes the idle-Mac prerequisite; sealing response bytes alone still does not prove route coverage (2026-10-09).

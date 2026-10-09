@@ -157,7 +157,7 @@ function validateMotionAndVisibility(run, reasons) {
     }
 }
 
-function validateTimingPhase(row, phase, requiredMs, reasons, { checkHost = true } = {}) {
+function validateTimingPhase(row, phase, requiredMs, reasons, { checkHost = true, hostMode = 'quiet' } = {}) {
     if (!isRecord(row)) return;
     add(reasons, finitePositive(row.requestedMs), `${phase}.requestedMs must be finite and positive`);
     add(reasons, finiteNonnegative(row.durationMs), `${phase}.durationMs must be finite and nonnegative`);
@@ -225,15 +225,28 @@ function validateTimingPhase(row, phase, requiredMs, reasons, { checkHost = true
     if (checkHost) {
         add(reasons, isRecord(row.host), `${phase}.host result is missing`);
         if (isRecord(row.host)) {
-            add(reasons, row.host.clean === true, `${phase} host window is not clean`);
             add(reasons, Array.isArray(row.host.reasons), `${phase}.host.reasons must be an array`);
-            if (Array.isArray(row.host.reasons)) add(reasons, row.host.reasons.length === 0, `${phase} host window has failure reasons`);
+            if (hostMode === 'loaded') {
+                // Pressure is part of this experiment's environment and remains in the
+                // receipt. Unobservable or corrupt native evidence is never admissible.
+                add(reasons, row.host.evidenceValid === true, `${phase} native host evidence is invalid or missing`);
+                add(reasons, Array.isArray(row.host.evidenceReasons), `${phase}.host.evidenceReasons must be an array`);
+                if (Array.isArray(row.host.evidenceReasons)) add(reasons, row.host.evidenceReasons.length === 0,
+                    `${phase} native host evidence has failure reasons`);
+                add(reasons, Number.isSafeInteger(row.host.samples) && row.host.samples >= 2,
+                    `${phase} native host evidence needs at least two samples`);
+                add(reasons, finitePositive(row.host.elapsedMs), `${phase} native host evidence has no elapsed interval`);
+            } else {
+                add(reasons, row.host.clean === true, `${phase} host window is not clean`);
+                if (Array.isArray(row.host.reasons)) add(reasons, row.host.reasons.length === 0, `${phase} host window has failure reasons`);
+            }
         }
     }
 }
 
-export function evaluatePerfAcceptanceRun(run) {
+export function evaluatePerfAcceptanceRun(run, { hostMode = 'quiet' } = {}) {
     const reasons = validateCommon(run);
+    add(reasons, ['quiet', 'loaded'].includes(hostMode), 'unknown host comparison mode');
     if (!isRecord(run)) return { accepted: false, readyForTiming: false, reasons };
 
     if (run.stage === 'preflight' || run.stage === 'measure') {
@@ -244,7 +257,7 @@ export function evaluatePerfAcceptanceRun(run) {
             for (const phase of PHASES) {
                 const row = phases[phase];
                 validateTimingPhase(row, phase, isRecord(required) ? required[phase === 'stationary' ? 'stationaryMs' : 'movementMs'] : null, reasons,
-                    { checkHost: run.stage === 'measure' });
+                    { checkHost: run.stage === 'measure', hostMode });
             }
         }
         if (isRecord(phases?.movement)) {
