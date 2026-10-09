@@ -22,6 +22,7 @@
 import { mkdir, writeFile, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { computeCost, record } from '../../../../agents/lib/llm-cost/index.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT  = path.resolve(__dirname, '..', '..', '..');
@@ -37,7 +38,16 @@ const RAIL_STATIONS_URL = process.env.RAIL_STATIONS_URL
 
 const OPENAI_API = 'https://api.openai.com/v1';
 const TTS_MODEL  = 'gpt-4o-mini-tts';
-const COST_PER_1K_CHARS_USD = 0.015;
+const LEDGER_SCRIPT = 'generate-station-audio';
+
+// Every synthesized clip is priced and ledgered by the shared cost layer (agents/lib/llm-cost), the
+// one price source; the speech endpoint returns no usage, so the layer prices by input characters.
+function ledgerClip(text, file) {
+    const characters = text.length;
+    const cost_usd = computeCost(TTS_MODEL, { characters });
+    record({ repo: 'station3d', script: LEDGER_SCRIPT, model: TTS_MODEL, usage: { characters }, cost_usd, meta: { file } });
+    return cost_usd;
+}
 
 // Source-to-spoken overrides: when the displayed station name has Croatian
 // abbreviations or initials, the spoken version expands them. Mirrors what
@@ -170,6 +180,7 @@ async function main() {
         const t0 = Date.now();
         const buf = await synthesize(PREFIX_TEXT, voice, apiKey);
         await writeFile(path.join(OUT_DIR, 'prefix.mp3'), buf);
+        ledgerClip(PREFIX_TEXT, 'audio/announcements/prefix.mp3');
         manifest.prefix = { file: 'audio/announcements/prefix.mp3', text: PREFIX_TEXT };
         log(`  ✓ prefix.mp3  (${buf.length} B, ${Date.now() - t0} ms)  "${PREFIX_TEXT}"`);
     }
@@ -181,7 +192,7 @@ async function main() {
         if (Number.isFinite(limit)) names = names.slice(0, limit);
 
         const totalChars = names.reduce((s, n) => s + NAME_TEXT(n).length, 0);
-        const estUsd = (totalChars / 1000) * COST_PER_1K_CHARS_USD;
+        const estUsd = computeCost(TTS_MODEL, { characters: totalChars });
         log(`Will generate ${names.length} name MP3s (~${totalChars} chars, est $${estUsd.toFixed(4)})`);
 
         let i = 0;
@@ -194,6 +205,7 @@ async function main() {
             try {
                 const buf = await synthesize(text, voice, apiKey);
                 await writeFile(path.join(OUT_DIR, filename), buf);
+                ledgerClip(text, `audio/announcements/${filename}`);
                 const ms = Date.now() - t0;
                 manifest.stations[name] = { file: `audio/announcements/${filename}`, slug, text };
                 log(`  [${i}/${names.length}] ✓ ${slug}.mp3  (${buf.length} B, ${ms} ms)  "${name}"`);

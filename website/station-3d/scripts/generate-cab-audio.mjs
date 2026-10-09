@@ -24,6 +24,7 @@
 import { mkdir, writeFile, readFile, rm } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { computeCost, record } from '../../../../agents/lib/llm-cost/index.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const AUDIO_DIR = path.resolve(__dirname, '..', 'audio');
@@ -32,8 +33,16 @@ const MANIFEST_PATH = path.join(AUDIO_DIR, 'manifest.json');
 const OPENAI_API = 'https://api.openai.com/v1';
 const TTS_MODEL = 'gpt-4o-mini-tts';
 
-// Roughly $0.015 / 1k input characters for gpt-4o-mini-tts.
-const COST_PER_1K_CHARS_USD = 0.015;
+const LEDGER_SCRIPT = 'generate-cab-audio';
+
+// Every synthesized clip is priced and ledgered by the shared cost layer (agents/lib/llm-cost), the
+// one price source; the speech endpoint returns no usage, so the layer prices by input characters.
+function ledgerClip(text, file) {
+    const characters = text.length;
+    const cost_usd = computeCost(TTS_MODEL, { characters });
+    record({ repo: 'station3d', script: LEDGER_SCRIPT, model: TTS_MODEL, usage: { characters }, cost_usd, meta: { file } });
+    return cost_usd;
+}
 
 const MALE_VOICES = ['onyx', 'ash'];
 const FEMALE_VOICES = ['ballad'];
@@ -213,7 +222,7 @@ async function main() {
             totalFiles += renderVoices.length;
         }
     }
-    const estUsd = (totalChars / 1000) * COST_PER_1K_CHARS_USD;
+    const estUsd = computeCost(TTS_MODEL, { characters: totalChars });
     log(`Voices: ${voices.join(', ')}`);
     log(`Buckets: ${buckets.join(', ')}`);
     log(`Will generate ${totalFiles} MP3s (~${totalChars} chars, est $${estUsd.toFixed(4)})`);
@@ -230,6 +239,7 @@ async function main() {
     manifest.generatedAt = new Date().toISOString();
     manifest.voices = voices;
 
+    let spentUsd = 0;
     for (const bucket of buckets) {
         const entries = linesByBucket[bucket];
         manifest.buckets[bucket] = [];
@@ -254,6 +264,7 @@ async function main() {
                 await writeFile(path.join(AUDIO_DIR, bucket, voice, filename), buf);
                 const ms = Date.now() - t0;
                 const rel = `audio/${bucket}/${voice}/${filename}`;
+                spentUsd += ledgerClip(text, rel);
                 manifest.buckets[bucket].push({ file: rel, voice, text });
                 log(`  ✓ ${rel}  (${buf.length} B, ${ms} ms)  "${text}"`);
             }
@@ -262,7 +273,7 @@ async function main() {
 
     await writeFile(MANIFEST_PATH, JSON.stringify(manifest, null, 2));
     log(`Wrote manifest: ${MANIFEST_PATH}`);
-    log(`DONE — ${totalFiles} files, est cost $${estUsd.toFixed(4)}`);
+    log(`DONE — ${totalFiles} files, ledgered $${spentUsd.toFixed(4)} (llm-cost)`);
 }
 
 main().catch(err => {

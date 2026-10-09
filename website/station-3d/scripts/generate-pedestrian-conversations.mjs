@@ -8,11 +8,14 @@ import os from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
+import { computeCost, record } from '../../../../agents/lib/llm-cost/index.mjs';
 import { PEDESTRIAN_CONVERSATIONS } from '../core/pedestrian-conversations.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const audioDir = path.resolve(here, '..', 'audio', 'conversations');
 const apiKey = process.env.OPENAI_API_KEY;
+const TTS_MODEL = 'gpt-4o-mini-tts';
+const LEDGER_SCRIPT = 'generate-pedestrian-conversations';
 const useLocalVoices = process.argv.includes('--local');
 const voiceBySpeaker = { A: 'onyx', B: 'ash' };
 const localVoiceBySpeaker = { A: 'Lana', B: 'Tina' };
@@ -25,6 +28,15 @@ const instructions = [
 ].join(' ');
 
 if (!useLocalVoices && !apiKey) throw new Error('OPENAI_API_KEY is required (or pass --local)');
+
+// Every synthesized clip is priced and ledgered by the shared cost layer (agents/lib/llm-cost), the
+// one price source; the speech endpoint returns no usage, so the layer prices by input characters.
+function ledgerClip(text, file) {
+    const characters = text.length;
+    const cost_usd = computeCost(TTS_MODEL, { characters });
+    record({ repo: 'station3d', script: LEDGER_SCRIPT, model: TTS_MODEL, usage: { characters }, cost_usd, meta: { file } });
+    return cost_usd;
+}
 
 async function synthesizeLocal(line) {
     const temp = await mkdtemp(path.join(os.tmpdir(), 'st3d-conversation-'));
@@ -52,7 +64,7 @@ async function synthesizeRemote(line) {
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-            model: 'gpt-4o-mini-tts',
+            model: TTS_MODEL,
             voice: voiceBySpeaker[line.speaker],
             input: line.text,
             instructions,
@@ -73,6 +85,8 @@ for (const script of PEDESTRIAN_CONVERSATIONS) {
             : await synthesizeRemote(line);
         const file = path.join(dir, `${index + 1}.mp3`);
         await writeFile(file, bytes);
+        // The --local macOS `say` path is free and records nothing.
+        if (!useLocalVoices) ledgerClip(line.text, `audio/conversations/${script.id}/${index + 1}.mp3`);
         console.log(`${script.id}/${index + 1}.mp3 ${line.speaker} ${bytes.length} B`);
     }
 }
