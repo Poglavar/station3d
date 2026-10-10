@@ -809,7 +809,7 @@
     "Road/rail/water/flight support and interaction matrix; memory-limited hardware."
   ],
   "rawArtifacts": {
-    "directory": "/Users/simun/Code/zagreb-isochrone-main/performance/station3d/results/paint-2026-09-28",
+    "directory": "~/Code/zagreb-isochrone-main/performance/station3d/results/paint-2026-09-28",
     "files": [
       {
         "file": "assets.log",

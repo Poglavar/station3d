@@ -66,7 +66,7 @@
     }
   },
   "sourceArchive": {
-    "directory": "/Users/simun/Code/zagreb-isochrone-main/performance/station3d/results/paint-2026-09-28/continuation/sources",
+    "directory": "~/Code/zagreb-isochrone-main/performance/station3d/results/paint-2026-09-28/continuation/sources",
     "complete": true,
     "entries": 1516,
     "entriesHash": "e58a3d7df1ef47da6ecab86c4bbecd3d018dcc28b9098932918599bec938f43c",
@@ -211,7 +211,7 @@
       "reason": "Sandbox denied default npm cache/log writes; retried successfully with /private/tmp cache."
     }
   ],
-  "rawDirectory": "/Users/simun/Code/zagreb-isochrone-main/performance/station3d/results/paint-2026-09-28/continuation",
+  "rawDirectory": "~/Code/zagreb-isochrone-main/performance/station3d/results/paint-2026-09-28/continuation",
   "artifacts": [
     {
       "file": "continuation/assets-final.log",

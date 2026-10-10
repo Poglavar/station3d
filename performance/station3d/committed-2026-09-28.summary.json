@@ -692,7 +692,7 @@
     "baselineAndCandidate": "Visible track, road, curbs, trees and buildings at the end pose; both screenshots show delayed-data toast. This does not prove full coverage or cross-mode parity."
   },
   "rawArtifacts": {
-    "root": "/Users/simun/Code/zagreb-isochrone-main/performance/station3d/results/paint-2026-09-28/committed",
+    "root": "~/Code/zagreb-isochrone-main/performance/station3d/results/paint-2026-09-28/committed",
     "files": [
       {
         "file": "browser-summary.json",
