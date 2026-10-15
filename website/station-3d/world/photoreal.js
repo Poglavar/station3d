@@ -106,7 +106,7 @@ function loadTilesLib() {
 // ships, overridable via window.__ION_TOKEN__ or runtime config. ion asset
 // 2275207 = Google Photorealistic 3D Tiles (brokered by ion; bypasses the EEA
 // block that 403s a raw Google key over Croatia).
-const DEFAULT_ION_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI5MTBkNDc1Ny0zNzlkLTRiOTMtYTM2Zi1hZjYzNWY0MTJjMTIiLCJpZCI6NDI0MDY3LCJpYXQiOjE3NzcyNzM2ODF9.-GY-QQkFSEcYl8fkkm_u4AxVbmWY2aNefvzoHAiLuLE';
+const DEFAULT_ION_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6IjByd19iYkpMaW1yWU1aVWciLCJqdGkiOiJiNGU3YWZiMy02YjQ4LTQ3MjQtOWY2YS0yZmM2YTMyZjI5YjEiLCJpZCI6NDI0MDY3LCJzdWIiOiJwb2dsYXZhciIsImlzcyI6Imh0dHBzOi8vYXBpLmNlc2l1bS5jb20iLCJhdWQiOiJ6YWdyZWItbG9sIHBob3RvcmVhbCByZXN0cmljdGVkIDIwMjYtMTAiLCJpYXQiOjE3OTIwNjE2ODF9.ZTMHuX13FJ-HojChWk1Ip7V9gDBkRGHcACC8J_Hwopc';
 function ionToken() {
     if (typeof window === 'undefined') return DEFAULT_ION_TOKEN;
     const cfg = window.__ZAGREB_RUNTIME_CONFIG__ || {};
