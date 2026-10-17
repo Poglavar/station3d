@@ -73,6 +73,7 @@
     "__tests__/road-formation-owner-query.test.mjs",
     "__tests__/road-formation-read-changes.test.mjs",
     "__tests__/road-formation-source-revisions.test.mjs",
+    "__tests__/road-formation-surface-sources.test.mjs",
     "__tests__/session-host.test.mjs",
     "__tests__/shadow-caster-cache.test.mjs",
     "__tests__/shared-tile-session.test.mjs",

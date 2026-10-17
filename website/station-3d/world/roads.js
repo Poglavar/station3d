@@ -92,6 +92,7 @@ import {
     scene,
 } from '../scene/setup.js';
 import { captureProposalMaskSnapshot } from './proposals.js';
+import { roadFormationSurfaceFeatures } from '../core/road-formation-surface-sources.js';
 import { buildSurfaceEdgingMesh } from './decor.js';
 import { applyStreetLampSurfaceLighting } from './streetlamp-lighting.js';
 import { applyPlannerSurfaceCutout, createPlannerGeometryMaterialCache } from './planner-surface-cutout.js';
@@ -5617,6 +5618,7 @@ function rebuildLoadedTiles() {
     const before = roadEntries.size;
     clearPublishedRoads();
     for (const [tileKey, features] of tileFeatures.entries()) {
+        updateSurfaceFormationTile(tileKey, features);
         roadSurfaceTiles?.markPending(tileKey);
         const tileFeatureKeys = new Set();
         const requiredSurfaceBuckets = new Set();
@@ -5661,20 +5663,35 @@ function roadTileMatchesAlignmentChange(tileKey, features, change) {
     return change.bounds.some(bounds => boundsIntersectWithPadding(tileBounds, bounds, 20));
 }
 
+// Proposal-mask verdicts per mask snapshot. Every ground generation re-offers
+// every loaded tile, so one footprint test per feature and mask revision keeps
+// that pass as cheap as it was before the mask joined it.
+let surfaceFormationMaskCache = { snapshot: null, verdicts: new WeakMap() };
+
+function isSurfaceMaskedForFormation(feature) {
+    const snapshot = captureProposalMaskSnapshot();
+    if (surfaceFormationMaskCache.snapshot !== snapshot) {
+        surfaceFormationMaskCache = { snapshot, verdicts: new WeakMap() };
+    }
+    const { verdicts } = surfaceFormationMaskCache;
+    let masked = verdicts.get(feature);
+    if (masked === undefined) {
+        masked = snapshot.isFeatureMasked(feature);
+        verdicts.set(feature, masked);
+    }
+    return masked;
+}
+
+// The formation holds exactly the surfaces the receivers can render: a road a
+// proposal footprint removed (prepareRoadFeature) must not keep its cut.
 function updateSurfaceFormationTile(tileKey, features, alignment = roadVerticalAlignmentModel) {
     if (!roadFormationModel) return;
     roadFormationModel.setSurfaceTile(
         tileKey,
-        alignment
-            ? (features || []).filter(feature => (
-                !alignment.replacesRoadSurfaceForOsmId(
-                    feature?.properties?.osm_id,
-                )
-                || alignment.retainsRoadFormationForOsmId(
-                    feature?.properties?.osm_id,
-                )
-            ))
-            : features || [],
+        roadFormationSurfaceFeatures(features, {
+            alignment,
+            isFeatureMasked: isSurfaceMaskedForFormation,
+        }),
     );
 }
 
