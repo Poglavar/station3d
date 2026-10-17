@@ -8,8 +8,8 @@
 //                (core/proposal-building-features.js): frame-budgeted build,
 //                aggregate batching, facades and roofs like the town around
 //                them. (geometry.buildings: Feature[])
-//   road-track → saved cross-section strips or tram rails/bed (geometry.roadPlan,
-//                                                               metadata.isTrack selects tram)
+//   road-track → saved cross-section strips or tram rails/bed (roadProposal.definition,
+//                stored as an OSM document; metadata.isTrack selects tram)
 //   park       → edited grass boundary + authored paths/ponds/planting/furniture
 //   square     → edited paving boundary + authored fountains/trees/benches/stalls
 //   lake       → water surface             (structureProposal.geometry: MultiPolygon
@@ -232,7 +232,7 @@ let activeLakes = [];       // Array<{ ring, holes, aabb }>
 let activeParkPonds = [];   // Authored pond polygons also count as walk-mode water.
 let activeRoads = [];       // Array<{ ring, isTrack, id, topologyId, formationId, profile, line, renderLines, widthM }>
 let activeRoadJunctions = []; // Array<{ ring, lat, lng, trimM, radiusM, formationIds, surfaceMesh }>
-// Centerlines from `roadPlan.points` — one entry per proposal that has them,
+// Centerlines of the decoded corridor stretches — one entry per proposal that has them,
 // kept separate from the polygon list so we can inject them into the cars
 // graph without re-deriving from the rendered surface. cars.js's
 // addProposalRoadCenterlines consumes these after the layer's beginSession.
@@ -848,9 +848,7 @@ function ingestLakes(proposal) {
 const DEFAULT_PROPOSAL_ROAD_WIDTH_M = 8;
 
 function ingestRoads(proposal) {
-    const rp = (proposal.geometry && proposal.geometry.roadPlan)
-        || proposal.definition
-        || (proposal.roadProposal && proposal.roadProposal.definition);
+    const rp = proposal.roadProposal && proposal.roadProposal.definition;
     if (!rp) return;
     const isTrack = !!(rp.metadata && rp.metadata.isTrack);
     const proposalId = proposal.id ?? proposal.proposalId;

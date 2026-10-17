@@ -238,7 +238,9 @@ selection state, source metadata and payload normalization helpers without
 loading the world runtime or creating another render loop.
 
 Planner hosts may import `/vendor/station3d/planning.js` for ENS-plan parsing
-and proposal-track conversion. Development-only scenario links may lazily
+and proposal-track conversion. `buildProposalTrackFeatures` takes the corridor
+record as consensus-builder publishes it (`roadProposal.definition`, stretches
+stored as an OSM document under `osm`). Development-only scenario links may lazily
 import `/vendor/station3d/debug.js`; neither entry initializes the renderer.
 
 Developer terrain inspectors may import `/vendor/station3d/terrain-tools.js`,

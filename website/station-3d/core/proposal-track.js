@@ -25,6 +25,7 @@
 //         designs a grade-limited profile over the terrain itself.
 
 import { haversineMeters } from './math.js';
+import { proposalCorridorView } from './proposal-corridor-record.js';
 import { DEFAULT_VIADUCT_FILL_THRESHOLD_M } from './rail-formation.js';
 
 const SUPPORTED_ELEVATION_DATUM = 'EVRF2000';
@@ -267,18 +268,19 @@ function authoredViaductRuns(points, chainages, thresholdM) {
 }
 
 /**
- * roadPlan → Feature[] (LineString per drawn segment), or throws with a
- * human-readable reason. `roadPlan` is proposal.geometry.roadPlan on newer
- * records and proposal.roadProposal.definition on older ones — both shapes
- * exist in the API today.
+ * definition → Feature[] (LineString per drawn segment), or throws with a
+ * human-readable reason. `definition` is proposal.roadProposal.definition, the
+ * consensus-builder corridor record; its stretches are decoded from the OSM
+ * document it is stored as.
  */
-export function buildProposalTrackFeatures(roadPlan, proposalId, {
+export function buildProposalTrackFeatures(definition, proposalId, {
     railPhysicalId = null,
 } = {}) {
-    if (roadPlan?.metadata?.isTrack !== true) {
+    if (definition?.metadata?.isTrack !== true) {
         throw new Error(`Prijedlog ${proposalId} nije nacrtana tračnička trasa.`);
     }
-    const metadata = roadPlan.metadata || {};
+    const metadata = definition.metadata || {};
+    const roadPlan = proposalCorridorView(definition) || {};
     const segments = normalizeSegments(roadPlan.points);
     const points = segments.flat().filter((point) => point && typeof point === 'object');
     const suppliedCount = points.filter((point) => pointElevationM(point) != null).length;

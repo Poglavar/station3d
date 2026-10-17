@@ -96,7 +96,9 @@ keys, source metadata, selection state and response normalization. This entry
 is a small independent bundle; importing it does not initialize the 3D runtime.
 
 Planning applications can import `/vendor/station3d/planning.js` for named-plan
-ID merging and proposal-track conversion. Local scenario launchers can lazily
+ID merging and proposal-track conversion; `buildProposalTrackFeatures` takes
+the published corridor record (`roadProposal.definition` with its `osm`
+document). Local scenario launchers can lazily
 import `/vendor/station3d/debug.js`. Explorer hosts receive checkpoint-link
 parsing through `/vendor/station3d/host.js`. These entries preserve the package
 boundary without creating a second Station3D runtime.

@@ -1,6 +1,8 @@
 // Converts consensus-builder road profiles into stable metric strip geometry for Station3D.
 // The helpers are rendering-agnostic so proposal ingestion and browser tests share one schema adapter.
 
+import { proposalCorridorView } from '../core/proposal-corridor-record.js';
+
 const LANE_TYPES = new Set([
     'driving',
     'bus',
@@ -75,15 +77,18 @@ function normalizeLineStrings(raw) {
     )).filter((line) => line.length >= 2);
 }
 
-export function proposalCorridorSegmentEntries(roadPlan, fallbackWidthM = 8) {
-    if (!roadPlan || typeof roadPlan !== 'object') return [];
-    const lines = normalizeLineStrings(roadPlan.points || roadPlan.segments);
-    const ids = Array.isArray(roadPlan.segmentIds) ? roadPlan.segmentIds : [];
-    const overrides = roadPlan.segmentProfiles && typeof roadPlan.segmentProfiles === 'object'
-        ? roadPlan.segmentProfiles
+// `definition` is a consensus-builder corridor record (roadProposal.definition);
+// its stretches are decoded from the OSM document it is stored as.
+export function proposalCorridorSegmentEntries(definition, fallbackWidthM = 8) {
+    const view = proposalCorridorView(definition);
+    if (!view) return [];
+    const lines = normalizeLineStrings(view.points);
+    const ids = Array.isArray(view.segmentIds) ? view.segmentIds : [];
+    const overrides = view.segmentProfiles && typeof view.segmentProfiles === 'object'
+        ? view.segmentProfiles
         : {};
-    const defaultProfile = normalizeProposalCorridorProfile(roadPlan.profile);
-    const declaredWidth = Number(roadPlan.width);
+    const defaultProfile = normalizeProposalCorridorProfile(view.profile);
+    const declaredWidth = Number(view.width);
     return lines.map((points, index) => {
         const id = ids[index] == null ? `segment-${index + 1}` : String(ids[index]);
         const profile = normalizeProposalCorridorProfile(overrides[id]) || defaultProfile;
