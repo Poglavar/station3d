@@ -217,7 +217,7 @@ The common entry points are:
 | `configureHost(options)` | Set host identity, loading-screen branding, exit callback, campaign availability and development-overlay policy. |
 | `ready()` / `preload()` | Load the full runtime without opening a session. |
 | `open(lat, lon, name?, options?)` | Open a static 3D inspection view. |
-| `openWalk(lat, lon, options?)` | Start a first-person walking session. |
+| `openWalk(lat, lon, options?)` | Start a first-person walking session. `{ plannedBuildings: true }` also shows the world's planned buildings around the start (see `worldProfile.plannedBuildings` in the provider contract); N cycles them solid, glass, hidden. |
 | `openGta(lat, lon, options?)` | Start the free road-vehicle mode. Returns `false` outside configured bounds. |
 | `openCab(train, line, poseFn, options?)` | Advanced rail integration using host-provided train, line and live pose data. |
 | `close()` | Close the current Station3D session. |

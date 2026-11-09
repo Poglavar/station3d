@@ -150,6 +150,8 @@ import {
     topologizeProposalCorridorEntries,
 } from './proposal-corridor.js';
 import { getLocation } from '../core/locations.js';
+import { getWorldProvider } from '../core/api.js';
+import { plannedBuildingsProposal, plannedBuildingsUrl } from '../core/planned-buildings.js';
 import {
     loadRecordsById,
     shouldLoadLegacyGdiCarves,
@@ -1078,6 +1080,23 @@ async function loadProposals(ids, prefetchedRecords = null) {
         // 'reparcellization' / 'decide-later' carry no rendering geometry.
     }
     finalizeProposalRoadCorridors();
+}
+
+// The world's planned buildings around the session start (core/planned-buildings.js), ingested
+// like a building proposal. Never rejects: a provider that cannot answer costs these buildings,
+// never the session's proposals or the city.
+async function loadPlannedBuildings(url) {
+    try {
+        const r = await fetch(url, { credentials: 'omit' });
+        if (!r.ok) {
+            console.error(`[${new Date().toISOString()}] [proposals] planned buildings: HTTP ${r.status}`);
+            return;
+        }
+        const proposal = plannedBuildingsProposal(await r.json());
+        if (proposal) ingestBuildings(proposal);
+    } catch (err) {
+        console.error(`[${new Date().toISOString()}] [proposals] planned buildings failed`, err);
+    }
 }
 
 // ─── Shared materials ──────────────────────────────────────────────────────
@@ -3305,6 +3324,7 @@ function updateProposalRoadFormationRefresh() {
 // ctx fields used:
 //   - anchorLat, anchorLon
 //   - proposalIds: number[] | string[] (optional)
+//   - plannedBuildings: true (optional) — also show worldProfile.plannedBuildings around the anchor
 export const proposalsLayer = {
     beginSession(ctx) {
         proposalRoadFormationModel = ctx?.roadFormation || null;
@@ -3359,7 +3379,11 @@ export const proposalsLayer = {
         // its ids — /plans/<slug> answers with them. Merged with any explicit
         // ?proposals= list, explicit first.
         const planSlug = parseEnsPlanParam();
-        if ((!Array.isArray(ids) || ids.length === 0) && !planSlug) return;
+        // plannedBuildings: true asks the world provider for what will be built around the start.
+        const plannedUrl = ctx?.plannedBuildings === true
+            ? plannedBuildingsUrl(getWorldProvider(), ctx.anchorLat, ctx.anchorLon)
+            : null;
+        if ((!Array.isArray(ids) || ids.length === 0) && !planSlug && !plannedUrl) return;
         // With enumerated ids the fetches start immediately and in parallel,
         // exactly as before: the carve only needs the ids from the deeplink,
         // not the proposals themselves. A NAMED plan costs one resolving
@@ -3378,10 +3402,13 @@ export const proposalsLayer = {
                     return mergeProposalIds(ids, null);
                 })
             : Promise.resolve(mergeProposalIds(ids, null));
-        const dataReady = idsReady.then((allIds) => (allIds.length === 0 ? [] : Promise.all([
-            loadProposals(allIds, ctx.prefetchedProposals),
-            loadLegacyCarves(allIds, cityId),
-        ])));
+        const dataReady = Promise.all([
+            idsReady.then((allIds) => (allIds.length === 0 ? [] : Promise.all([
+                loadProposals(allIds, ctx.prefetchedProposals),
+                loadLegacyCarves(allIds, cityId),
+            ]))),
+            plannedUrl ? loadPlannedBuildings(plannedUrl) : null,
+        ]);
         // The gate is on the DATA, never on the emit/sweep block below — and it never rejects.
         // The whole cadastre building layer is downstream of this promise: if it stayed pending or
         // rejected because emitting some proposal's geometry threw, the city would come up with no

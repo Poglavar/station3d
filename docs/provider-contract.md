@@ -53,6 +53,7 @@ The neutral profile currently recognizes these common capability fields:
 | `apiDecor` | `true` | Streams decor from the provider API. |
 | `passengers` | `false` | Enables passenger/fare systems when the product provides demand data. |
 | `water` | `true` | Streams water polygons. |
+| `plannedBuildings` | `{ endpoint: 'plans/future-buildings', radiusM: 1500 }` | Offers buildings that will be built. A session opened with `plannedBuildings: true` requests `<apiBaseUrl>/<endpoint>?bbox=…` once for the square of ±`radiusM` (default 1,500 m) around its start and shows them as proposed buildings. |
 | `terrain.surfaceStyle` | `'grass'` | Selects the generic ground appearance. |
 | `terrain.source` | provider-defined key | Selects a terrain source passed to `/terrain/grid`. |
 | `naturalGround` | sizing/style object | Controls the natural-ground ring. |
@@ -76,6 +77,7 @@ endpoint paths and geographic bounding boxes. Common endpoint families are:
 | Decor | `/decor?kind=…&bbox=…` | GeoJSON `FeatureCollection`. |
 | Coverage | `/prepared-coverage` | Prepared-area metadata used for honest missing-data warnings. |
 | Telemetry | `/telemetry` | Optional product-owned diagnostics sink. |
+| Planned buildings | `worldProfile.plannedBuildings.endpoint` | GeoJSON `FeatureCollection` of Polygon/MultiPolygon building outlines with `properties.height_m` in metres. An outline without a positive `height_m` is not drawn and does not hide today's building. |
 
 This is a compatibility contract, not a complete standalone backend
 specification yet. The binary road and terrain decoders are versioned in

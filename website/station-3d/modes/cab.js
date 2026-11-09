@@ -5698,6 +5698,7 @@ export function openCab(train, line, poseFn, options) {
         ambientTrainServices: (options && options.ambientTrainServices) || [],
         proposalIds: (options && options.proposalIds) || null,
         prefetchedProposals: (options && options.prefetchedProposals) || null,
+        plannedBuildings: options?.plannedBuildings === true,
         entityInspection: options?.entityInspection === true,
         railProfileMode: options?.railProfileMode || 'osm',
         // Retained for campaign train/GTA hand-offs that deliberately preserve
@@ -5872,6 +5873,7 @@ export function openCab(train, line, poseFn, options) {
         terrainPolicy,
         proposalIds: (options && options.proposalIds) || null,
         prefetchedProposals: (options && options.prefetchedProposals) || null,
+        plannedBuildings: options?.plannedBuildings === true,
         entityInspection: options?.entityInspection === true,
         railProfileMode: options?.railProfileMode || 'osm',
         onPlayerTramDamage: damagePlayerTram,
@@ -6141,6 +6143,7 @@ function openFreeRoam(lat, lon, options, presetId) {
         initialLookPitchDeg: options && options.initialLookPitchDeg,
         proposalIds: (options && options.proposalIds) || null,
         prefetchedProposals: (options && options.prefetchedProposals) || null,
+        plannedBuildings: options?.plannedBuildings === true,
         entityInspection: options?.entityInspection === true,
         railProfileMode: options?.railProfileMode || 'osm',
         railMode: options?.railMode || '',
