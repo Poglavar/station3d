@@ -84,8 +84,11 @@ git diff --check
   green. Stage only your files and commit by pathspec
   (`git commit -- <your files>`), so other sessions' staged work stays out;
   never `git add -A` or `git add .`. Leave a file that mixes your edits with
-  another session's uncommitted edits out of the commit, and say so. Report
-  the commit SHAs.
+  another session's uncommitted edits out of the commit, and say so. A
+  pathspec commit takes each named file as it is on disk, not as staged, so
+  to commit only your hunks of such a file, stage them with
+  `git apply --cached`, check `git diff --cached`, then run a plain
+  `git commit`. Report the commit SHAs.
 - Do not push, publish, create releases or change remotes unless the user
   explicitly requests that action.
 - Do not add an AI system as author or co-author. Do not add model/vendor names,
