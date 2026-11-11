@@ -8,7 +8,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
-import { computeCost, record } from '../../../../agents/lib/llm-cost/index.mjs';
+import { loadLlmCost } from './llm-cost-loader.mjs';
 import { PEDESTRIAN_CONVERSATIONS } from '../core/pedestrian-conversations.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -28,6 +28,10 @@ const instructions = [
 ].join(' ');
 
 if (!useLocalVoices && !apiKey) throw new Error('OPENAI_API_KEY is required (or pass --local)');
+
+// The shared cost layer's functions, loaded before the first paid request. The free --local
+// path records nothing and does not need the layer.
+const { computeCost, record } = useLocalVoices ? {} : await loadLlmCost();
 
 // Every synthesized clip is priced and ledgered by the shared cost layer (agents/lib/llm-cost), the
 // one price source; the speech endpoint returns no usage, so the layer prices by input characters.

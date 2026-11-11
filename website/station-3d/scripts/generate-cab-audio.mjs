@@ -24,7 +24,11 @@
 import { mkdir, writeFile, readFile, rm } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { computeCost, record } from '../../../../agents/lib/llm-cost/index.mjs';
+import { loadLlmCost } from './llm-cost-loader.mjs';
+
+// The shared cost layer's functions, loaded in main() before the first paid request.
+let computeCost;
+let record;
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const AUDIO_DIR = path.resolve(__dirname, '..', 'audio');
@@ -197,6 +201,7 @@ async function main() {
         console.error('OPENAI_API_KEY not set. Try: node --env-file=../cadastre-data/api/.env scripts/generate-cab-audio.js');
         process.exit(1);
     }
+    ({ computeCost, record } = await loadLlmCost());
 
     const voices = (args.voices ? String(args.voices).split(',') : ['onyx', 'ash', 'ballad'])
         .map(v => v.trim()).filter(Boolean);
