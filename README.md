@@ -317,6 +317,8 @@ Performance work has two canonical documents: the [measured audit](docs/performa
 and [ranked next steps](docs/performance/next-steps.md). They distinguish completed
 work, confirmed failures, experiments and rejected directions. Update them in
 place rather than creating another dated audit or ground-delivery tracker.
+Techniques noticed in other projects are collected in [prior art](docs/prior-art/README.md)
+until they are moved into the backlog.
 
 ```sh
 nvm install
