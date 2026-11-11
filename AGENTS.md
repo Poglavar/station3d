@@ -80,8 +80,14 @@ git diff --check
 
 ## Git and attribution
 
-- Do not commit, push, publish, create releases or change remotes unless the
-  user explicitly requests that action.
+- Commit your own finished work locally without asking, once its tests are
+  green. Stage only your files and commit by pathspec
+  (`git commit -- <your files>`), so other sessions' staged work stays out;
+  never `git add -A` or `git add .`. Leave a file that mixes your edits with
+  another session's uncommitted edits out of the commit, and say so. Report
+  the commit SHAs.
+- Do not push, publish, create releases or change remotes unless the user
+  explicitly requests that action.
 - Do not add an AI system as author or co-author. Do not add model/vendor names,
   generated-by banners or session links to source, docs, commits or assets.
 - Preserve unrelated work in a dirty tree and report it rather than reverting
