@@ -77,7 +77,7 @@ endpoint paths and geographic bounding boxes. Common endpoint families are:
 | Decor | `/decor?kind=…&bbox=…` | GeoJSON `FeatureCollection`. |
 | Coverage | `/prepared-coverage` | Prepared-area metadata used for honest missing-data warnings. |
 | Telemetry | `/telemetry` | Optional product-owned diagnostics sink. |
-| Planned buildings | `worldProfile.plannedBuildings.endpoint` | GeoJSON `FeatureCollection` of Polygon/MultiPolygon building outlines with `properties.height_m` in metres. An outline without a positive `height_m` is not drawn and does not hide today's building. |
+| Planned buildings | `worldProfile.plannedBuildings.endpoint` | GeoJSON `FeatureCollection` of Polygon/MultiPolygon building outlines with `properties.height_m` in metres. An outline without a positive `height_m` is not drawn and does not hide today's building. An outline may carry `properties.model_url` (a path below `apiBaseUrl`, or an absolute URL) naming a modelled mesh of the building in the `/buildings-mesh` feature format (`{ features }`, one MultiPolygon Z of triangles per stated material, absolute `z_min`). The solid view then draws that mesh once per URL instead of extruding the outlines, which still hide today's buildings; ghost view extrudes them as glass, and a mesh that cannot be loaded falls back to the extrusion. |
 
 This is a compatibility contract, not a complete standalone backend
 specification yet. The binary road and terrain decoders are versioned in

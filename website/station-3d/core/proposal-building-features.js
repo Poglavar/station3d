@@ -75,13 +75,17 @@ function ringCentroid(ring) {
  * activeBuildings entries → Map<tileKey, Feature[]>.
  *
  * Entries with a modelUrl are SKIPPED: an uploaded glTF is the bespoke look and
- * stays on the proposals layer's own model path. Degenerate outer rings skip
- * the building; degenerate holes are dropped individually.
+ * stays on the proposals layer's own model path. Entries with a meshUrl are
+ * skipped too by default: their modelled mesh is drawn instead, and `select`
+ * picks them back out as the fallback when that mesh cannot be loaded. Ids keep
+ * the entry's index in `buildings`, so a later call never repeats one.
+ * Degenerate outer rings skip the building; degenerate holes are dropped individually.
  */
 export function proposalBuildingFeaturesByTile(buildings, {
     anchorLat,
     anchorLon,
     tileSizeM = 200,
+    select = (building) => !building.modelUrl && !building.meshUrl,
 } = {}) {
     const byTile = new Map();
     if (!Array.isArray(buildings)
@@ -92,7 +96,7 @@ export function proposalBuildingFeaturesByTile(buildings, {
     const scaleLon = DEG_TO_RAD * EARTH_RADIUS_M * Math.cos(anchorLat * DEG_TO_RAD);
     const scaleLat = DEG_TO_RAD * EARTH_RADIUS_M;
     buildings.forEach((building, index) => {
-        if (!building || building.modelUrl) return;
+        if (!building || !select(building)) return;
         const outer = finiteRing(building.ring);
         if (!outer) return;
         const holes = [];

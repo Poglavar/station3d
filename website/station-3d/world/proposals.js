@@ -67,7 +67,7 @@ import {
     parseProposalBuildingDisplay,
     proposalBuildingDisplayPolicy,
 } from '../core/proposal-building-display.js';
-import { proposalBuildingFeaturesByTile } from '../core/proposal-building-features.js';
+import { PROPOSAL_BUILDING_TILE_PREFIX, proposalBuildingFeaturesByTile } from '../core/proposal-building-features.js';
 import { proposalCourtyardRings } from '../core/proposal-block-massing.js';
 import { mergeProposalIds, parseEnsPlanParam } from '../core/ens-plan.js';
 import { refineTriangulatedSurface } from '../core/road-formation.js';
@@ -151,7 +151,7 @@ import {
 } from './proposal-corridor.js';
 import { getLocation } from '../core/locations.js';
 import { getWorldProvider } from '../core/api.js';
-import { plannedBuildingsProposal, plannedBuildingsUrl } from '../core/planned-buildings.js';
+import { plannedBuildingsProposal, plannedBuildingsUrl, plannedMeshFeatures } from '../core/planned-buildings.js';
 import {
     loadRecordsById,
     shouldLoadLegacyGdiCarves,
@@ -226,7 +226,7 @@ const PROPOSAL_TRACK_CONSTRUCTION_CLEARANCE_M = 0.75;
 // Resolves once the proposals, track impact index, and road-carve verdicts are known. The buildings
 // layer waits on it, so it never renders a legacy building before its fate is established.
 let proposalsReadyPromise = Promise.resolve();
-let activeBuildings = [];   // Array<{ ring, heightM, colorHex, modelUrl }>
+let activeBuildings = [];   // Array<{ ring, heightM, colorHex, modelUrl, meshUrl }>
 let gltfLoader = null;      // lazily created; shared across loads
 let activeParks = [];       // Array<{ ring, holes, aabb, decorations, hasAuthoredDecorations }>
 let activeSquares = [];     // Array<{ ring, holes, aabb, decorations, hasAuthoredDecorations }>
@@ -272,6 +272,7 @@ let proposalGlassTexture = null;
 let buildingDisplayState = 'solid';
 let solidBuildingsEnqueued = false;
 let ghostBuildingsEmitted = false;
+let plannedMeshSession = 0;   // moves when the session closes; a planned mesh arriving after is dropped
 let buildingsEmitAnchor = null;   // { anchorLat, anchorLon } captured at emitAll
 
 function consensusApiBase() {
@@ -740,6 +741,10 @@ function ingestBuildings(proposal) {
         // spawn the model multiple times.
         const modelUrl = (f.properties && typeof f.properties.modelUrl === 'string' && f.properties.modelUrl)
             ? f.properties.modelUrl : null;
+        // A planned building's modelled mesh (core/planned-buildings.js) replaces the solid
+        // extrusion of every piece that names it; it is drawn once per URL, not per piece.
+        const meshUrl = (f.properties && typeof f.properties.meshUrl === 'string' && f.properties.meshUrl)
+            ? f.properties.meshUrl : null;
         let firstPiece = true;
         for (const { outer, holes } of polys) {
             // Mask uses the OUTER ring only — the courtyard area inside
@@ -758,6 +763,7 @@ function ingestBuildings(proposal) {
                 heightM,
                 colorHex,
                 modelUrl: firstPiece ? modelUrl : null,
+                meshUrl,
                 proposalId: proposal.id ?? proposal.proposalId ?? null,
             });
             if (!courtyardAssigned && courtyardRings.length) courtyardAssigned = true;
@@ -1092,11 +1098,50 @@ async function loadPlannedBuildings(url) {
             console.error(`[${new Date().toISOString()}] [proposals] planned buildings: HTTP ${r.status}`);
             return;
         }
-        const proposal = plannedBuildingsProposal(await r.json());
+        const proposal = plannedBuildingsProposal(await r.json(), { apiBaseUrl: getWorldProvider()?.apiBaseUrl });
         if (proposal) ingestBuildings(proposal);
     } catch (err) {
         console.error(`[${new Date().toISOString()}] [proposals] planned buildings failed`, err);
     }
+}
+
+// A planned building's modelled mesh. Fetched when solid buildings are first drawn, never
+// before the city: the outlines already mask today's buildings, so the gate does not wait for
+// a multi-megabyte model. Resolves to drawable features, or null after saying why.
+async function loadPlannedMesh(url) {
+    try {
+        const r = await fetch(url, { credentials: 'omit' });
+        if (!r.ok) {
+            console.error(`[${new Date().toISOString()}] [proposals] planned building mesh: HTTP ${r.status} ${url}`);
+            return null;
+        }
+        const features = plannedMeshFeatures(await r.json(), url);
+        if (!features) console.error(`[${new Date().toISOString()}] [proposals] planned building mesh has no drawable parts: ${url}`);
+        return features;
+    } catch (err) {
+        console.error(`[${new Date().toISOString()}] [proposals] planned building mesh failed: ${url}`, err);
+        return null;
+    }
+}
+
+// Each planned mesh goes to the buildings layer as a proposal tile of its own, so it batches,
+// toggles (N) and takes walk surfaces like a landmark. A mesh that cannot be loaded leaves its
+// outlines to the ordinary solid extrusion: a planned building never simply vanishes.
+function enqueuePlannedMeshes(anchorLat, anchorLon) {
+    const urls = [...new Set(activeBuildings.map((b) => b.meshUrl).filter(Boolean))];
+    const session = plannedMeshSession;
+    urls.forEach((url, index) => {
+        loadPlannedMesh(url).then((features) => (session !== plannedMeshSession ? null : enqueueProposalBuildingTiles(features
+            ? new Map([[`${PROPOSAL_BUILDING_TILE_PREFIX}planned|${index}`, features]])
+            : proposalBuildingFeaturesByTile(activeBuildings, {
+                anchorLat,
+                anchorLon,
+                tileSizeM: PROPOSAL_BUILDING_TILE_SIZE_M,
+                select: (building) => building.meshUrl === url,
+            })))).catch((err) => {
+            console.error('[proposals] planned building mesh failed to build', err);
+        });
+    });
 }
 
 // ─── Shared materials ──────────────────────────────────────────────────────
@@ -2971,6 +3016,7 @@ function applyBuildingDisplayState() {
             enqueueProposalBuildingTiles(byTile).catch((err) => {
                 console.error('[proposals] solid proposal buildings failed to build', err);
             });
+            enqueuePlannedMeshes(anchorLat, anchorLon);
         }
         if (policy.ghost && !ghostBuildingsEmitted) {
             ghostBuildingsEmitted = true;
@@ -3488,6 +3534,7 @@ export const proposalsLayer = {
         proposalsWalkableGroup = null;
         solidBuildingsEnqueued = false;
         ghostBuildingsEmitted = false;
+        plannedMeshSession++;
         buildingsEmitAnchor = null;
         maskPolygons = [];
         maskRevision++;
