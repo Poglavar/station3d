@@ -173,18 +173,18 @@ export function setLoadingCurtainDetails({ tasks, activity } = {}) {
 }
 
 // A fraction always describes the named stage, never guessed remaining time.
-// Unknown work explicitly resets a previous stage's completed bar.
+// Unknown work hides the bar (the spinner already says "working"), which also
+// clears a previous stage's completed bar.
 export function setLoadingCurtainProgress({ fraction = null, text = null } = {}) {
     const curtain = loadingCurtainElement();
     if (!curtain) return;
     const known = Number.isFinite(fraction);
     const bar = part(curtain, 'bar');
-    if (bar.hidden) bar.hidden = false;
+    if (bar.hidden !== !known) bar.hidden = !known;
     const pct = known ? Math.floor(Math.max(0, Math.min(1, fraction)) * 100) : null;
     const state = pct === null ? 'unknown' : String(pct);
     if (bar.dataset.progressState !== state) {
         bar.dataset.progressState = state;
-        bar.classList.toggle('is-indeterminate', !known);
         bar.setAttribute('role', 'progressbar');
         bar.setAttribute('aria-valuemin', '0');
         bar.setAttribute('aria-valuemax', '100');

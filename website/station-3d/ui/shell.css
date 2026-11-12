@@ -1829,23 +1829,7 @@
     transition: width 0.25s ease;
 }
 
-.station-3d-campaign-curtain-bar.is-indeterminate .station-3d-campaign-curtain-fill {
-    width: 35%;
-    transition: none;
-    animation: station-3d-load-activity 1.8s ease-in-out infinite alternate;
-}
-
-@keyframes station-3d-load-activity {
-    from { transform: translateX(-100%); }
-    to { transform: translateX(286%); }
-}
-
 @media (prefers-reduced-motion: reduce) {
-    .station-3d-campaign-curtain-bar.is-indeterminate .station-3d-campaign-curtain-fill {
-        animation: none;
-        transform: translateX(93%);
-        opacity: 0.65;
-    }
     .station-3d-campaign-curtain-fill { transition: none; }
 }
 

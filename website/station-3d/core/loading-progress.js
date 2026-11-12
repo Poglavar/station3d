@@ -56,25 +56,6 @@ export function formatLoadElapsed(elapsedMs) {
     return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 }
 
-// A running clock is not evidence of engine progress. Only changes in the
-// engine's activity counter reset the age of the last observed activity.
-export function createWorldLoadActivity() {
-    let lastElapsedMs = null;
-    let lastSerial = null;
-    let lastActivityMs = 0;
-    return (telemetry) => {
-        const elapsedMs = telemetry?.elapsedMs;
-        if (!Number.isFinite(elapsedMs) || elapsedMs < 0) return null;
-        const serial = Number.isFinite(telemetry.activitySerial) ? telemetry.activitySerial : null;
-        if (lastElapsedMs === null || elapsedMs < lastElapsedMs || (serial !== null && serial !== lastSerial)) {
-            lastActivityMs = elapsedMs;
-        }
-        lastElapsedMs = elapsedMs;
-        lastSerial = serial;
-        return { elapsedMs, inactiveMs: elapsedMs - lastActivityMs, observed: serial !== null };
-    };
-}
-
 // Pack downloads have a true denominator: the manifest lists every chunk's
 // size. Chunks stand in until sizes are known; otherwise progress is unknown.
 export function campaignPackFraction(progress) {

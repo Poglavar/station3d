@@ -11,7 +11,7 @@ import { t, onLangChange } from '../core/i18n.js';
 import { compassReading } from '../core/compass.js';
 import { formatDashboardMetricValues, formatLoadTelemetry } from '../core/dashboard-metrics.js';
 import { loadingGridPlan } from '../core/loading-layout.js';
-import { createWorldLoadActivity, formatLoadElapsed, worldLoadFraction, worldLoadStages } from '../core/loading-progress.js';
+import { formatLoadElapsed, worldLoadFraction, worldLoadStages } from '../core/loading-progress.js';
 import { loadingDiagnosticsAllowed } from '../core/loading-curtain-policy.js';
 import {
     loadingCurtainDiagnostics,
@@ -94,7 +94,6 @@ let dataOutageEl = null;
 let dataOutageLabelEl = null;
 let dataOutageLabels = [];
 let lastWorldLoadComponents = [];
-let worldLoadActivity = createWorldLoadActivity();
 let bakeStatusEl = null;
 
 // The loading screen owns the message while it covers the scene; the pill takes
@@ -485,10 +484,7 @@ export function setCampaignBakeStatus(status) {
 // data-world-build-state ('building' / 'ready') and data-world-build-reason.
 export function setWorldLoading(visible, reason = '', { eyebrow, headline, blockers = [] } = {}) {
     ensureDashboard();
-    if (visible && !worldBuildHoldActive) {
-        worldLoadActivity = createWorldLoadActivity();
-        lastWorldLoadComponents = [];
-    }
+    if (visible && !worldBuildHoldActive) lastWorldLoadComponents = [];
     worldBuildHoldActive = !!visible;
     if (modalEl) {
         if (visible) {
@@ -537,14 +533,9 @@ export function setWorldLoading(visible, reason = '', { eyebrow, headline, block
 // Seconds and MB are SI abbreviations in every supported UI language.
 export function setWorldLoadTelemetry(telemetry) {
     if (worldBuildHoldActive) {
-        const activity = worldLoadActivity(telemetry);
-        if (activity) {
-            const elapsed = t('loading.elapsed', { time: formatLoadElapsed(activity.elapsedMs) });
-            const recent = activity.observed && activity.inactiveMs < 1_000;
-            const lastActivity = recent ? t('loading.activityRecent')
-                : activity.observed ? t('loading.activityAgo', { time: formatLoadElapsed(activity.inactiveMs) })
-                    : t('loading.waitingUpdate');
-            setLoadingCurtainDetails({ activity: `${elapsed} · ${lastActivity}` });
+        const elapsedMs = telemetry?.elapsedMs;
+        if (Number.isFinite(elapsedMs) && elapsedMs >= 0) {
+            setLoadingCurtainDetails({ activity: t('loading.elapsed', { time: formatLoadElapsed(elapsedMs) }) });
         }
     }
     if (!worldLoadingTelemetryEl) return;
@@ -643,7 +634,7 @@ export function setWorldLoadComponents(components) {
         const otherTasks = [...new Set(stages.active.slice(1).map(stageLabel))];
         const visibleTasks = otherTasks.slice(0, 2);
         if (otherTasks.length > 2) visibleTasks.push(t('loading.moreTasks', { n: otherTasks.length - 2 }));
-        const completed = t('loading.completedTasks', { done: stages.doneCount });
+        const completed = t('loading.completedTasks', { done: stages.doneCount, total: list.length });
         const also = visibleTasks.length ? t('loading.also', { tasks: visibleTasks.join(' · ') }) : '';
         setLoadingCurtainDetails({ tasks: [also, completed].filter(Boolean).join('\n') });
     }
