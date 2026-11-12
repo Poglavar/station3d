@@ -17,6 +17,17 @@ export function formatLoadTelemetry({ elapsedMs = 0, receivedBytes = 0, transfer
     return `${seconds} s · ${megabytes.toFixed(1)} MB${label ? ` ${label}` : ''}`;
 }
 
+// The loading screen's player-facing figure: megabytes the build has loaded so
+// far, one decimal in the page language ("12,4" in Croatian). The wire figure when
+// the browser reports one, else the decoded estimate; null before any bytes arrive.
+export function formatLoadedMegabytes({ receivedBytes = 0, transferBytes = 0 } = {}, lang = 'en') {
+    const transfer = Math.max(0, Number(transferBytes) || 0);
+    const bytes = transfer > 0 ? transfer : Math.max(0, Number(receivedBytes) || 0);
+    if (bytes <= 0) return null;
+    return (bytes / 1_000_000).toLocaleString(lang === 'hr' ? 'hr-HR' : 'en-GB',
+        { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+}
+
 export function formatDashboardMetricValues(altitudeM, absolute = false, gradePct = null, chainageText = '') {
     const raw = Number(altitudeM);
     const rounded = Number.isFinite(raw) ? Math.round(raw * 10) / 10 : null;

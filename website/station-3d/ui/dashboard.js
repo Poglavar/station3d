@@ -7,9 +7,9 @@
 // dashboard cowl rendered behind it provides the depth.
 
 import { modalEl } from './modal.js';
-import { t, onLangChange } from '../core/i18n.js';
+import { t, getLang, onLangChange } from '../core/i18n.js';
 import { compassReading } from '../core/compass.js';
-import { formatDashboardMetricValues, formatLoadTelemetry } from '../core/dashboard-metrics.js';
+import { formatDashboardMetricValues, formatLoadedMegabytes, formatLoadTelemetry } from '../core/dashboard-metrics.js';
 import { loadingGridPlan } from '../core/loading-layout.js';
 import { formatLoadElapsed, worldLoadFraction, worldLoadStages } from '../core/loading-progress.js';
 import { loadingDiagnosticsAllowed } from '../core/loading-curtain-policy.js';
@@ -19,7 +19,6 @@ import {
     raiseLoadingCurtain,
     setLoadingCurtainHeading,
     setLoadingCurtainLabel,
-    setLoadingCurtainProgress,
     setLoadingCurtainDetails,
 } from './loading-curtain.js';
 import { onTileStreamHealth } from '../core/shared-tile-session.js';
@@ -508,7 +507,6 @@ export function setWorldLoading(visible, reason = '', { eyebrow, headline, block
         return;
     }
     raiseLoadingCurtain({ label: t('hud.loadingWorld') });
-    setLoadingCurtainProgress();
     setLoadingCurtainDetails({ tasks: '', activity: '' });
     if (eyebrow || headline) setLoadingCurtainHeading({ eyebrow, headline });
     const diagnosticsAllowed = typeof location !== 'undefined'
@@ -535,7 +533,10 @@ export function setWorldLoadTelemetry(telemetry) {
     if (worldBuildHoldActive) {
         const elapsedMs = telemetry?.elapsedMs;
         if (Number.isFinite(elapsedMs) && elapsedMs >= 0) {
-            setLoadingCurtainDetails({ activity: t('loading.elapsed', { time: formatLoadElapsed(elapsedMs) }) });
+            // Growing megabytes show the player the build is moving, without a guessed bar.
+            const mb = formatLoadedMegabytes(telemetry, getLang());
+            const elapsed = t('loading.elapsed', { time: formatLoadElapsed(elapsedMs) });
+            setLoadingCurtainDetails({ activity: mb ? `${elapsed} · ${t('loading.loaded', { mb })}` : elapsed });
         }
     }
     if (!worldLoadingTelemetryEl) return;
@@ -630,7 +631,7 @@ export function setWorldLoadComponents(components) {
         : t(stages.finishing ? 'loading.finishingWorld' : 'hud.loadingWorld');
     if (worldBuildHoldActive) {
         const outage = dataOutageLabels.length > 0;
-        setLoadingCurtainProgress({ fraction: outage ? null : current?.fraction ?? null, text: outage ? t('hud.dataOutage') : text });
+        setLoadingCurtainLabel(outage ? t('hud.dataOutage') : text);
         const otherTasks = [...new Set(stages.active.slice(1).map(stageLabel))];
         const visibleTasks = otherTasks.slice(0, 2);
         if (otherTasks.length > 2) visibleTasks.push(t('loading.moreTasks', { n: otherTasks.length - 2 }));

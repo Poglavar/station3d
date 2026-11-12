@@ -1,7 +1,7 @@
 // The one loading screen of every Station3D session, on <body> above the 3D
 // modal (z-index 4100), from the click that asks
 // for a world until that world is built. A host raises it before the engine has
-// loaded; the engine adopts the same element, feeds its bar, and drops it when the
+// loaded; the engine adopts the same element, feeds its stage text, and drops it when the
 // world is ready. Every piece of state lives on the element, so the host's copy of
 // this module and the engine bundle's copy agree without sharing an instance. It
 // began as the campaign's chapter curtain, which is why the class keeps that name.
@@ -16,7 +16,6 @@ const PARTS = [
     ['spinner', 'span', 'station-3d-photo-loading-spinner'],
     ['title', 'div', `${LOADING_CURTAIN_CLASS}-title`],
     ['label', 'span', `${LOADING_CURTAIN_CLASS}-label`],
-    ['bar', 'span', `${LOADING_CURTAIN_CLASS}-bar`],
     // The way back sits above the developer breakdown, so a short screen never
     // pushes it out of reach.
     ['cancel', 'button', `${LOADING_CURTAIN_CLASS}-cancel`],
@@ -50,10 +49,6 @@ function part(curtain, name) {
         element.hidden = true;
     }
     if (name === 'spinner') element.setAttribute('aria-hidden', 'true');
-    if (name === 'bar') {
-        element.hidden = true;
-        element.appendChild(Object.assign(doc().createElement('span'), { className: `${LOADING_CURTAIN_CLASS}-fill` }));
-    }
     if (name === 'title' || name === 'diagnostics' || name === 'cancel') element.hidden = true;
     if (name === 'cancel') element.type = 'button';
     const next = PARTS.slice(index + 1)
@@ -172,37 +167,7 @@ export function setLoadingCurtainDetails({ tasks, activity } = {}) {
     }
 }
 
-// A fraction always describes the named stage, never guessed remaining time.
-// Unknown work hides the bar (the spinner already says "working"), which also
-// clears a previous stage's completed bar.
-export function setLoadingCurtainProgress({ fraction = null, text = null } = {}) {
-    const curtain = loadingCurtainElement();
-    if (!curtain) return;
-    const known = Number.isFinite(fraction);
-    const bar = part(curtain, 'bar');
-    if (bar.hidden !== !known) bar.hidden = !known;
-    const pct = known ? Math.floor(Math.max(0, Math.min(1, fraction)) * 100) : null;
-    const state = pct === null ? 'unknown' : String(pct);
-    if (bar.dataset.progressState !== state) {
-        bar.dataset.progressState = state;
-        bar.setAttribute('role', 'progressbar');
-        bar.setAttribute('aria-valuemin', '0');
-        bar.setAttribute('aria-valuemax', '100');
-        const fill = bar.querySelector(`.${LOADING_CURTAIN_CLASS}-fill`);
-        if (known) {
-            if (fill) fill.style.width = `${pct}%`;
-            bar.setAttribute('aria-valuenow', String(pct));
-        } else {
-            if (fill) fill.style.width = '';
-            bar.removeAttribute('aria-valuenow');
-        }
-    }
-    if (typeof text === 'string' && text) setLoadingCurtainLabel(text);
-    const label = labelPart(curtain, 'stage').textContent;
-    if (bar.getAttribute('aria-label') !== label) bar.setAttribute('aria-label', label);
-}
-
-// The development breakdown under the bar (see core/loading-curtain-policy.js);
+// The development breakdown under the label (see core/loading-curtain-policy.js);
 // null when no curtain is up.
 export function loadingCurtainDiagnostics({ show = true } = {}) {
     const curtain = loadingCurtainElement();

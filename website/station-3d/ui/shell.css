@@ -1775,17 +1775,6 @@
     opacity: 0.75;
 }
 
-/* Only a named stage with measured progress gets a determinate bar. */
-.station-3d-campaign-curtain-bar {
-    display: block;
-    width: min(360px, 62vw);
-    height: 5px;
-    margin-top: 6px;
-    border-radius: 3px;
-    background: rgba(255, 255, 255, 0.16);
-    overflow: hidden;
-}
-
 .station-3d-campaign-curtain[hidden],
 .station-3d-campaign-curtain > [hidden],
 .station-3d-campaign-curtain-label > [hidden] {
@@ -1818,19 +1807,6 @@
 .station-3d-campaign-curtain-cancel:hover {
     background: var(--station3d-loading-foreground);
     color: var(--station3d-loading-background);
-}
-
-.station-3d-campaign-curtain-fill {
-    display: block;
-    height: 100%;
-    width: 0%;
-    border-radius: 3px;
-    background: var(--station3d-loading-accent);
-    transition: width 0.25s ease;
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .station-3d-campaign-curtain-fill { transition: none; }
 }
 
 /* The bake indicator (offline compiler sessions only): above everything,

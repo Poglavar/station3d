@@ -55,18 +55,3 @@ export function formatLoadElapsed(elapsedMs) {
     const seconds = Number.isFinite(elapsedMs) ? Math.max(0, Math.floor(elapsedMs / 1000)) : 0;
     return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 }
-
-// Pack downloads have a true denominator: the manifest lists every chunk's
-// size. Chunks stand in until sizes are known; otherwise progress is unknown.
-export function campaignPackFraction(progress) {
-    if (!progress || typeof progress !== 'object') return null;
-    if (progress.phase === 'build') {
-        const totalPackets = Number(progress.totalPackets);
-        return Number.isFinite(totalPackets) && totalPackets > 0 ? clamp01(Number(progress.uploadedPackets) / totalPackets) : null;
-    }
-    const totalBytes = Number(progress.totalBytes);
-    if (Number.isFinite(totalBytes) && totalBytes > 0) return clamp01(Number(progress.loadedBytes) / totalBytes);
-    const totalChunks = Number(progress.totalChunks);
-    if (Number.isFinite(totalChunks) && totalChunks > 0) return clamp01(Number(progress.loadedChunks) / totalChunks);
-    return null;
-}

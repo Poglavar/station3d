@@ -519,7 +519,7 @@ import {
     setWorldLoadTelemetry,
     recordWorldLoadDurations,
 } from '../ui/dashboard.js';
-import { dropLoadingCurtain, setLoadingCurtainProgress } from '../ui/loading-curtain.js';
+import { dropLoadingCurtain } from '../ui/loading-curtain.js';
 import { cabViewHeadingDeg } from '../core/compass.js';
 import {
     buildDriverGraph, snapPoseToGraph, driverStep, computeDriverPose,
@@ -4210,7 +4210,6 @@ function cabStep() {
     if (photoLoading) {
         setPhotoLoadProgress(getPhotorealLoadProgress());
         setPhotoLoadTelemetry(getPhotorealLoadTelemetry());
-        setLoadingCurtainProgress({ fraction: getPhotorealLoadProgress() });
     } else if (isPhotoWorld() && !cabState.campaignScene && cabState.photoCurtainPending !== false) {
         // The photo world reveals itself, and the loading screen goes with the reveal.
         cabState.photoCurtainPending = false;

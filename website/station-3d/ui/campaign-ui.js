@@ -25,8 +25,7 @@ import { evaluateCampaignCondition } from '../core/campaign-conditions.js';
 import { escapeHtml } from '../core/text.js';
 import { getLang, onLangChange, t } from '../core/i18n.js';
 import { campaignSceneLoadingHeading } from '../core/campaign-feature.js';
-import { dropLoadingCurtain, raiseLoadingCurtain, setLoadingCurtainProgress } from './loading-curtain.js';
-import { campaignPackFraction } from '../core/loading-progress.js';
+import { dropLoadingCurtain, raiseLoadingCurtain, setLoadingCurtainLabel } from './loading-curtain.js';
 import { campaignSpeechPlan } from '../core/campaign-voice.js';
 import { campaignDialoguePauseElapsed } from '../core/campaign-dialogue-timing.js';
 
@@ -1241,20 +1240,17 @@ function showCompleted(input) {
 // underneath for as long as the next world takes to download. The loading screen
 // is mounted on <body> for exactly that reason: anything inside the modal goes
 // dark with it (ui/loading-curtain.js). It names the chapter it is loading as the
-// chapter card does, and a live world feeds its bar from the build hold.
-// The baked level is the one load with a true denominator: its manifest lists
-// every chunk's size, so the bar is bytes received over bytes total.
+// chapter card does, and a live world feeds its stage text from the build hold.
+// The baked level's manifest lists every chunk's size, so its text counts
+// megabytes received over the total.
 function onCampaignPackProgress(event) {
     const detail = event?.detail || {};
-    setLoadingCurtainProgress({
-        fraction: campaignPackFraction(detail),
-        text: detail.phase === 'build'
-            ? t('campaign.packBuild', { done: Number(detail.uploadedPackets) || 0, total: Number(detail.totalPackets) || 0 })
-            : t('campaign.packDownload', {
-                loaded: (Number(detail.loadedBytes) / 1048576 || 0).toFixed(0),
-                total: (Number(detail.totalBytes) / 1048576 || 0).toFixed(0),
-            }),
-    });
+    setLoadingCurtainLabel(detail.phase === 'build'
+        ? t('campaign.packBuild', { done: Number(detail.uploadedPackets) || 0, total: Number(detail.totalPackets) || 0 })
+        : t('campaign.packDownload', {
+            loaded: (Number(detail.loadedBytes) / 1048576 || 0).toFixed(0),
+            total: (Number(detail.totalBytes) / 1048576 || 0).toFixed(0),
+        }));
 }
 
 function showCampaignCurtain(scene) {
