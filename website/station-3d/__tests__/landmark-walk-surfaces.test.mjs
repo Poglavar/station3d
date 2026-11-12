@@ -136,6 +136,18 @@ test('the walker stands on the highest floor within a step, never on the roof ov
     assert.equal(landmarkSupportY(index, 30, 4, 50), null);
 });
 
+test('a level roof wound downwards still carries the walker on it, and a ceiling overhead still does not', () => {
+    // Almeria centar's roof and part of Chromos's arrive wound downwards; they render
+    // double-sided, so only the walk could tell, and the walker fell through them.
+    const index = buildLandmarkWalkIndex([
+        ...plate(-20, 20, -20, 20, 0.3),            // forecourt, wound up
+        ...plate(-20, 20, -20, 20, 53.2, 'down'),   // flat roof, wound down
+    ]);
+    assert.ok(Math.abs(landmarkSupportY(index, 3, 4, 53.2 + 0.5) - 53.2) < 1e-6, 'standing on the roof');
+    assert.ok(Math.abs(landmarkSupportY(index, 3, 4, 0.3 + 1.75) - 0.3) < 1e-6, 'the roof overhead is not ground');
+    assert.equal(index.walls.count, 0, 'a level face is never a wall');
+});
+
 test('a raked tier is a floor to walk up, and a soffit sloping down towards the walker is a wall', () => {
     // Tier rising 0.5 m per metre northwards; the same slope underneath as a soffit.
     const tier = slope(-10, 10, 0, 0.0, 20, 10.0, 'up');

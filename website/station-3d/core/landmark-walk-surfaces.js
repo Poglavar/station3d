@@ -15,9 +15,13 @@
 //     an inclined slab at the line where it meets the body, and a slab above
 //     the head not at all. A wall is solid from both sides: the collision
 //     resolver already lets a walker who starts embedded in one walk out.
-// Floor-ness needs the face's up direction, so it trusts the winding; a
-// landmark with flipped winding loses support on its sloped floors (as every
-// landmark had none before), never gains a wall across open ground.
+// Floor-ness needs the face's up direction, so a sloped face trusts the
+// winding: a slope wound downwards is a soffit, and a wall. A LEVEL face is a
+// floor whichever way it is wound. Landmarks render double-sided, so nothing
+// shows a flipped roof, and authored models carry them (Almeria centar's whole
+// roof, a twentieth of Chromos's, 2026-11-12): trusting the winding there let
+// the walker fall through. A level face rises nothing, so it never was a
+// wall, and as a floor it can only carry someone within a step of it.
 // Pure, so the geometry is unit-tested without a renderer.
 
 export const LANDMARK_WALK_CELL_M = 4;
@@ -27,6 +31,8 @@ const MIN_FACE_RISE_M = 0.05;
 const MIN_SLICE_M = 0.05;
 // Upward faces at least this level (normal y ≥ cos 50°) are floors.
 const WALKABLE_NORMAL_Y = 0.64;
+// Faces within 15° of level are floors whichever way they are wound.
+const LEVEL_NORMAL_Y = 0.966;
 
 // A far-LOD render row whose outline is a landmark part's hull is not a
 // pedestrian outline; the near model supplies that landmark's walls.
@@ -134,7 +140,8 @@ export function buildLandmarkWalkIndex(positions, { cellM = LANDMARK_WALK_CELL_M
         if (length < 1e-9) continue;
         const lo = Math.min(ay, by, cy);
         const hi = Math.max(ay, by, cy);
-        if (ny / length >= WALKABLE_NORMAL_Y) addToBucket(floors, values, lo, hi, cellM);
+        const upness = ny / length;
+        if (upness >= WALKABLE_NORMAL_Y || -upness >= LEVEL_NORMAL_Y) addToBucket(floors, values, lo, hi, cellM);
         else if (hi - lo >= MIN_FACE_RISE_M) addToBucket(walls, values, lo, hi, cellM);
         else continue;
         minX = Math.min(minX, ax, bx, cx); maxX = Math.max(maxX, ax, bx, cx);
