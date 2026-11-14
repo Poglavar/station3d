@@ -7,6 +7,17 @@ const finite=value=>typeof value==='number'&&Number.isFinite(value);
 const cross=(a,b,c)=>(b.x-a.x)*(c.z-a.z)-(b.z-a.z)*(c.x-a.x);
 const normal=(a,b,c)=>[(b.y-a.y)*(c.z-a.z)-(b.z-a.z)*(c.y-a.y),
     (b.z-a.z)*(c.x-a.x)-(b.x-a.x)*(c.z-a.z),(b.x-a.x)*(c.y-a.y)-(b.y-a.y)*(c.x-a.x)];
+// A source face that draws no area: an exactly zero normal, or two vertices
+// closer than the 1 mm storage tolerance this clipper enforces on boundary
+// points, so it cannot be clipped within that tolerance. Refined rings carry
+// both kinds. Only the exact test existed until 2026-11-14, when a sliver whose
+// vertices were one Float32 step apart (5.4 µm) beside Stari terminal (project
+// 77) was clipped into a fragment the storage check rejects, failing every
+// ground generation there: no rails, and the loading screen held to its timeout.
+const EMPTY_FACE_EDGE_M=.001;
+const distance3=(p,q)=>Math.hypot(p.x-q.x,p.y-q.y,p.z-q.z);
+const emptySourceFace=(a,b,c,winding)=>winding.every(value=>value===0)
+    ||Math.min(distance3(a,b),distance3(b,c),distance3(c,a))<EMPTY_FACE_EDGE_M;
 // A failure names where it happened: an unlocatable rejection cost days at Split.
 const fail=(code,message,details=null)=>{throw Object.assign(new Error(details?`${message} at ${details.x?.toFixed?.(3)},${details.z?.toFixed?.(3)}`:message),details?{code,details}:{code});};
 
@@ -129,7 +140,7 @@ export function* clipReceiverGeometrySteps({geometry,topology,originX=0,originY=
         // those exact source indices; only newly clipped faces must have area.
         // This is an exact 3D test, so a vertical wall is never mistaken for an
         // empty face. Nonzero faces still use the strict storage validation.
-        const degenerateSource=volume&&winding.every(value=>value===0);
+        const degenerateSource=volume&&emptySourceFace(a,b,c,winding);
         if(degenerateSource)degenerateSourceTriangles++;
         const clipped=degenerateSource?{unchanged:true}:yield* topology.clipTriangleSteps(a,b,c,{now,isCurrent,storageOrigin:{x:originX,z:originZ}});
         if(clipped.unchanged) {
@@ -227,7 +238,8 @@ export function* clipReceiverGeometrySteps({geometry,topology,originX=0,originY=
             for(let face=0;face<sourceIndexCount/3;face++) {
                 yield* budget('ground-topology-edge-conformity');
                 const sourceIds=indices?[indices[face*3],indices[face*3+1],indices[face*3+2]]:[face*3,face*3+1,face*3+2];
-                const winding=normal(...sourceIds.map(point)),degenerate=winding.every(value=>value===0);
+                const corners=sourceIds.map(point),winding=normal(...corners);
+                const degenerate=emptySourceFace(...corners,winding);
                 for(let offset=previousOffsets[face];offset<previousOffsets[face+1];offset+=3) {
                     const pending=[[previousIndices[offset],previousIndices[offset+1],previousIndices[offset+2]]];
                     while(pending.length) {
