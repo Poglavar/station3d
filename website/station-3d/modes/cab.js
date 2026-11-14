@@ -25,7 +25,7 @@ import {
 } from '../core/math.js';
 import { CivilGroundComposition } from '../core/civil-ground-composition.js';
 import { SURFACE_CLASS, SURFACE_COVERAGE_STATE, SURFACE_VERTICAL_RELATION } from '../core/surface-hierarchy.js';
-import { createFlightCameraResolver } from '../core/flight.js';
+import { createFlightCameraResolver, offsetGeo } from '../core/flight.js';
 import {
     createPhotoTrackFrame,
     resolvePhotoHandoffState,
@@ -311,10 +311,12 @@ import {
     getRailsGroupForWalkColliders,
     getEnclosedRailTunnelSpans,
     getActiveRailTrafficSource,
+    getStationTrackSpacingFlares,
     isRailSurfacePreloadSettled,
     tramTrackbedSupportYAtLocal,
     railsLayer,
 } from '../world/rails.js';
+import { ridingTrackCenterOffsetM } from '../core/planner-station-flare.js';
 import { electrificationLayer } from '../world/electrification.js';
 import { levelCrossingsLayer } from '../world/level-crossings.js';
 import { streetNamesLayer, setStreetNamesPresentationHidden } from '../world/street-names.js';
@@ -1843,7 +1845,7 @@ function getCurrentCabPose(cabState) {
     }
     if (typeof cabState.poseFn === 'function') {
         const pose = cabState.poseFn();
-        if (pose) return pose;
+        if (pose) return withPlannerRidingOffset(cabState, pose);
     }
     return cabState.lastAutoPose || null;
 }
@@ -1855,7 +1857,49 @@ function computeControlledRailPose(cabState) {
             ? TRAIN_CAR_CENTER_OFFSETS_M
             : null,
         switchRules: cabState.switchRules,
+        ridingOffsetM: plannerRidingOffset(cabState),
     });
+}
+
+// A planner line is the axis of its tracks, so a cab driving it rides the outer
+// running-track centre the rails were built to: the offset and published station
+// list ambient project trains use (core/planner-station-flare.js). Without it the
+// cab ran between the rails and through every island platform. Graphs claimed
+// from streamed OSM rail are already single tracks and are never offset.
+function plannerRidingOffset(cabState) {
+    const tracks = cabState.plannerDriverTracks;
+    if (!tracks || cabState.driverGraph !== cabState.plannerDriverGraph) return null;
+    return (edge, { lat, lon }) => {
+        const properties = tracks[edge.lineIdx]?.properties;
+        if (!properties) return 0;
+        const local = geoToLocal(lon, lat, cabState.anchorLon, cabState.anchorLat);
+        return ridingTrackCenterOffsetM(properties, local.x, local.z, getStationTrackSpacingFlares());
+    };
+}
+
+// The host's scripted ride (openCab's poseFn) also runs on the planner line's
+// axis. Find the planner edge under it and apply the same riding offset, so the
+// automatic ride and the driven one sit on the same track.
+const PLANNER_RIDING_SNAP_M = 3;
+function withPlannerRidingOffset(cabState, pose) {
+    // Only the planner's own ride: a walk swaps in its own poseFn, and a walker
+    // beside the line must never be pushed across it.
+    if (cabState.walkMode || cabState.poseFn !== cabState.plannerRidePoseFn) return pose;
+    const offsetAt = plannerRidingOffset(cabState);
+    if (!offsetAt || !pose || !Number.isFinite(pose.lat) || !Number.isFinite(pose.lon)
+        || !Number.isFinite(pose.headingDeg)) return pose;
+    const snap = snapPoseToGraph(cabState.plannerDriverGraph, pose.lat, pose.lon, pose.headingDeg,
+        PLANNER_RIDING_SNAP_M);
+    if (!snap) return pose;
+    const offsetM = Number(offsetAt(cabState.plannerDriverGraph.edges[snap.edgeId], pose));
+    if (!Number.isFinite(offsetM) || Math.abs(offsetM) < 1e-6) return pose;
+    const shift = (at) => ({ ...at, ...offsetGeo(at.lat, at.lon, at.headingDeg + 90, offsetM) });
+    return {
+        ...shift(pose),
+        ...(Array.isArray(pose.articulatedCars)
+            ? { articulatedCars: pose.articulatedCars.map(car => (car ? shift(car) : car)) }
+            : {}),
+    };
 }
 
 function railSurfaceStreamingFocus(cabState, local, pose) {
@@ -3862,7 +3906,8 @@ function canonicalKeyForAction(action) {
 }
 
 function sampleExternalPose(cabState, loadingHold) {
-    const sampledPose = cabState.poseFn({ paused: cabState.simPaused || loadingHold });
+    const sampledPose = withPlannerRidingOffset(cabState,
+        cabState.poseFn({ paused: cabState.simPaused || loadingHold }));
     if (!sampledPose) return null;
     if (cabState.simPaused) {
         if (!cabState.simPausedPose) {
@@ -5719,6 +5764,9 @@ export function openCab(train, line, poseFn, options) {
     };
     if (driverTracks.length > 0) {
         cabState.driverGraph = buildDriverGraph(driverTracks);
+        cabState.plannerDriverGraph = cabState.driverGraph;
+        cabState.plannerDriverTracks = driverTracks;
+        cabState.plannerRidePoseFn = cabState.poseFn;
     }
     // An explicitly supplied driving graph must cover the initial cab pose.
     // Validate once at entry; walking sessions may start away from their train.

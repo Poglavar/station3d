@@ -5,6 +5,7 @@
 // the caller.
 
 import { haversineMeters, signedAngleDiffDeg } from '../core/math.js';
+import { offsetGeo } from '../core/flight.js';
 // The rail driver owns this prerequisite in every host, including Sloboda's
 // campaign scenes, which do not load the planner's classic script tags.
 import '../../tram-switch-utils.js';
@@ -531,14 +532,25 @@ export function sampleDriverStateAtOffset(ds, graph, offsetM, switchRules = null
     return sampled;
 }
 
+// `ridingOffsetM(edge, { lat, lon, headingDeg })`, when given, says how far right
+// of the direction of travel the running track lies from this graph's line. A
+// planner line is the AXIS of its tracks, so a cab on it rode between the rails
+// and, at an island station, straight through the platform.
 export function computeDriverPose(ds, graph, {
     articulatedCarOffsetsM = null,
     switchRules = null,
+    ridingOffsetM = null,
 } = {}) {
     const e = graph.edges[ds.edgeId];
-    const lat = e.lat1 + (e.lat2 - e.lat1) * ds.t;
-    const lng = e.lng1 + (e.lng2 - e.lng1) * ds.t;
+    let lat = e.lat1 + (e.lat2 - e.lat1) * ds.t;
+    let lng = e.lng1 + (e.lng2 - e.lng1) * ds.t;
     const headingDeg = ds.direction === 1 ? e.bearing : (e.bearing + 180) % 360;
+    const offsetM = typeof ridingOffsetM === 'function'
+        ? Number(ridingOffsetM(e, { lat, lon: lng, headingDeg }))
+        : 0;
+    if (Number.isFinite(offsetM) && Math.abs(offsetM) > 1e-6) {
+        ({ lat, lon: lng } = offsetGeo(lat, lng, headingDeg + 90, offsetM));
+    }
     const upcoming = findUpcomingSwitch(ds, graph, 80);
     const authoredY1 = Number(e.authoredY1);
     const authoredY2 = Number(e.authoredY2);
@@ -581,7 +593,7 @@ export function computeDriverPose(ds, graph, {
         pose.articulatedCars = articulatedCarOffsetsM.map((offsetM) => {
             const carState = sampleDriverStateAtOffset(ds, graph, offsetM, switchRules);
             if (!carState) return null;
-            const carPose = computeDriverPose(carState, graph);
+            const carPose = computeDriverPose(carState, graph, { ridingOffsetM });
             return {
                 lat: carPose.lat,
                 lon: carPose.lon,
