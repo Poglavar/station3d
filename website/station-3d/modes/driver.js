@@ -4,8 +4,7 @@
 // object — no scene, no DOM, no module singletons aside from graph caching in
 // the caller.
 
-import { haversineMeters, signedAngleDiffDeg } from '../core/math.js';
-import { offsetGeo } from '../core/flight.js';
+import { bearingDeg, haversineMeters, signedAngleDiffDeg } from '../core/math.js';
 // The rail driver owns this prerequisite in every host, including Sloboda's
 // campaign scenes, which do not load the planner's classic script tags.
 import '../../tram-switch-utils.js';
@@ -532,24 +531,30 @@ export function sampleDriverStateAtOffset(ds, graph, offsetM, switchRules = null
     return sampled;
 }
 
-// `ridingOffsetM(edge, { lat, lon, headingDeg })`, when given, says how far right
-// of the direction of travel the running track lies from this graph's line. A
-// planner line is the AXIS of its tracks, so a cab on it rode between the rails
-// and, at an island station, straight through the platform.
+// `chordHeadingM`, when given, takes the heading across that length of track
+// centred on the vehicle instead of from the edge it is on. An edge's bearing
+// steps at every vertex; on a densely noded curve the cab's view twitched at each
+// one (yaw rate swinging 3–30 °/s about a steady 11 °/s on project 77).
 export function computeDriverPose(ds, graph, {
     articulatedCarOffsetsM = null,
     switchRules = null,
-    ridingOffsetM = null,
+    chordHeadingM = 0,
 } = {}) {
     const e = graph.edges[ds.edgeId];
-    let lat = e.lat1 + (e.lat2 - e.lat1) * ds.t;
-    let lng = e.lng1 + (e.lng2 - e.lng1) * ds.t;
-    const headingDeg = ds.direction === 1 ? e.bearing : (e.bearing + 180) % 360;
-    const offsetM = typeof ridingOffsetM === 'function'
-        ? Number(ridingOffsetM(e, { lat, lon: lng, headingDeg }))
-        : 0;
-    if (Number.isFinite(offsetM) && Math.abs(offsetM) > 1e-6) {
-        ({ lat, lon: lng } = offsetGeo(lat, lng, headingDeg + 90, offsetM));
+    const lat = e.lat1 + (e.lat2 - e.lat1) * ds.t;
+    const lng = e.lng1 + (e.lng2 - e.lng1) * ds.t;
+    let headingDeg = ds.direction === 1 ? e.bearing : (e.bearing + 180) % 360;
+    if (Number(chordHeadingM) > 0) {
+        const at = (state) => {
+            const edge = state && graph.edges[state.edgeId];
+            return edge ? { lat: edge.lat1 + (edge.lat2 - edge.lat1) * state.t,
+                lng: edge.lng1 + (edge.lng2 - edge.lng1) * state.t } : null;
+        };
+        const ahead = at(sampleDriverStateAtOffset(ds, graph, chordHeadingM / 2, switchRules));
+        const behind = at(sampleDriverStateAtOffset(ds, graph, -chordHeadingM / 2, switchRules));
+        if (ahead && behind && (ahead.lat !== behind.lat || ahead.lng !== behind.lng)) {
+            headingDeg = bearingDeg(behind.lat, behind.lng, ahead.lat, ahead.lng);
+        }
     }
     const upcoming = findUpcomingSwitch(ds, graph, 80);
     const authoredY1 = Number(e.authoredY1);
@@ -593,7 +598,7 @@ export function computeDriverPose(ds, graph, {
         pose.articulatedCars = articulatedCarOffsetsM.map((offsetM) => {
             const carState = sampleDriverStateAtOffset(ds, graph, offsetM, switchRules);
             if (!carState) return null;
-            const carPose = computeDriverPose(carState, graph, { ridingOffsetM });
+            const carPose = computeDriverPose(carState, graph, { chordHeadingM, switchRules });
             return {
                 lat: carPose.lat,
                 lon: carPose.lon,

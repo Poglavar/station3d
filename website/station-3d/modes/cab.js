@@ -311,12 +311,10 @@ import {
     getRailsGroupForWalkColliders,
     getEnclosedRailTunnelSpans,
     getActiveRailTrafficSource,
-    getStationTrackSpacingFlares,
     isRailSurfacePreloadSettled,
     tramTrackbedSupportYAtLocal,
     railsLayer,
 } from '../world/rails.js';
-import { ridingTrackCenterOffsetM } from '../core/planner-station-flare.js';
 import { electrificationLayer } from '../world/electrification.js';
 import { levelCrossingsLayer } from '../world/level-crossings.js';
 import { streetNamesLayer, setStreetNamesPresentationHidden } from '../world/street-names.js';
@@ -1845,7 +1843,7 @@ function getCurrentCabPose(cabState) {
     }
     if (typeof cabState.poseFn === 'function') {
         const pose = cabState.poseFn();
-        if (pose) return withPlannerRidingOffset(cabState, pose);
+        if (pose) return withPlannerChordHeading(cabState, pose);
     }
     return cabState.lastAutoPose || null;
 }
@@ -1857,49 +1855,46 @@ function computeControlledRailPose(cabState) {
             ? TRAIN_CAR_CENTER_OFFSETS_M
             : null,
         switchRules: cabState.switchRules,
-        ridingOffsetM: plannerRidingOffset(cabState),
+        chordHeadingM: cabState.driverGraph === cabState.plannerDriverGraph ? PLANNER_HEADING_CHORD_M : 0,
     });
 }
 
-// A planner line is the axis of its tracks, so a cab driving it rides the outer
-// running-track centre the rails were built to: the offset and published station
-// list ambient project trains use (core/planner-station-flare.js). Without it the
-// cab ran between the rails and through every island platform. Graphs claimed
-// from streamed OSM rail are already single tracks and are never offset.
-function plannerRidingOffset(cabState) {
-    const tracks = cabState.plannerDriverTracks;
-    if (!tracks || cabState.driverGraph !== cabState.plannerDriverGraph) return null;
-    return (edge, { lat, lon }) => {
-        const properties = tracks[edge.lineIdx]?.properties;
-        if (!properties) return 0;
-        const local = geoToLocal(lon, lat, cabState.anchorLon, cabState.anchorLat);
-        return ridingTrackCenterOffsetM(properties, local.x, local.z, getStationTrackSpacingFlares());
-    };
-}
+// The heading a planner ride looks along: the track across this chord, centred
+// on the cab (modes/driver.js chordHeadingM), so the view turns smoothly through
+// a densely noded curve instead of stepping at every vertex.
+const PLANNER_HEADING_CHORD_M = 8;
 
-// The host's scripted ride (openCab's poseFn) also runs on the planner line's
-// axis. Find the planner edge under it and apply the same riding offset, so the
-// automatic ride and the driven one sit on the same track.
-const PLANNER_RIDING_SNAP_M = 3;
-function withPlannerRidingOffset(cabState, pose) {
-    // Only the planner's own ride: a walk swaps in its own poseFn, and a walker
-    // beside the line must never be pushed across it.
-    if (cabState.walkMode || cabState.poseFn !== cabState.plannerRidePoseFn) return pose;
-    const offsetAt = plannerRidingOffset(cabState);
-    if (!offsetAt || !pose || !Number.isFinite(pose.lat) || !Number.isFinite(pose.lon)
+// The host's scripted ride (openCab's poseFn) carries the bearing of the line
+// segment it is on, and so steps at every vertex too; the planner also sets its
+// running-track offset along that stepping bearing, so the position zigzags at
+// each vertex as well. Keep how far right of the line the planner put the cab
+// (its running track, and its spread around island platforms) but re-apply that
+// distance along the chord heading of the planner line under it.
+// The snap radius covers the offset (6.6 m at an island station).
+const PLANNER_HEADING_SNAP_M = 10;
+function withPlannerChordHeading(cabState, pose) {
+    // Only the planner's own ride: a walk swaps in its own poseFn.
+    if (cabState.walkMode || !cabState.plannerDriverGraph
+        || cabState.poseFn !== cabState.plannerRidePoseFn) return pose;
+    if (!pose || !Number.isFinite(pose.lat) || !Number.isFinite(pose.lon)
         || !Number.isFinite(pose.headingDeg)) return pose;
-    const snap = snapPoseToGraph(cabState.plannerDriverGraph, pose.lat, pose.lon, pose.headingDeg,
-        PLANNER_RIDING_SNAP_M);
+    const graph = cabState.plannerDriverGraph;
+    const snap = snapPoseToGraph(graph, pose.lat, pose.lon, pose.headingDeg, PLANNER_HEADING_SNAP_M);
     if (!snap) return pose;
-    const offsetM = Number(offsetAt(cabState.plannerDriverGraph.edges[snap.edgeId], pose));
-    if (!Number.isFinite(offsetM) || Math.abs(offsetM) < 1e-6) return pose;
-    const shift = (at) => ({ ...at, ...offsetGeo(at.lat, at.lon, at.headingDeg + 90, offsetM) });
-    return {
-        ...shift(pose),
-        ...(Array.isArray(pose.articulatedCars)
-            ? { articulatedCars: pose.articulatedCars.map(car => (car ? shift(car) : car)) }
-            : {}),
-    };
+    const axis = computeDriverPose({ ...snap, speed: 0 }, graph, {
+        switchRules: cabState.switchRules,
+        chordHeadingM: PLANNER_HEADING_CHORD_M,
+    });
+    if (!Number.isFinite(axis.headingDeg)) return pose;
+    // Signed distance of the host pose right of the line (scene x east, z south),
+    // measured across the segment the planner offset it from, so it is exactly
+    // the planner's offset rather than that offset seen through the chord.
+    const edge = graph.edges[snap.edgeId];
+    const a = geoToLocal(axis.lon, axis.lat, cabState.anchorLon, cabState.anchorLat);
+    const p = geoToLocal(pose.lon, pose.lat, cabState.anchorLon, cabState.anchorLat);
+    const bearing = (snap.direction === 1 ? edge.bearing : edge.bearing + 180) * DEG_TO_RAD;
+    const rightM = (p.x - a.x) * Math.cos(bearing) + (p.z - a.z) * Math.sin(bearing);
+    return { ...pose, ...offsetGeo(axis.lat, axis.lon, axis.headingDeg + 90, rightM), headingDeg: axis.headingDeg };
 }
 
 function railSurfaceStreamingFocus(cabState, local, pose) {
@@ -3906,7 +3901,7 @@ function canonicalKeyForAction(action) {
 }
 
 function sampleExternalPose(cabState, loadingHold) {
-    const sampledPose = withPlannerRidingOffset(cabState,
+    const sampledPose = withPlannerChordHeading(cabState,
         cabState.poseFn({ paused: cabState.simPaused || loadingHold }));
     if (!sampledPose) return null;
     if (cabState.simPaused) {
@@ -5765,7 +5760,6 @@ export function openCab(train, line, poseFn, options) {
     if (driverTracks.length > 0) {
         cabState.driverGraph = buildDriverGraph(driverTracks);
         cabState.plannerDriverGraph = cabState.driverGraph;
-        cabState.plannerDriverTracks = driverTracks;
         cabState.plannerRidePoseFn = cabState.poseFn;
     }
     // An explicitly supplied driving graph must cover the initial cab pose.
