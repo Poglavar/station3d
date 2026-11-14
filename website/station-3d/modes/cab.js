@@ -357,7 +357,7 @@ import {
     gtaSpecialVehiclesLayer,
 } from '../world/gta-special-vehicles.js';
 import { sourceEntitiesLayer } from '../world/source-entities.js';
-import { photorealLayer, getPhotorealGroundGroup, getPhotorealWallsGroup, isPhotorealGhostGround, getPhotorealAltitudeOffset, getPhotorealRegistration, isPhotoWorld, isPhotorealRevealed, isPhotorealUnavailable, getPhotorealLoadProgress, getPhotorealLoadTelemetry, photorealCorridorDeckY } from '../world/photoreal.js';
+import { photorealLayer, getPhotorealGroundGroup, getPhotorealWallsGroup, isPhotorealGhostGround, getPhotorealAltitudeOffset, getPhotorealRegistration, isPhotoWorld, isPhotorealRevealed, isPhotorealUnavailable, getPhotorealLoadProgress, getPhotorealLoadTelemetry, getPhotorealRevealSteps, photorealCorridorDeckY } from '../world/photoreal.js';
 import {
     groundOwnershipMaskDiagnostics,
     isTerrainTilePublishedAtLocal,
@@ -515,6 +515,7 @@ import {
     setCampaignBakeStatus,
     setPhotoLoadProgress,
     setPhotoLoadTelemetry,
+    setPhotoLoadingCurtain,
     setWorldLoadComponents,
     setWorldLoadTelemetry,
     recordWorldLoadDurations,
@@ -4209,7 +4210,9 @@ function cabStep() {
     setPhotoLoading(photoLoading);
     if (photoLoading) {
         setPhotoLoadProgress(getPhotorealLoadProgress());
-        setPhotoLoadTelemetry(getPhotorealLoadTelemetry());
+        const photoTelemetry = getPhotorealLoadTelemetry();
+        setPhotoLoadTelemetry(photoTelemetry);
+        setPhotoLoadingCurtain(getPhotorealRevealSteps(), photoTelemetry);
     } else if (isPhotoWorld() && !cabState.campaignScene && cabState.photoCurtainPending !== false) {
         // The photo world reveals itself, and the loading screen goes with the reveal.
         cabState.photoCurtainPending = false;

@@ -552,6 +552,27 @@ export function setPhotoLoadTelemetry(telemetry) {
     if (photoLoadingTelemetryEl) photoLoadingTelemetryEl.textContent = formatLoadTelemetry(telemetry);
 }
 
+// The photo world on the one loading screen, in the model build's own lines: the
+// reveal step being waited on, the finished steps, and the elapsed time
+// (core/photo-reveal-steps.js). Without it the screen kept the host's bare
+// "Loading surroundings…" for the whole photo load. No megabytes: Google's tile
+// responses are cross-origin without Timing-Allow-Origin, so the browser reports
+// almost none of their bytes and the figure read "0,0 MB" through a large load.
+export function setPhotoLoadingCurtain(reveal, telemetry) {
+    if (worldBuildHoldActive || !reveal) return;
+    setLoadingCurtainLabel(reveal.current
+        ? t('loading.stage', { component: t(`loading.${reveal.current}`) })
+        : t('loading.finishingWorld'));
+    const elapsedMs = telemetry?.elapsedMs;
+    const activity = Number.isFinite(elapsedMs) && elapsedMs >= 0
+        ? t('loading.elapsed', { time: formatLoadElapsed(elapsedMs) })
+        : '';
+    setLoadingCurtainDetails({
+        tasks: t('loading.completedTasks', { done: reveal.doneCount, total: reveal.total }),
+        activity,
+    });
+}
+
 // Photo loading bar: fraction 0..1 of queued tiles loaded.
 export function setPhotoLoadProgress(fraction) {
     if (!photoLoadingFillEl) return;

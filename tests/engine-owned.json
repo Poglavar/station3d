@@ -66,6 +66,7 @@
     "__tests__/perf-source-archive.test.mjs",
     "__tests__/perf-source-snapshots.test.mjs",
     "__tests__/perf-source-vectors.test.mjs",
+    "__tests__/photo-reveal-steps.test.mjs",
     "__tests__/planned-buildings.test.mjs",
     "__tests__/proposal-corridor-record.test.mjs",
     "__tests__/quality-profile.test.mjs",

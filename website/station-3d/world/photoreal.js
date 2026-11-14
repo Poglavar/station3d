@@ -76,6 +76,7 @@ import { ensureRoadIndex } from '../core/road-index.js';
 import { resolveIntelligentPillarSamples } from '../core/intelligent-pillar-placement.js';
 import { createPillarClearanceEvaluator } from '../core/pillar-clearance.js';
 import { shouldSuspendPhotoSource } from '../core/photo-source-suspension.js';
+import { photoRevealSteps } from '../core/photo-reveal-steps.js';
 import { markInspectionLayer } from '../core/scene-inspection.js';
 
 // 3d-tiles-renderer is a heavy optional dependency, so it is LAZY-loaded — dynamically
@@ -1679,6 +1680,18 @@ export function isPhotorealRevealed() {
 // so the fraction fills, drops, fills again). Instead ease forward monotonically
 // on wall time toward the reveal cap, and complete on actual reveal — a uniform
 // bar that never retreats.
+// Where the reveal stands, as the loading screen's steps (core/photo-reveal-steps.js).
+export function getPhotorealRevealSteps() {
+    return photoRevealSteps({
+        streaming: !!tiles,
+        grounded,
+        carve: carveEnabled,
+        maskReady,
+        wallsBuilt: wallsBuiltOnce,
+        revealed: photoUnavailable || (active && tilesRevealed),
+    });
+}
+
 export function getPhotorealLoadProgress() {
     if (photoUnavailable || (active && tilesRevealed)) return 1;
     const now = (typeof performance !== 'undefined' ? performance.now() : Date.now());
