@@ -1035,6 +1035,17 @@ function discardRailVisualRefresh(refresh) {
 // One complete shared read is used by trackbed, dressing and structures until
 // the detached visual candidate publishes or is discarded. Roads already
 // cache/copy this graph cooperatively for their own builders and curbs.
+// The roads layer supplies the session's shared surface read, and cab.js runs
+// roads only in the model world. A photo session has neither terrain nor roads,
+// so its read is the terrain-less snapshot road-render-ground.js itself returns
+// when it has no terrain.
+function* captureRailSurfaceGroundSteps(owner) {
+    const capture = streamedRailSessionContext?.captureSurfaceBuildGround;
+    if (capture) return yield* capture(owner);
+    return ownReadSnapshot({ terrain: null, civilGround: null, roadFormation: null,
+        verticalAlignments: null, isCurrent: () => true }, []);
+}
+
 function* captureRailVisualGroundSteps(refresh, owner = 'rail-visual') {
     const session = railSessionToken;
     const features = lastFeatures, terrain = lastTerrain, rail = lastRailFormation;
@@ -1064,7 +1075,7 @@ function* captureRailVisualGroundSteps(refresh, owner = 'rail-visual') {
     // for changed inputs/capacity instead of resuming a closed iterator.
     refresh.captureInputsCurrent = () => sourcesCurrent() && road?.revision === roadRevision
         && road?.surfaceGeometryRevision === roadGeometry && road?.surfacePublicationRevision === roadPublication;
-    const ground = yield* streamedRailSessionContext.captureSurfaceBuildGround(owner);
+    const ground = yield* captureRailSurfaceGroundSteps(owner);
     if (!ground) return null;
     const radius = lastMaxRadiusM + RAIL_WALL_WINDOW_PADDING_M;
     const roadInputsCurrent = ground.currentWithin?.({
@@ -7676,6 +7687,21 @@ export const railsLayer = {
         // Visual cells, structures and pillar clearance are staged by that
         // coordinated publication; publishing them here would build the same
         // startup generation twice.
+        // A session without that coordinator (cab.js creates none for a photo
+        // world, nor for a model world without published terrain) has no other
+        // owner for the first formation, so this layer stages it on its own
+        // cooperative path. From 2026-09-20 until this was added, photo rides
+        // had no rails at all.
+        if (!ctx.groundCoordinator && lastFeatures?.length) {
+            createPendingRailFormationBuild(lastFeatures, {
+                fullRefresh: true,
+                changeBounds: [],
+                centerX: 0,
+                centerZ: 0,
+                canResampleSolvedChords: false,
+                reason: 'startup',
+            });
+        }
         if (streamsCroatiaRails) {
             streamedRailTileFeatures = new Map();
             streamedRailDeliveredTileKeys.clear();
