@@ -101,6 +101,8 @@ function schedulerMode() {
 // throttle and nothing yields to the player, because there is none. Set by
 // the cab for a bake session and cleared with it (core/frame-work-policy.js).
 let schedulerThroughputOverride = false;
+// Set per frame by noteFrameChunkObserver.
+let observerRouteRide = false;
 
 export function setFrameChunkSchedulerThroughput(enabled) {
     schedulerThroughputOverride = enabled === true;
@@ -116,6 +118,7 @@ function currentAdaptiveBudget() {
         viewMoving: nowMs() - observerLastViewMovedMs < OBSERVER_SETTLE_MS,
         loading: isWorldBuilding(),
         offlineCompile: schedulerThroughputOverride,
+        routeRide: observerRouteRide,
     });
 }
 
@@ -159,6 +162,7 @@ export function setFrameChunkSchedulerMode(mode = null) {
 }
 
 export function resetFrameChunkObserver() {
+    observerRouteRide = false;
     observerX = Number.NaN;
     observerZ = Number.NaN;
     observerViewHeadingDeg = Number.NaN;
@@ -255,12 +259,16 @@ export function getFrameChunkWorkMotionState() {
 
 // Called once per rendered frame. Legacy mode retains the old walker gate;
 // adaptive mode converts the same samples into time-normalized speed classes.
+// routeRide: the observer is riding a train along its route this frame, which
+// selects the ride budgets in core/frame-work-policy.js.
 export function noteFrameChunkObserver(x, z, {
     pauseWhileMoving = true,
     viewHeadingDeg = Number.NaN,
+    routeRide = false,
 } = {}) {
     if (!Number.isFinite(x) || !Number.isFinite(z)) return;
     observerMovementGateEnabled = !!pauseWhileMoving;
+    observerRouteRide = routeRide === true;
     // Record motion whatever the gate says. Zeroing this when the gate was off
     // made the legacy path's answer to "is the observer moving" wrong rather than
     // merely unenforced, which is the same conflation the two exported predicates

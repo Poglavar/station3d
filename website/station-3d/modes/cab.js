@@ -5265,6 +5265,7 @@ function cabStep() {
     // overlay isn't shown, so this stays free in prod.
     resetEnemyMusicFrame();
     noteFrameChunkObserver(local.x, local.z, {
+        routeRide: !!cabState.isTrainSession && !cabState.walkMode,
         pauseWhileMoving: !!cabState.walkMode && !sessionCapabilityEnabled(
             cabState.sessionCapabilities,
             SESSION_CAPABILITY.CONTINUOUS_STREAMING,

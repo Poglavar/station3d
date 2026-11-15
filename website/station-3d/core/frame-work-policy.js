@@ -77,6 +77,20 @@ const ADAPTIVE_BUDGETS = Object.freeze({
     }),
 });
 
+// A train ride spends its whole length at transit or fast speed along a fixed
+// route, so the interactive budgets above never let its surroundings catch up:
+// at 70 km/h a ground generation (terrain, roads, curbs around the train) took
+// 9-10 s, half of it waiting for 4 ms slices, and far buildings got nothing.
+// Twice the near slice and a little far work, measured on the planner ride
+// back to back (2026-11-15): 6-10% fewer fps (109 -> 99-102), generations
+// ~20% faster (9.0-10.4 -> 7.0-8.6 s) and 20-60% more of them per minute.
+// The user accepted that trade. Car driving keeps the ordinary budgets: its
+// city scenes render heavier and were not measured.
+const ROUTE_RIDE_BUDGETS = Object.freeze({
+    transit: Object.freeze({ ...ADAPTIVE_BUDGETS.transit, near: 8, far: 1 }),
+    fast: Object.freeze({ ...ADAPTIVE_BUDGETS.fast, near: 8, far: 1 }),
+});
+
 // Only the actual world-ready hold (opaque curtain + frozen simulation) may
 // favour loading throughput over interactive latency. Speed is not that gate.
 // An offline compile — the campaign pack bake — has no frame to protect: the
@@ -131,6 +145,7 @@ export function adaptiveFrameWorkBudget({
     viewMoving = false,
     loading = false,
     offlineCompile = false,
+    routeRide = false,
 } = {}) {
     const throughput = offlineCompile === true;
     const translationState = MOTION_STATES.includes(motionState) ? motionState : 'stationary';
@@ -140,7 +155,8 @@ export function adaptiveFrameWorkBudget({
     const state = throughput ? 'stationary'
         : translationState === 'stationary' && viewMoving ? 'slow' : translationState;
     const configured = throughput ? OFFLINE_COMPILE_BUDGET
-        : loading ? LOADING_BUDGET : ADAPTIVE_BUDGETS[state];
+        : loading ? LOADING_BUDGET
+            : (routeRide === true && ROUTE_RIDE_BUDGETS[state]) || ADAPTIVE_BUDGETS[state];
     const classBudgets = {};
     let configuredTotalMs = 0;
     for (const workClass of FRAME_WORK_CLASSES) {
