@@ -60,7 +60,7 @@ import {
 import { waitForCampaignPackSettlement } from '../core/campaign-pack-settlement.js';
 import { createSurfacePublicationRegistry } from '../core/surface-publication-registry.js';
 import { createGroundPublicationBoundary } from '../core/ground-publication-boundary.js';
-import { createRenderCompilerClient } from '../core/render-compiler-client.js';
+import { createRenderCompilerClient, terrainCompilerWorkerCount } from '../core/render-compiler-client.js';
 import { applySurfacePublicationDrawContracts } from '../world/surface-material-authority.js';
 import {
     campaignWorldPackBuildingColliderSpecsNear,
@@ -5665,7 +5665,7 @@ export function openCab(train, line, poseFn, options) {
     try {
         cabState.renderCompiler = createCompiler();
         cabState.unregisterRenderCompilerActivity = registerBackgroundActivityReader(() => {
-            const snapshots = [cabState.renderCompiler, cabState.terrainRenderCompiler]
+            const snapshots = [cabState.renderCompiler, ...(cabState.terrainRenderCompilers || [])]
                 .filter(Boolean).map(compiler => compiler.snapshot?.() || {});
             return {
                 kind: 'build',
@@ -5828,14 +5828,22 @@ export function openCab(train, line, poseFn, options) {
         },
     );
     cabState.terrainPolicy = terrainPolicy;
-    // Moving terrain rebuilds a bounded receiver window repeatedly. A second
-    // compiler overlaps those independent tiles on machines with enough CPU,
-    // while every other packet layer retains the primary client and the same
-    // publication path. It is optional: failure keeps the established
-    // single-worker path alive.
-    if ((Number(navigator.hardwareConcurrency) || 1) >= 4 && isTerrainRequested(terrainPolicy)) {
-        try { cabState.terrainRenderCompiler = createCompiler(); }
-        catch (error) { reportRenderCompilerFailure(error); }
+    // Moving terrain rebuilds a bounded receiver window repeatedly, one tile per
+    // job, and a tile with road and rail cuts costs hundreds of milliseconds.
+    // Dedicated compilers overlap those independent tiles on machines with
+    // enough CPU and keep them from queueing behind far-building packets on the
+    // primary client. Measured 2026-11-15 on an 8-core ride, project 77: the
+    // primary shared with far buildings plus one dedicated compiler cost a
+    // ground generation 224-235 ms of compile wait per rebuilt tile, three
+    // dedicated 166-182 ms; one slow tile (up to ~1.9 s) still sets the floor.
+    // Every other packet layer keeps the primary client and the same
+    // publication path. Optional: with none, terrain uses the primary compiler.
+    cabState.terrainRenderCompilers = [];
+    if (isTerrainRequested(terrainPolicy)) {
+        for (let index = 0; index < terrainCompilerWorkerCount(navigator.hardwareConcurrency); index++) {
+            try { cabState.terrainRenderCompilers.push(createCompiler()); }
+            catch (error) { reportRenderCompilerFailure(error); break; }
+        }
     }
     // Same reason this sits here: it is the one place that knows where the
     // session actually is. An unprepared spawn renders an empty plane that is
@@ -5885,7 +5893,7 @@ export function openCab(train, line, poseFn, options) {
         getDecorReadiness: () => state.cabState === cabState ? getDecorReadinessSnapshot() : null,
         getGroundPhysics: () => state.cabState === cabState ? cabState.gtaSession || null : null,
         renderCompiler: cabState.renderCompiler,
-        terrainRenderCompilers: [cabState.renderCompiler, cabState.terrainRenderCompiler].filter(Boolean),
+        terrainRenderCompilers: cabState.terrainRenderCompilers,
         otherTracks,
         customTrackCorridors,
         allStops: (options && options.allStops) || [],
@@ -7582,8 +7590,8 @@ export function closeCab() {
     cabState.unregisterRenderCompilerActivity = null;
     cabState.renderCompiler?.dispose?.('cab-session-ended');
     cabState.renderCompiler = null;
-    cabState.terrainRenderCompiler?.dispose?.('cab-session-ended');
-    cabState.terrainRenderCompiler = null;
+    for (const compiler of cabState.terrainRenderCompilers || []) compiler.dispose?.('cab-session-ended');
+    cabState.terrainRenderCompilers = [];
     cabState.surfacePublications?.close();
     cabState.surfacePublications = null;
     beginGroundCover({ enabled: false });   // restore the sidewalk catch-all

@@ -51,6 +51,14 @@ function listen(worker, type, listener) {
     };
 }
 
+// Dedicated terrain compilers for a machine: none under four cores (terrain
+// then shares the primary client), two on four or five, three from six. The
+// main thread, the GPU process and the primary compiler keep the rest.
+export function terrainCompilerWorkerCount(hardwareConcurrency) {
+    const cores = Math.floor(Number(hardwareConcurrency) || 1);
+    return cores < 4 ? 0 : Math.min(3, Math.floor(cores / 2));
+}
+
 export function createRenderCompilerClient({
     workerUrl,
     workerFactory = defaultWorkerFactory,

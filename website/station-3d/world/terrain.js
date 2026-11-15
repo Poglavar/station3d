@@ -3353,10 +3353,13 @@ export const terrainLayer = {
         surfacePublications = ctx.surfacePublications || null;
         groundPublications = ctx.groundPublications || null;
         groundPaint = ctx.groundPaint || null;
-        terrainRenderCompilers = [...new Set([
-            ctx.renderCompiler,
-            ...(Array.isArray(ctx.terrainRenderCompilers) ? ctx.terrainRenderCompilers : []),
-        ].filter(Boolean))];
+        // Terrain's own compilers when the session has them; the primary,
+        // which also compiles far-building packets, only when it has none.
+        const dedicatedCompilers = (Array.isArray(ctx.terrainRenderCompilers) ? ctx.terrainRenderCompilers : [])
+            .filter(Boolean);
+        terrainRenderCompilers = dedicatedCompilers.length
+            ? [...new Set(dedicatedCompilers)]
+            : [ctx.renderCompiler].filter(Boolean);
         renderCompiler = terrainRenderCompilers[0] || null;
         if (!isTerrainRequested(ctx.terrainPolicy)) {
             noteWorldPhase('terrain-data-ready');
