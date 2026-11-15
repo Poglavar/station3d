@@ -7,7 +7,7 @@ import { createGroundGenerationCoordinator } from '../core/ground-generation-coo
 import { createGroundSourceAdmission } from '../core/ground-source-admission.js';
 import { createHeldDeliveryWake } from '../core/held-delivery-wake.js';
 import { initialWorldSupportTileKeys } from '../core/initial-world-support.js';
-import { groundGenerationScope } from '../core/ground-generation-scope.js';
+import { groundGenerationScope, reusesPublishedRailConstruction } from '../core/ground-generation-scope.js';
 import { createPublishedGroundReadSlot } from '../core/published-ground-read.js';
 import { prepareGroundConsumerSteps } from '../core/ground-consumer-preparation.js';
 import { createFrameChunkQueue, FRAME_CHUNK_REPEAT_ITEM, FRAME_CHUNK_DEFER_ITEM,
@@ -611,8 +611,8 @@ export function createWorldGroundGenerations({ ctx, layers, isCurrent,
         let handedOff = false;
         try {
             const windowOnly = changes.length > 0 && changes.every(change => windowFamilies.has(change.family));
-            const reusePublishedRail = changes.length > 0 && receiverReadSlot.hasActive()
-                && changes.every(change => !['bootstrap', 'rails', 'planner', 'stations'].includes(change.family));
+            const reusePublishedRail = reusesPublishedRailConstruction(changes,
+                { receiversActive: receiverReadSlot.hasActive() });
             const ready = windowOnly ? layers.terrain.groundReady() : Object.values(layers).every(layer => layer.groundReady());
             if (!sources.isCurrent() || !ready) {
                 fail('ground-dependency-busy', 'Ground layers are finishing their current work');

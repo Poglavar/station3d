@@ -35,3 +35,21 @@ export function groundGenerationScope(changes, terrainTileM) {
     return { full, curbFull, terrainBounds, roadGeometryBounds, receiverBounds, curbBounds,
         curbSourceKeys: [...curbSourceKeys] };
 }
+
+// Families whose changes can move the rail construction: its sources, the
+// planner and station inputs that design it, and terrain. Terrain heights set
+// an OSM line's grade and where every formation's sides meet the ground, and a
+// released evidence gate lets lines that waited on it finish, so a generation
+// carrying a terrain change rebuilds the rails (per feature, only those its
+// bounds touch). Reusing the published construction there kept a line solved
+// on the coarse corridor grid after the 1 m detail arrived: 4-6 m concrete
+// cut walls where the fine ground sits level with the track, burying the road
+// beside it and cutting the ground away to the wrong outline.
+const RAIL_CONSTRUCTION_FAMILIES = new Set(['bootstrap', 'rails', 'planner', 'stations', 'terrain']);
+
+// Road, curb and window changes leave the published rail construction valid,
+// so a generation made only of them reuses it instead of re-solving the lines.
+export function reusesPublishedRailConstruction(changes, { receiversActive = false } = {}) {
+    return changes.length > 0 && receiversActive === true
+        && changes.every(change => !RAIL_CONSTRUCTION_FAMILIES.has(change.family));
+}
