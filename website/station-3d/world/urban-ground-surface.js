@@ -14,15 +14,55 @@ import {
 } from '../core/ground-surface-inspection.js';
 import {
     asSurfaceClaim,
+    SURFACE_CLASS,
     surfaceClaimMayUseUrbanGround,
 } from '../core/surface-hierarchy.js';
 
 const fallbackMask = new THREE.DataTexture(new Uint8Array([0, 0, 0, 255]), 1, 1);
 fallbackMask.needsUpdate = true;
 
-// How strongly the farmland patchwork tints the default ground. Kept well under 1
-// so the quilt reads as crop variation in grassland, never as coloured tiles.
-const FIELD_PATCHWORK_STRENGTH = 0.72;
+// How far the default ground moves from plain grass to its field's own colour. The
+// grass texture's grain stays on top as relative detail, so 1 would still not
+// read as flat paint; under 1 keeps some grassland between the crops.
+const FIELD_PATCHWORK_STRENGTH = 0.85;
+
+// Shared GLSL for ground that carries the grass texture. `groundGrain` is the
+// texel's brightness relative to the grass texture's mean (world/decor.js
+// getGrassTexture: sRGB 34/72/30 base, mean linear luminance ~0.052), so a field
+// or berm colour keeps the grass's grain instead of becoming flat paint.
+const GROUND_GRAIN_GLSL = 'float groundGrain = clamp(dot(diffuseColor.rgb, vec3(0.2126, 0.7152, 0.0722))'
+    + ' / 0.052, 0.5, 1.6);';
+
+// Earthworks (road and rail cut/fill faces, embankments, ramps) are mown verge
+// grass: lighter and yellower than the fields around them, with faint mowing
+// bands along their contours, so a berm reads as built ground (2026-11-15).
+// Only sloped faces change: a collar's flat seam must keep matching the terrain
+// it continues. Natural terrain never compiles this, whatever its slope.
+const EARTHWORK_SURFACE_CLASSES = new Set([
+    SURFACE_CLASS.ROAD_EARTHWORK,
+    SURFACE_CLASS.RAIL_EARTHWORK,
+]);
+const EARTHWORK_VERTEX_DECLARATIONS = [
+    'varying float vEarthworkWorldY;',
+    'varying float vEarthworkUpness;',
+];
+const EARTHWORK_VERTEX_LINES = [
+    'vEarthworkWorldY = (modelMatrix * vec4(position, 1.0)).y;',
+    'vEarthworkUpness = abs(normalize(mat3(modelMatrix) * normal).y);',
+];
+// Full verge look from ~20 degrees, none below ~10 (a 1:1.5 bank is ~34).
+const EARTHWORK_SLOPE_GLSL = 'float earthworkSlope = 1.0 - smoothstep(0.94, 0.985, vEarthworkUpness);';
+const EARTHWORK_APPLY_GLSL = [
+    'if (earthworkSlope > 0.0) {',
+    // Mowing bands every 0.9 m of height, faded out before they alias.
+    '    float bermContour = vEarthworkWorldY / 0.9;',
+    '    float bermBands = (0.5 + 0.5 * cos(6.2831853 * bermContour))',
+    '        * (1.0 - smoothstep(0.2, 0.5, fwidth(bermContour)));',
+    // Linear for sRGB 104/124/60, a sunlit mown verge.
+    '    vec3 bermColor = vec3(0.138, 0.202, 0.045) * groundGrain * (1.0 - 0.1 * bermBands);',
+    '    diffuseColor.rgb = mix(diffuseColor.rgb, bermColor, 0.85 * earthworkSlope);',
+    '}',
+];
 
 const uniforms = {
     uUrbanGroundMap: { value: null },
@@ -44,6 +84,8 @@ function ensureFieldPatchwork() {
     if (fieldTexture) return fieldTexture;
     const raster = createFieldPatchworkRaster();
     fieldTexture = new THREE.DataTexture(raster.color, raster.size, raster.size, THREE.RGBAFormat);
+    // RGB holds each field's sRGB colour; A (row strength) is linear either way.
+    fieldTexture.colorSpace = THREE.SRGBColorSpace;
     fieldTexture.wrapS = THREE.RepeatWrapping;
     fieldTexture.wrapT = THREE.RepeatWrapping;
     fieldTexture.minFilter = THREE.LinearMipmapLinearFilter;
@@ -145,6 +187,33 @@ export function inspectGroundSurfaceMaterialAtLocal(localX, localZ) {
     });
 }
 
+// The earthwork face look on its own, for a civil earth material that does not
+// otherwise continue the terrain (a planned road's embankment and ramps). Chains
+// any existing onBeforeCompile; flat faces of the same mesh are unchanged.
+export function applyEarthworkFaceSurface(material) {
+    if (!material || material.userData?.earthworkFaceSurface) return material;
+    const previousCompile = material.onBeforeCompile;
+    const previousCacheKey = material.customProgramCacheKey;
+    material.onBeforeCompile = (shader, renderer) => {
+        if (typeof previousCompile === 'function') previousCompile.call(material, shader, renderer);
+        shader.vertexShader = shader.vertexShader
+            .replace('#include <common>', ['#include <common>', ...EARTHWORK_VERTEX_DECLARATIONS].join('\n'))
+            .replace('#include <begin_vertex>', ['#include <begin_vertex>', ...EARTHWORK_VERTEX_LINES].join('\n'));
+        shader.fragmentShader = shader.fragmentShader
+            .replace('#include <common>', ['#include <common>', ...EARTHWORK_VERTEX_DECLARATIONS].join('\n'))
+            .replace('#include <map_fragment>', ['#include <map_fragment>', GROUND_GRAIN_GLSL,
+                EARTHWORK_SLOPE_GLSL, ...EARTHWORK_APPLY_GLSL].join('\n'));
+    };
+    material.customProgramCacheKey = () => {
+        const base = typeof previousCacheKey === 'function' ? previousCacheKey.call(material) : '';
+        return `${base}|earthwork-face-v1`;
+    };
+    material.userData ||= {};
+    material.userData.earthworkFaceSurface = true;
+    material.needsUpdate = true;
+    return material;
+}
+
 // `fieldPatchwork: true` opts a material into the farmland quilt. Off by default so
 // it lands on ground surfaces (terrain, ground cover, formation collars) and never on
 // things that merely share this shader, like the tram bed.
@@ -174,6 +243,7 @@ export function applyUrbanGroundSurface(
     if (material.userData.urbanGroundSurface) return material;
     uniforms.uUrbanGroundMap.value = getSidewalkTexture();
     const fields = fieldPatchwork && fieldPatchworkWanted();
+    const earthworkFaces = EARTHWORK_SURFACE_CLASSES.has(claim.surfaceClass);
     const usesUrbanGround = urbanGround !== false;
     // Formation collars and their cut/fill faces intentionally share one
     // material/batch. The broad city-ground mask belongs on the upward-facing
@@ -198,12 +268,18 @@ export function applyUrbanGroundSurface(
                 'varying vec3 vUrbanGroundWorldPos;',
                 ...(limitsUrbanGroundToUpwardFaces
                     ? ['varying float vUrbanGroundUpness;'] : []),
+                ...(earthworkFaces ? EARTHWORK_VERTEX_DECLARATIONS : []),
+                ...(fields ? ['varying float vGroundFieldUpness;'] : []),
             ].join('\n'))
             .replace('#include <begin_vertex>', [
                 '#include <begin_vertex>',
                 'vUrbanGroundWorldPos = (modelMatrix * vec4(position, 1.0)).xyz;',
                 ...(limitsUrbanGroundToUpwardFaces ? [
                     'vUrbanGroundUpness = abs(normalize(mat3(modelMatrix) * normal).y);',
+                ] : []),
+                ...(earthworkFaces ? EARTHWORK_VERTEX_LINES : []),
+                ...(fields ? [
+                    'vGroundFieldUpness = abs(normalize(mat3(modelMatrix) * normal).y);',
                 ] : []),
             ].join('\n'));
         shader.fragmentShader = shader.fragmentShader
@@ -212,6 +288,8 @@ export function applyUrbanGroundSurface(
                 'varying vec3 vUrbanGroundWorldPos;',
                 ...(limitsUrbanGroundToUpwardFaces
                     ? ['varying float vUrbanGroundUpness;'] : []),
+                ...(earthworkFaces ? EARTHWORK_VERTEX_DECLARATIONS : []),
+                ...(fields ? ['varying float vGroundFieldUpness;'] : []),
                 'uniform sampler2D uUrbanGroundMap;',
                 'uniform sampler2D uUrbanGroundMask;',
                 'uniform vec2 uUrbanGroundCenter;',
@@ -229,6 +307,8 @@ export function applyUrbanGroundSurface(
             ].join('\n'))
             .replace('#include <map_fragment>', [
                 '#include <map_fragment>',
+                GROUND_GRAIN_GLSL,
+                earthworkFaces ? EARTHWORK_SLOPE_GLSL : 'float earthworkSlope = 0.0;',
                 'vec2 urbanGroundAbsoluteXZ = vUrbanGroundWorldPos.xz + uRenderOriginXZ;',
                 // urbanMix is hoisted out of the mask-window test so the farmland
                 // tint below can still apply where there is no mask at all — open
@@ -269,21 +349,35 @@ export function applyUrbanGroundSurface(
                 ] : []),
                 ...(fields ? [
                     'if (uFieldStrength > 0.001) {',
-                    // Bytes encode a 0..2 multiplier with 1.0 at mid-grey, hence the x2.
-                    '    vec3 fieldMult = texture2D(',
+                    // The field's own colour (sRGB texture, so linear here) with
+                    // the grass grain on top; A is its crop-row strength.
+                    '    vec4 fieldTexel = texture2D(',
                     '        uFieldMap, urbanGroundAbsoluteXZ * uFieldUvPerM',
-                    '    ).rgb * 2.0;',
+                    '    );',
+                    // Rows run along the fields' long (x) axis, 2.4 m apart, and
+                    // fade out where a pixel would span a whole row.
+                    '    float fieldRowPhase = urbanGroundAbsoluteXZ.y / 2.4;',
+                    '    float fieldRows = fieldTexel.a * (0.5 + 0.5 * cos(6.2831853 * fieldRowPhase))',
+                    '        * (1.0 - smoothstep(0.18, 0.45, fwidth(fieldRowPhase)));',
+                    '    vec3 fieldColor = fieldTexel.rgb * groundGrain * (1.0 - 0.25 * fieldRows);',
                     // Fade the quilt out as the ground turns urban, so pavement and
-                    // building surrounds are never tinted like a crop.
-                    '    float fieldAmount = uFieldStrength * (1.0 - urbanMix);',
-                    '    diffuseColor.rgb *= mix(vec3(1.0), fieldMult * roadSeam, fieldAmount);',
+                    // building surrounds are never tinted like a crop, and down an
+                    // earthwork face, which is verge grass rather than field. Fields
+                    // do not climb banks either: terrain steeper than ~16 degrees
+                    // (gone by ~25) stays grass, so a bank the DTM carries, like an
+                    // existing overpass ramp, stands apart from the crops around it.
+                    '    float fieldAmount = uFieldStrength * (1.0 - urbanMix) * (1.0 - earthworkSlope)',
+                    '        * smoothstep(0.90, 0.96, vGroundFieldUpness);',
+                    '    diffuseColor.rgb = mix(diffuseColor.rgb, fieldColor * roadSeam, fieldAmount);',
                     '}',
                 ] : []),
+                ...(earthworkFaces ? EARTHWORK_APPLY_GLSL : []),
             ].join('\n'));
     };
     material.customProgramCacheKey = () => {
         const base = typeof previousCacheKey === 'function' ? previousCacheKey.call(material) : '';
-        return `${base}|urban-ground-surface-v7${fields ? '-fields' : ''}`
+        return `${base}|urban-ground-surface-v8${fields ? '-fields' : ''}`
+            + `${earthworkFaces ? '-earthwork' : ''}`
             + `${usesUrbanGround ? '' : '-no-urban'}`
             + `${limitsUrbanGroundToUpwardFaces ? '-upward-only' : ''}`;
     };

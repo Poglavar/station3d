@@ -1,6 +1,6 @@
 // Procedural farmland patchwork for the default ground: instead of one flat green,
-// the terrain reads as a quilt of elongated fields, each with its own crop tint and
-// a darker hedgerow-ish rim. Pure — no DOM, no three.js, no canvas — so the pattern
+// the terrain reads as a quilt of long narrow fields, each with its own crop colour,
+// crop rows and a darker hedgerow-ish rim. Pure — no DOM, no three.js, no canvas — so the pattern
 // maths is unit-testable headless; the caller wraps the returned RGBA bytes in a
 // texture and samples it in world space (see world/urban-ground-surface.js).
 //
@@ -9,23 +9,26 @@
 // seamlessly and no seam line appears every tileM metres. Fields are bands rather
 // than rotated rectangles precisely because rotation cannot be made to wrap.
 
-// Muted crop/pasture greens plus a few fallow browns — deliberately low contrast,
-// because the ground is a backdrop: enough variety to break the flat wash, not
-// enough to read as coloured tiles. Values are multipliers on the grass texture.
-const FIELD_TINTS = [
-    [0.86, 1.00, 0.78], // young cereal
-    [0.94, 1.02, 0.82],
-    [0.78, 0.95, 0.70], // deeper pasture
-    [1.02, 1.00, 0.86],
-    [0.88, 0.92, 0.72],
-    [1.06, 0.98, 0.80], // dry grass
-    [0.72, 0.88, 0.68],
-    [0.98, 0.94, 0.76],
-    [1.10, 1.02, 0.88], // stubble
-    [0.82, 0.98, 0.74],
-    [0.92, 0.86, 0.68], // ploughed / fallow, browner
-    [1.00, 0.90, 0.72],
-];
+// Lowland farmland covers as absolute sRGB colours, plus how strongly each shows
+// crop rows (0 = none, 1 = deep furrows). They were multipliers on the dark grass
+// texture, which can only shade green: a brown or straw field needs several times
+// the grass's red, so every field read as the same flat green (2026-11-15). The
+// shader keeps the grass texture's grain as relative detail on top of these.
+// Muted on purpose — a backdrop, not coloured tiles — but distinct crops.
+export const FIELD_COVERS = Object.freeze([
+    Object.freeze({ name: 'winter cereal', rgb: [82, 112, 50], rows: 0.45 }),
+    Object.freeze({ name: 'young cereal', rgb: [92, 120, 58], rows: 0.4 }),
+    Object.freeze({ name: 'pasture', rgb: [62, 96, 44], rows: 0 }),
+    Object.freeze({ name: 'meadow', rgb: [72, 100, 50], rows: 0 }),
+    Object.freeze({ name: 'rapeseed', rgb: [70, 106, 60], rows: 0.35 }),
+    Object.freeze({ name: 'maize stubble', rgb: [126, 112, 74], rows: 0.6 }),
+    Object.freeze({ name: 'cereal stubble', rgb: [138, 124, 84], rows: 0.5 }),
+    Object.freeze({ name: 'dry fallow', rgb: [104, 102, 64], rows: 0 }),
+    Object.freeze({ name: 'ploughed', rgb: [88, 70, 52], rows: 0.9 }),
+    Object.freeze({ name: 'harrowed', rgb: [110, 90, 66], rows: 0.55 }),
+    Object.freeze({ name: 'soy stubble', rgb: [112, 100, 76], rows: 0.5 }),
+    Object.freeze({ name: 'pasture', rgb: [58, 90, 42], rows: 0 }),
+]);
 
 // 2D integer hash → [0,1). Cheap, decorrelated enough for tint/size jitter.
 function hash2(ix, iy, seed) {
@@ -55,14 +58,14 @@ function periodicNoise(u, v, period, seed) {
 }
 
 export const FIELD_PATCHWORK_DEFAULTS = Object.freeze({
-    size: 256,        // 8 m/px over the 2 km tile; ample for 100 m-scale fields
+    size: 512,        // 4 m/px over the 2 km tile, so a ~60 m strip keeps its rim
     tileM: 2048,      // world metres the raster spans before repeating
-    strips: 14,       // bands across the tile → ~146 m mean field depth
-    segments: 7,      // splits along each band → ~293 m mean field length (elongated)
+    strips: 32,       // bands across the tile → ~64 m mean field width, like Posavina strips
+    segments: 5,      // splits along each band → ~410 m mean field length (long and narrow)
     warpAmount: 0.35, // band waviness, in strip-heights
     warpPeriod: 4,    // lattice period of the warp (must divide evenly for tiling)
     rimStrength: 0.30, // how much darker a field boundary is
-    rimWidth: 0.055,  // boundary thickness as a fraction of a cell
+    rimWidth: 0.06,   // boundary thickness as a fraction of a cell (~4 m across a strip)
     seed: 20260726,
 });
 
@@ -97,8 +100,8 @@ function fieldAtResolved(u, v, o, result) {
     const tintIndex = Math.floor(
         hash2(bandWrapped,
               ((segment % segments) + segments) % segments,
-              seed) * FIELD_TINTS.length,
-    ) % FIELD_TINTS.length;
+              seed) * FIELD_COVERS.length,
+    ) % FIELD_COVERS.length;
 
     const sample = result || {};
     sample.band = band;
@@ -112,9 +115,9 @@ export function fieldAt(u, v, options = {}) {
     return fieldAtResolved(u, v, { ...FIELD_PATCHWORK_DEFAULTS, ...options });
 }
 
-// Full RGBA raster. RGB carries the per-field tint (a multiplier around 1.0 encoded
-// as 0..255 over the 0..2 range) darkened toward field boundaries; A is unused and
-// left at 255 so the result drops straight into an RGBA texture.
+// Full RGBA raster. RGB is the field's sRGB colour darkened toward its boundary;
+// A is its crop-row strength (0..255), faded out at the rim so rows stop short of
+// the hedge. The caller uploads it as an sRGB texture.
 export function createFieldPatchworkRaster(options = {}) {
     const o = { ...FIELD_PATCHWORK_DEFAULTS, ...options };
     const { size, rimStrength, rimWidth } = o;
@@ -130,18 +133,17 @@ export function createFieldPatchworkRaster(options = {}) {
         for (let x = 0; x < size; x++) {
             const u = x / size;
             fieldAtResolved(u, v, o, sample);
-            const tint = FIELD_TINTS[sample.tintIndex];
+            const cover = FIELD_COVERS[sample.tintIndex];
 
             // Darken toward the boundary: full rim at the edge, none past rimWidth.
-            const rim = 1 - rimStrength
-                * (1 - smoothstep(Math.min(1, sample.edgeDistance / rimWidth)));
+            const inside = smoothstep(Math.min(1, sample.edgeDistance / rimWidth));
+            const rim = 1 - rimStrength * (1 - inside);
 
             const i = (y * size + x) * 4;
-            // Encode a 0..2 multiplier into a byte, so 1.0 (neutral) is 127.
-            color[i] = Math.max(0, Math.min(255, Math.round((tint[0] * rim) * 127.5)));
-            color[i + 1] = Math.max(0, Math.min(255, Math.round((tint[1] * rim) * 127.5)));
-            color[i + 2] = Math.max(0, Math.min(255, Math.round((tint[2] * rim) * 127.5)));
-            color[i + 3] = 255;
+            color[i] = Math.max(0, Math.min(255, Math.round(cover.rgb[0] * rim)));
+            color[i + 1] = Math.max(0, Math.min(255, Math.round(cover.rgb[1] * rim)));
+            color[i + 2] = Math.max(0, Math.min(255, Math.round(cover.rgb[2] * rim)));
+            color[i + 3] = Math.round(cover.rows * inside * 255);
         }
     }
 

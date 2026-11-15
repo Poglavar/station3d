@@ -38,7 +38,7 @@ import { applyGroundOwnership } from './terrain.js';
 import { applySurfaceStencil } from './surface-material-authority.js';
 import { applyStreetLampSurfaceLighting } from './streetlamp-lighting.js';
 import { getActiveTerrainSurface } from './terrain-surface.js';
-import { applyUrbanGroundSurface } from './urban-ground-surface.js';
+import { applyEarthworkFaceSurface, applyUrbanGroundSurface } from './urban-ground-surface.js';
 import {
     isCoveredStructureSample,
     roadReplacementFormationBlend,
@@ -1274,12 +1274,13 @@ function createMaterials() {
             color: 0xffffff,
             roughness: 0.94,
         }),
-        earth: new THREE.MeshStandardMaterial({
+        // Embankment and ramp faces read as mown verge, not field.
+        earth: applyEarthworkFaceSurface(new THREE.MeshStandardMaterial({
             map: getGrassTexture(),
             color: 0xffffff,
             roughness: 1,
             side: THREE.DoubleSide,
-        }),
+        })),
         concrete: new THREE.MeshStandardMaterial({
             map: concreteSurface.map,
             bumpMap: concreteSurface.bumpMap,
