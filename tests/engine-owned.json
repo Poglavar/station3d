@@ -86,6 +86,8 @@
     "__tests__/shared-tile-session.test.mjs",
     "__tests__/strip-geometry-cache.test.mjs",
     "__tests__/surface-hierarchy.test.mjs",
+    "__tests__/terrain-cutout-tile-signature.test.mjs",
+    "__tests__/terrain-detail-influence.test.mjs",
     "__tests__/terrain-evidence-scope.test.mjs",
     "__tests__/terrain-read-changes.test.mjs",
     "__tests__/terrain-request.test.mjs",

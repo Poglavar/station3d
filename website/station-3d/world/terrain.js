@@ -32,6 +32,7 @@ import {
     sampledTerrainTileSurfaceSignature,
     retainTrailingDetailWindows,
     mergePreparedDetails,
+    terrainDetailInfluenceChangeBounds,
 } from '../core/terrain-detail-change.js';
 import { disposeGroup } from '../core/dispose.js';
 import { getApiBase } from '../core/api.js';
@@ -407,6 +408,10 @@ async function fetchDetailGrids(ctx, config, signal) {
     return payloads.filter(Boolean);
 }
 
+// A detail rect is its grid's extent inset by this much; the grid still shapes
+// heights out to its full extent.
+const DETAIL_RECT_INSET_M = 32;
+
 // The fine-surface rect for one detail grid: its footprint in local metres,
 // inset past the composite blend band. No tile snapping here — the reference
 // treats a tile as fine only when a rect fully covers it, so partial-tile
@@ -414,7 +419,7 @@ async function fetchDetailGrids(ctx, config, signal) {
 function detailSurfaceRect(detailGrid, anchorLon, anchorLat) {
     const metresPerDegreeLat = DEG_TO_RAD * EARTH_RADIUS_M;
     const metresPerDegreeLon = metresPerDegreeLat * Math.cos(anchorLat * DEG_TO_RAD);
-    const insetM = 32;
+    const insetM = DETAIL_RECT_INSET_M;
     const rect = {
         minX: (detailGrid.west - anchorLon) * metresPerDegreeLon + insetM,
         maxX: (detailGrid.east - anchorLon) * metresPerDegreeLon - insetM,
@@ -2703,23 +2708,31 @@ function handleTerrainSourceChange(_revision, change) {
     // A source patch includes shared lattice knots and interpolation near its
     // edge. Rebuild the adjacent tile on both sides of those knots, including
     // the corner neighbours, instead of discovering a stale edge after upload.
+    // Exact bounds (a moved detail window) already are everywhere a height can
+    // differ, so they are taken as given: the one-tile ring around a 6-tile
+    // detail move rebuilt ~40 receivers every few hundred metres of a ride.
     // Only resident/pending receivers need revision entries. An enormous
     // source rectangle must not enumerate an enormous invisible tile grid.
+    const ring = change?.exactBounds === true ? 0 : 1;
     const candidates = new Set(tiles.keys());
     for (const row of pendingTileBuilds) candidates.add(row.key);
     for (const row of terrainGroundGenerationLease?.admission?.rows || []) candidates.add(row.key);
     for (const key of candidates) {
         const [x,z] = key.split('_').map(Number);
-        let affected = bounds.some(b => b.minX <= (x+2)*TILE_M && b.maxX >= (x-1)*TILE_M
-            && b.minZ <= (z+2)*TILE_M && b.maxZ >= (z-1)*TILE_M);
-        for (let dx=-1;dx<=1&&!affected;dx++) for (let dz=-1;dz<=1;dz++) {
+        let affected = bounds.some(b => b.minX <= (x+1+ring)*TILE_M && b.maxX >= (x-ring)*TILE_M
+            && b.minZ <= (z+1+ring)*TILE_M && b.maxZ >= (z-ring)*TILE_M);
+        for (let dx=-ring;dx<=ring&&!affected;dx++) for (let dz=-ring;dz<=ring;dz++) {
             if (sourceKeys.has(`${x+dx}_${z+dz}`)) { affected = true; break; }
         }
         if (affected) keys.add(key);
     }
     const full = !bounds.length && !sourceKeys.size;
-    queueTerrainTileRebuild(change?.focus?.x ?? lastTileX*TILE_M, change?.focus?.z ?? lastTileZ*TILE_M,
-        { changedTileKeys: [...keys], invalidateAll: full });
+    // Released evidence changes no height, so no receiver is rebuilt for it;
+    // the ground coordinator still re-runs the layers that waited on it.
+    if (change?.evidenceOnly !== true) {
+        queueTerrainTileRebuild(change?.focus?.x ?? lastTileX*TILE_M, change?.focus?.z ?? lastTileZ*TILE_M,
+            { changedTileKeys: [...keys], invalidateAll: full });
+    }
     groundCoordinator?.invalidate('terrain', { bounds, keys: [...keys], full, reason: change?.reason || 'terrain-source' });
     if (terrainGroundGenerationLease) return;
     void installTerrainCompilerSnapshot().catch(error => {
@@ -3183,8 +3196,16 @@ function beginStreamedTerrainDetailRefresh(state, pose, local, { force = false }
             reference.clearPendingDetailWindow({ notify: false });
             reference.replaceGrid(composed.grid, {
                 detail: composed.detail,
-                changedBounds: detailChange.changedBounds,
+                // Every tile a changed detail grid reaches, including coarse
+                // tiles it only partly covers, which the per-tile plan above
+                // does not list; exact, so no neighbour ring is added.
+                changedBounds: [
+                    ...detailChange.changedBounds,
+                    ...terrainDetailInfluenceChangeBounds(previousDetail, composed.detail,
+                        { influenceM: DETAIL_RECT_INSET_M + 1 }),
+                ],
                 changedTileKeys: detailChange.changedTileKeys,
+                exactBounds: true,
                 reason: 'moving-detail-window',
                 focus: {
                     x: target.x,

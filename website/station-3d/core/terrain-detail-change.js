@@ -170,6 +170,33 @@ export function sampledTerrainTileSurfaceSignature(reference, key, {
     return `${count}:${precision}:${hash.toString(16).padStart(8, '0')}`;
 }
 
+// Where a newly composed detail window can change terrain heights: the extent of
+// every detail grid added or dropped since the previous composition, each rect
+// grown by `influenceM` (a rect is its grid's extent inset; see world/terrain.js
+// detailSurfaceRect). CompositeTerrainGrid reads a detail grid only inside that
+// extent, so a terrain tile clear of the returned bounds keeps every height,
+// shared edge knots included, and need not rebuild. Kept grids that changed
+// order could change which grid wins an overlap, so then every rect counts.
+export function terrainDetailInfluenceChangeBounds(previousDetail, nextDetail, { influenceM = 0 } = {}) {
+    const rectsOf = detail => (Array.isArray(detail?.rects) ? detail.rects : []).map(finiteRect).filter(Boolean);
+    const rectKey = rect => [rect.minX, rect.minZ, rect.maxX, rect.maxZ].map(value => Math.round(value * 1000)).join(',');
+    const previous = rectsOf(previousDetail);
+    const next = rectsOf(nextDetail);
+    const previousKeys = new Set(previous.map(rectKey));
+    const nextKeys = new Set(next.map(rectKey));
+    const keptInPreviousOrder = previous.map(rectKey).filter(key => nextKeys.has(key));
+    const keptInNextOrder = next.map(rectKey).filter(key => previousKeys.has(key));
+    const reordered = keptInPreviousOrder.join(';') !== keptInNextOrder.join(';');
+    const grow = Math.max(0, Number(influenceM) || 0);
+    const changed = new Map();
+    for (const rect of [...previous, ...next]) {
+        const key = rectKey(rect);
+        if (!reordered && previousKeys.has(key) && nextKeys.has(key)) continue;
+        changed.set(key, { minX: rect.minX - grow, minZ: rect.minZ - grow, maxX: rect.maxX + grow, maxZ: rect.maxZ + grow });
+    }
+    return [...changed.values()];
+}
+
 export function terrainTileBoundsForKeys(keys, tileM) {
     const size = Number(tileM);
     if (!Number.isFinite(size) || size <= 0) return [];

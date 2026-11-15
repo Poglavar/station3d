@@ -809,12 +809,15 @@ export class TerrainReference {
         }
     }
 
+    // exactBounds: the changed bounds are exactly where heights may differ, so a
+    // consumer need not widen them (see terrainDetailInfluenceChangeBounds).
     replaceGrid(grid, {
         detail = null,
         changedBounds = null,
         changedTileKeys = null,
         reason = 'grid-replaced',
         focus = null,
+        exactBounds = false,
     } = {}) {
         if (!grid || typeof grid.sampleHeight !== 'function') {
             throw new Error('TerrainReference replacement requires a terrain grid');
@@ -824,7 +827,7 @@ export class TerrainReference {
         this._coarseCornerSampler = null;
         this._fineCornerSceneY = null;
         this._configureDetail(detail);
-        return this._emitChange({ reason, changedBounds, changedTileKeys, focus });
+        return this._emitChange({ reason, changedBounds, changedTileKeys, focus, exactBounds });
     }
 
     onChange(listener) {
@@ -833,11 +836,17 @@ export class TerrainReference {
         return () => this._changeListeners.delete(listener);
     }
 
-    _emitChange({ reason, changedBounds = null, changedTileKeys = null, focus = null } = {}) {
+    // evidenceOnly: no height changed, only which points report evidence (a
+    // released pending detail window). Height consumers such as terrain meshes
+    // have nothing to rebuild; evidence consumers re-run over the bounds.
+    _emitChange({ reason, changedBounds = null, changedTileKeys = null, focus = null,
+        exactBounds = false, evidenceOnly = false } = {}) {
         this.revision += 1;
         const event = {
             revision: this.revision,
             reason: String(reason || 'grid-replaced'),
+            exactBounds: exactBounds === true,
+            evidenceOnly: evidenceOnly === true,
             bounds: normalizeLocalBounds(changedBounds),
             changedTileKeys: normalizeTerrainTileKeys(changedTileKeys),
             focus: focus && [focus.x, focus.z].every(value => finiteOrNull(value) !== null)
@@ -890,7 +899,7 @@ export class TerrainReference {
         const previous = this.pendingDetailWindow;
         if (!previous) return false;
         this.pendingDetailWindow = null;
-        if (notify) this._emitChange({ reason, changedBounds: [previous] });
+        if (notify) this._emitChange({ reason, changedBounds: [previous], evidenceOnly: true });
         return true;
     }
 
