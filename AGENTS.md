@@ -66,13 +66,16 @@ or a second implementation of a world rule in product code.
 - Tool scripts reserve stdout for data; write diagnostic and progress logs to stderr.
 - Preserve generic behavior across static, walk, road and rail sessions unless
   a capability is explicitly mode-specific.
-- Before handing off a change, run:
+- Before handing off a change, run the headless tests for the code you changed
+  and `git diff --check`. The release gate is:
 
 ```sh
 npm run ci
 npm run assets:audit:release
-git diff --check
 ```
+
+  `npm run ci` runs the full engine suite, build, asset audit and package check;
+  run it before publication, and otherwise only when the user agrees.
 
 - A build reporting any `Review-required bundle inputs` is not publishable.
 - Browser verification is appropriate for integration or visual changes, but
@@ -83,10 +86,9 @@ git diff --check
 - Commit your own finished work locally without asking, once its tests are
   green. Stage only your files and commit by pathspec
   (`git commit -- <your files>`), so other sessions' staged work stays out;
-  never `git add -A` or `git add .`. Leave a file that mixes your edits with
-  another session's uncommitted edits out of the commit, and say so. A
-  pathspec commit takes each named file as it is on disk, not as staged, so
-  to commit only your hunks of such a file, stage them with
+  never `git add -A` or `git add .`. A pathspec commit takes each named file
+  as it is on disk, not as staged, so when a file mixes your edits with
+  another session's uncommitted edits, stage only your hunks with
   `git apply --cached`, check `git diff --cached`, then run a plain
   `git commit`. Report the commit SHAs.
 - Do not push, publish, create releases or change remotes unless the user
