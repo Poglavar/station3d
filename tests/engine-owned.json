@@ -77,6 +77,7 @@
     "__tests__/receiver-empty-source-face.test.mjs",
     "__tests__/render-origin.test.mjs",
     "__tests__/road-alignment-read-changes.test.mjs",
+    "__tests__/road-fleet-winding.test.mjs",
     "__tests__/road-formation-dependency.test.mjs",
     "__tests__/road-formation-owner-query.test.mjs",
     "__tests__/road-formation-read-changes.test.mjs",
