@@ -436,6 +436,7 @@
     "__tests__/proposal-road-formation.test.mjs",
     "__tests__/proposal-road-surface.test.mjs",
     "__tests__/proposal-track-impact.test.mjs",
+    "__tests__/proposal-track.test.mjs",
     "__tests__/published-ground-read.test.mjs",
     "__tests__/quality-profile.test.mjs",
     "__tests__/queued-shader-warmup.test.mjs",
