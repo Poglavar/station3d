@@ -335,6 +335,7 @@
     "__tests__/new-build-courtyard.test.mjs",
     "__tests__/new-build-roof-decor.test.mjs",
     "__tests__/new-build-roof-pool-render.test.mjs",
+    "__tests__/no-null-as-zero.test.mjs",
     "__tests__/no-transmission-materials.test.mjs",
     "__tests__/npm-pack-report.test.mjs",
     "__tests__/occupant-provider.test.mjs",
