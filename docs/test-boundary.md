@@ -1,12 +1,13 @@
 # Test ownership boundary
 
-## Baseline
+## Current state
 
-The first history-preserving extraction runs 4,694 assertions. Of those, 4,574
-pass and 120 fail. The failures occur across 81 test files plus individual
-assertions in otherwise loaded files. They primarily expose deliberately
-omitted Zagreb host files, not production-bundle failures; the standalone
-Station3D bundle already builds successfully.
+Every test inherited from zagreb-isochrone now has an owner. The engine-owned
+manifest (`tests/engine-owned.json`, the `npm test` target) holds the inherited
+tests that exercise engine code, including those updated to the engine's later,
+intended changes; tests and assertions that need Zagreb host files, campaign
+content, Croatian datasets or downstream audio stay in zagreb-isochrone, which
+runs them against the installed Station3D package.
 
 The extracted repository must not copy the whole Zagreb application merely to
 make inherited tests green.
@@ -58,17 +59,6 @@ The public engine test command will use a positive manifest of Station3D-owned
 tests. It must not use a growing exclusion list, because new downstream-coupled
 tests would otherwise enter the engine suite silently.
 
-During migration:
-
-1. Add an explicit engine-owned manifest.
-2. Bring generic supporting tools into the extracted history.
-3. Move downstream tests back to their owning repository or convert them into
-   contract tests.
-4. Make `npm test` green in Station3D.
-5. Keep the full inherited run available as `test:extraction-audit` until every
-   test has an owner, then remove that temporary command.
-
-The first positive manifest is checked in at `tests/engine-owned.json` and is
-now the default `npm test` target. It intentionally starts with deterministic,
-host-independent contracts; additional inherited tests move into it only after
-their source and fixture ownership are confirmed.
+A new test joins the manifest only when everything it reads ships in this
+repository; a test that also needs a downstream host is a contract test and
+lives with that host.
