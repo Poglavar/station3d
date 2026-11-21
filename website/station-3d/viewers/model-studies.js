@@ -61,7 +61,7 @@ export function studyCatalog(manifest, importer, baseURL) {
     if (fleet.length) entries.splice(1, 0, {
         id: 'study-fleet-lineup', label: 'Fleet line-up', category: 'vehicles', collection: 'studies', provenance: 'Blender', llmModel: 'Not recorded',
         description: `${fleet.length} detailed vehicles at their original scale, including the TMK tram and HŽ train.`,
-        source: publicURL('website/station-3d/models/vehicles/studies/fleet/build_fleet.py'),
+        source: publicURL('website/station-3d/models/vehicles/fleet/index.json'),
         create: () => fleetLineup(fleet),
     });
     return entries;
