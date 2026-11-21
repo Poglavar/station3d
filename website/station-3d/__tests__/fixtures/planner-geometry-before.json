@@ -1,0 +1,1416 @@
+{
+  "sourceHash": "54aed9ecfeb1ec4728fcb658d096977c0468e810e65d333145badb25b9d3e43d",
+  "omissions": [
+    "concrete bitmap",
+    "marker plate rasterization and meshes"
+  ],
+  "fixtures": [
+    {
+      "name": "elevated",
+      "features": [
+        {
+          "type": "Feature",
+          "properties": {
+            "source": "user",
+            "trackId": "fixture"
+          },
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                16,
+                45,
+                10
+              ],
+              [
+                16.00152619937443,
+                45,
+                10
+              ]
+            ]
+          }
+        }
+      ],
+      "meshes": [
+        {
+          "name": "PlannerViaductDeck",
+          "type": "Mesh",
+          "count": 1,
+          "arrays": {
+            "index": {
+              "type": "Uint16Array",
+              "length": 36,
+              "sha256": "b303c1401055460fe3ef2a32caed7c971fdb14a877955d936a839c4bdf626b76"
+            },
+            "position": {
+              "type": "Float32Array",
+              "length": 24,
+              "sha256": "efd929ceb00edc4cdf09fb1584c0e1f82c5225c7d87fecec135726ddd6303ec1"
+            },
+            "normal": {
+              "type": "Float32Array",
+              "length": 24,
+              "sha256": "594cd413b29ebc293a1c4455dc9932ca98bb86ff0e8dd6517196b3056247050a"
+            }
+          }
+        },
+        {
+          "name": "PlannerEmergencyWalkway",
+          "type": "Mesh",
+          "count": 1,
+          "arrays": {
+            "index": {
+              "type": "Uint16Array",
+              "length": 36,
+              "sha256": "b303c1401055460fe3ef2a32caed7c971fdb14a877955d936a839c4bdf626b76"
+            },
+            "position": {
+              "type": "Float32Array",
+              "length": 24,
+              "sha256": "120a96cc9ebd444dbe07df4670829e8d00dc992da1d61909d8c3c2f1e54b53b1"
+            },
+            "normal": {
+              "type": "Float32Array",
+              "length": 24,
+              "sha256": "bf6e5c08883f18920c0fa5f960ceab67a5ae4d30c7e937cac3c455af440ab222"
+            }
+          }
+        },
+        {
+          "name": "PlannerWalkwayCurbs",
+          "type": "Mesh",
+          "count": 100,
+          "arrays": {
+            "index": {
+              "type": "Uint16Array",
+              "length": 36,
+              "sha256": "7d2c65fffb490f18b89d5d949a36ac6fe37f052789bdc3ad49759abb3ecd0898"
+            },
+            "position": {
+              "type": "Float32Array",
+              "length": 72,
+              "sha256": "684624d0687cbb7ce0a1119f1588586e3d1d758cf5bee26b78af640572a1e1bd"
+            },
+            "normal": {
+              "type": "Float32Array",
+              "length": 72,
+              "sha256": "cf38d80691f04d52b9686807b830aec77584c7ecdc0ceed56144923548dd5593"
+            },
+            "uv": {
+              "type": "Float32Array",
+              "length": 48,
+              "sha256": "9acbda3fe508de1f96b8f061ef5888cfba15a3e6ae752467e73665e4dfe3182a"
+            },
+            "instanceMatrix": {
+              "type": "Float32Array",
+              "length": 1600,
+              "sha256": "e9a95fae20aaf77bb4baca90f7846c1a107fe63552549525cc63ec4aa18ae43f"
+            }
+          }
+        },
+        {
+          "name": "PlannerWalkwayRails",
+          "type": "Mesh",
+          "count": 2,
+          "arrays": {
+            "index": {
+              "type": "Uint16Array",
+              "length": 36,
+              "sha256": "7d2c65fffb490f18b89d5d949a36ac6fe37f052789bdc3ad49759abb3ecd0898"
+            },
+            "position": {
+              "type": "Float32Array",
+              "length": 72,
+              "sha256": "684624d0687cbb7ce0a1119f1588586e3d1d758cf5bee26b78af640572a1e1bd"
+            },
+            "normal": {
+              "type": "Float32Array",
+              "length": 72,
+              "sha256": "cf38d80691f04d52b9686807b830aec77584c7ecdc0ceed56144923548dd5593"
+            },
+            "uv": {
+              "type": "Float32Array",
+              "length": 48,
+              "sha256": "9acbda3fe508de1f96b8f061ef5888cfba15a3e6ae752467e73665e4dfe3182a"
+            },
+            "instanceMatrix": {
+              "type": "Float32Array",
+              "length": 32,
+              "sha256": "340e0fc3e95fd62aaae5ec933d305f8f53e82e78171ecae9c2c83bad3f6853ac"
+            }
+          }
+        },
+        {
+          "name": "PlannerWalkwayRailPosts",
+          "type": "Mesh",
+          "count": 49,
+          "arrays": {
+            "index": {
+              "type": "Uint16Array",
+              "length": 36,
+              "sha256": "7d2c65fffb490f18b89d5d949a36ac6fe37f052789bdc3ad49759abb3ecd0898"
+            },
+            "position": {
+              "type": "Float32Array",
+              "length": 72,
+              "sha256": "684624d0687cbb7ce0a1119f1588586e3d1d758cf5bee26b78af640572a1e1bd"
+            },
+            "normal": {
+              "type": "Float32Array",
+              "length": 72,
+              "sha256": "cf38d80691f04d52b9686807b830aec77584c7ecdc0ceed56144923548dd5593"
+            },
+            "uv": {
+              "type": "Float32Array",
+              "length": 48,
+              "sha256": "9acbda3fe508de1f96b8f061ef5888cfba15a3e6ae752467e73665e4dfe3182a"
+            },
+            "instanceMatrix": {
+              "type": "Float32Array",
+              "length": 784,
+              "sha256": "ab503af56bcd2ee7f671596731c50f064e0773c509965cdbbaae2d2fbff3dc22"
+            }
+          }
+        },
+        {
+          "name": "PlannerViaductPillars",
+          "type": "Mesh",
+          "count": 4,
+          "arrays": {
+            "index": {
+              "type": "Uint16Array",
+              "length": 36,
+              "sha256": "7d2c65fffb490f18b89d5d949a36ac6fe37f052789bdc3ad49759abb3ecd0898"
+            },
+            "position": {
+              "type": "Float32Array",
+              "length": 72,
+              "sha256": "684624d0687cbb7ce0a1119f1588586e3d1d758cf5bee26b78af640572a1e1bd"
+            },
+            "normal": {
+              "type": "Float32Array",
+              "length": 72,
+              "sha256": "cf38d80691f04d52b9686807b830aec77584c7ecdc0ceed56144923548dd5593"
+            },
+            "uv": {
+              "type": "Float32Array",
+              "length": 48,
+              "sha256": "9acbda3fe508de1f96b8f061ef5888cfba15a3e6ae752467e73665e4dfe3182a"
+            },
+            "instanceMatrix": {
+              "type": "Float32Array",
+              "length": 64,
+              "sha256": "d6d5c4532ec8bc12feba87806c7f064d3bfdd6f02012c660780d8defb16bf405"
+            }
+          }
+        },
+        {
+          "name": "PlannerViaductPierCaps",
+          "type": "Mesh",
+          "count": 4,
+          "arrays": {
+            "index": {
+              "type": "Uint16Array",
+              "length": 36,
+              "sha256": "7d2c65fffb490f18b89d5d949a36ac6fe37f052789bdc3ad49759abb3ecd0898"
+            },
+            "position": {
+              "type": "Float32Array",
+              "length": 72,
+              "sha256": "684624d0687cbb7ce0a1119f1588586e3d1d758cf5bee26b78af640572a1e1bd"
+            },
+            "normal": {
+              "type": "Float32Array",
+              "length": 72,
+              "sha256": "cf38d80691f04d52b9686807b830aec77584c7ecdc0ceed56144923548dd5593"
+            },
+            "uv": {
+              "type": "Float32Array",
+              "length": 48,
+              "sha256": "9acbda3fe508de1f96b8f061ef5888cfba15a3e6ae752467e73665e4dfe3182a"
+            },
+            "instanceMatrix": {
+              "type": "Float32Array",
+              "length": 64,
+              "sha256": "211139c0abc4cd3eb29b8a0e30017980aedf2601dadd02d151b25ac0b5ce7674"
+            }
+          }
+        }
+      ],
+      "enclosedSpans": [],
+      "markers": []
+    },
+    {
+      "name": "ascending",
+      "features": [
+        {
+          "type": "Feature",
+          "properties": {
+            "source": "user",
+            "trackId": "fixture"
+          },
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                16,
+                45,
+                0
+              ],
+              [
+                16.00152619937443,
+                45,
+                10
+              ]
+            ]
+          }
+        }
+      ],
+      "meshes": [
+        {
+          "name": "PlannerLowRampFill",
+          "type": "Mesh",
+          "count": 1,
+          "arrays": {
+            "index": {
+              "type": "Uint16Array",
+              "length": 36,
+              "sha256": "d6f3896682994c0104bb5556d9686d23d40a2261bf7a354f56cb0f3a6c28e382"
+            },
+            "position": {
+              "type": "Float32Array",
+              "length": 24,
+              "sha256": "ce717afb7d28f2737129f85480a539354fcdf706ef7f00ca202ebb11b38b7109"
+            },
+            "normal": {
+              "type": "Float32Array",
+              "length": 24,
+              "sha256": "e549055b1d66983dff4d0d63698557f79ec5e50cc9544bc7c33917d50b961765"
+            }
+          }
+        },
+        {
+          "name": "PlannerViaductDeck",
+          "type": "Mesh",
+          "count": 1,
+          "arrays": {
+            "index": {
+              "type": "Uint16Array",
+              "length": 36,
+              "sha256": "b303c1401055460fe3ef2a32caed7c971fdb14a877955d936a839c4bdf626b76"
+            },
+            "position": {
+              "type": "Float32Array",
+              "length": 24,
+              "sha256": "5f8a8cebd8ae5f025b774884674bd9162bfdb4bba0f3f4fd6373d5563e439798"
+            },
+            "normal": {
+              "type": "Float32Array",
+              "length": 24,
+              "sha256": "0eeadee92ce8e85303a9b4434bb34b29dfdb40c31b1c6c9bf10c6baeda881ebc"
+            }
+          }
+        },
+        {
+          "name": "PlannerEmergencyWalkway",
+          "type": "Mesh",
+          "count": 1,
+          "arrays": {
+            "index": {
+              "type": "Uint16Array",
+              "length": 36,
+              "sha256": "b303c1401055460fe3ef2a32caed7c971fdb14a877955d936a839c4bdf626b76"
+            },
+            "position": {
+              "type": "Float32Array",
+              "length": 24,
+              "sha256": "2de1b28500bf7cc4db4d869840f8dd093365523fd24206462d9a46d1d3e81eff"
+            },
+            "normal": {
+              "type": "Float32Array",
+              "length": 24,
+              "sha256": "ea31761a331c9cab90f6fece9d846f2f86bdbfb2612badf3af28f8d750dfd32d"
+            }
+          }
+        },
+        {
+          "name": "PlannerWalkwayCurbs",
+          "type": "Mesh",
+          "count": 100,
+          "arrays": {
+            "index": {
+              "type": "Uint16Array",
+              "length": 36,
+              "sha256": "7d2c65fffb490f18b89d5d949a36ac6fe37f052789bdc3ad49759abb3ecd0898"
+            },
+            "position": {
+              "type": "Float32Array",
+              "length": 72,
+              "sha256": "684624d0687cbb7ce0a1119f1588586e3d1d758cf5bee26b78af640572a1e1bd"
+            },
+            "normal": {
+              "type": "Float32Array",
+              "length": 72,
+              "sha256": "cf38d80691f04d52b9686807b830aec77584c7ecdc0ceed56144923548dd5593"
+            },
+            "uv": {
+              "type": "Float32Array",
+              "length": 48,
+              "sha256": "9acbda3fe508de1f96b8f061ef5888cfba15a3e6ae752467e73665e4dfe3182a"
+            },
+            "instanceMatrix": {
+              "type": "Float32Array",
+              "length": 1600,
+              "sha256": "693b47307c2161e40bf900f31a7629f5ffb4990da29eba817351f1febee2750f"
+            }
+          }
+        },
+        {
+          "name": "PlannerWalkwayRails",
+          "type": "Mesh",
+          "count": 2,
+          "arrays": {
+            "index": {
+              "type": "Uint16Array",
+              "length": 36,
+              "sha256": "7d2c65fffb490f18b89d5d949a36ac6fe37f052789bdc3ad49759abb3ecd0898"
+            },
+            "position": {
+              "type": "Float32Array",
+              "length": 72,
+              "sha256": "684624d0687cbb7ce0a1119f1588586e3d1d758cf5bee26b78af640572a1e1bd"
+            },
+            "normal": {
+              "type": "Float32Array",
+              "length": 72,
+              "sha256": "cf38d80691f04d52b9686807b830aec77584c7ecdc0ceed56144923548dd5593"
+            },
+            "uv": {
+              "type": "Float32Array",
+              "length": 48,
+              "sha256": "9acbda3fe508de1f96b8f061ef5888cfba15a3e6ae752467e73665e4dfe3182a"
+            },
+            "instanceMatrix": {
+              "type": "Float32Array",
+              "length": 32,
+              "sha256": "aba8e29f4a9dfe0340e17b9c8a7ae1500bf0480f2663fc7ab0b2b59144ed769a"
+            }
+          }
+        },
+        {
+          "name": "PlannerWalkwayRailPosts",
+          "type": "Mesh",
+          "count": 49,
+          "arrays": {
+            "index": {
+              "type": "Uint16Array",
+              "length": 36,
+              "sha256": "7d2c65fffb490f18b89d5d949a36ac6fe37f052789bdc3ad49759abb3ecd0898"
+            },
+            "position": {
+              "type": "Float32Array",
+              "length": 72,
+              "sha256": "684624d0687cbb7ce0a1119f1588586e3d1d758cf5bee26b78af640572a1e1bd"
+            },
+            "normal": {
+              "type": "Float32Array",
+              "length": 72,
+              "sha256": "cf38d80691f04d52b9686807b830aec77584c7ecdc0ceed56144923548dd5593"
+            },
+            "uv": {
+              "type": "Float32Array",
+              "length": 48,
+              "sha256": "9acbda3fe508de1f96b8f061ef5888cfba15a3e6ae752467e73665e4dfe3182a"
+            },
+            "instanceMatrix": {
+              "type": "Float32Array",
+              "length": 784,
+              "sha256": "cbf13ad3c622debb7b5374249c65dd1dc8533d7e5cd1682fa8b2aea791d31c35"
+            }
+          }
+        },
+        {
+          "name": "PlannerViaductPillars",
+          "type": "Mesh",
+          "count": 3,
+          "arrays": {
+            "index": {
+              "type": "Uint16Array",
+              "length": 36,
+              "sha256": "7d2c65fffb490f18b89d5d949a36ac6fe37f052789bdc3ad49759abb3ecd0898"
+            },
+            "position": {
+              "type": "Float32Array",
+              "length": 72,
+              "sha256": "684624d0687cbb7ce0a1119f1588586e3d1d758cf5bee26b78af640572a1e1bd"
+            },
+            "normal": {
+              "type": "Float32Array",
+              "length": 72,
+              "sha256": "cf38d80691f04d52b9686807b830aec77584c7ecdc0ceed56144923548dd5593"
+            },
+            "uv": {
+              "type": "Float32Array",
+              "length": 48,
+              "sha256": "9acbda3fe508de1f96b8f061ef5888cfba15a3e6ae752467e73665e4dfe3182a"
+            },
+            "instanceMatrix": {
+              "type": "Float32Array",
+              "length": 48,
+              "sha256": "1a54fab05460c0df98b3467d5d29d304e1c83ec36805ae25e60373e2a0b30dbb"
+            }
+          }
+        },
+        {
+          "name": "PlannerViaductPierCaps",
+          "type": "Mesh",
+          "count": 3,
+          "arrays": {
+            "index": {
+              "type": "Uint16Array",
+              "length": 36,
+              "sha256": "7d2c65fffb490f18b89d5d949a36ac6fe37f052789bdc3ad49759abb3ecd0898"
+            },
+            "position": {
+              "type": "Float32Array",
+              "length": 72,
+              "sha256": "684624d0687cbb7ce0a1119f1588586e3d1d758cf5bee26b78af640572a1e1bd"
+            },
+            "normal": {
+              "type": "Float32Array",
+              "length": 72,
+              "sha256": "cf38d80691f04d52b9686807b830aec77584c7ecdc0ceed56144923548dd5593"
+            },
+            "uv": {
+              "type": "Float32Array",
+              "length": 48,
+              "sha256": "9acbda3fe508de1f96b8f061ef5888cfba15a3e6ae752467e73665e4dfe3182a"
+            },
+            "instanceMatrix": {
+              "type": "Float32Array",
+              "length": 48,
+              "sha256": "8bb76a11737e4dc289efd9f787e90d2391116e8123fb9be5bfaa487cb834a67b"
+            }
+          }
+        }
+      ],
+      "enclosedSpans": [],
+      "markers": []
+    },
+    {
+      "name": "tunnel",
+      "features": [
+        {
+          "type": "Feature",
+          "properties": {
+            "source": "user",
+            "trackId": "fixture"
+          },
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                16,
+                45,
+                -10
+              ],
+              [
+                16.00152619937443,
+                45,
+                -10
+              ]
+            ]
+          }
+        }
+      ],
+      "meshes": [
+        {
+          "name": "PlannerTunnelInteriorWalls",
+          "type": "Mesh",
+          "count": 18,
+          "arrays": {
+            "index": {
+              "type": "Uint16Array",
+              "length": 36,
+              "sha256": "7d2c65fffb490f18b89d5d949a36ac6fe37f052789bdc3ad49759abb3ecd0898"
+            },
+            "position": {
+              "type": "Float32Array",
+              "length": 72,
+              "sha256": "684624d0687cbb7ce0a1119f1588586e3d1d758cf5bee26b78af640572a1e1bd"
+            },
+            "normal": {
+              "type": "Float32Array",
+              "length": 72,
+              "sha256": "cf38d80691f04d52b9686807b830aec77584c7ecdc0ceed56144923548dd5593"
+            },
+            "uv": {
+              "type": "Float32Array",
+              "length": 48,
+              "sha256": "9acbda3fe508de1f96b8f061ef5888cfba15a3e6ae752467e73665e4dfe3182a"
+            },
+            "instanceMatrix": {
+              "type": "Float32Array",
+              "length": 288,
+              "sha256": "ec5508426042928186b366f205910493d6e035fbe01fbacd227ba31f60aaa6c7"
+            },
+            "instanceColor": {
+              "type": "Float32Array",
+              "length": 54,
+              "sha256": "c1d2e0d0beafb939929ff2ad0c233427dab39a1f25fd0450214ddb212f4e6970"
+            }
+          }
+        },
+        {
+          "name": "PlannerTunnelCeilings",
+          "type": "Mesh",
+          "count": 9,
+          "arrays": {
+            "index": {
+              "type": "Uint16Array",
+              "length": 36,
+              "sha256": "7d2c65fffb490f18b89d5d949a36ac6fe37f052789bdc3ad49759abb3ecd0898"
+            },
+            "position": {
+              "type": "Float32Array",
+              "length": 72,
+              "sha256": "684624d0687cbb7ce0a1119f1588586e3d1d758cf5bee26b78af640572a1e1bd"
+            },
+            "normal": {
+              "type": "Float32Array",
+              "length": 72,
+              "sha256": "cf38d80691f04d52b9686807b830aec77584c7ecdc0ceed56144923548dd5593"
+            },
+            "uv": {
+              "type": "Float32Array",
+              "length": 48,
+              "sha256": "9acbda3fe508de1f96b8f061ef5888cfba15a3e6ae752467e73665e4dfe3182a"
+            },
+            "instanceMatrix": {
+              "type": "Float32Array",
+              "length": 144,
+              "sha256": "a1cafd7d0bb0718fa29d82264ec32a5b92e4ab5ba68a7f73fc5702f430f3bf44"
+            },
+            "instanceColor": {
+              "type": "Float32Array",
+              "length": 27,
+              "sha256": "98c71c67ec1eb5e8da0680d93119f7ef4f6a6bc723082d3f404074b0d585234f"
+            }
+          }
+        },
+        {
+          "name": "PlannerTunnelInteriorFloors",
+          "type": "Mesh",
+          "count": 9,
+          "arrays": {
+            "index": {
+              "type": "Uint16Array",
+              "length": 36,
+              "sha256": "7d2c65fffb490f18b89d5d949a36ac6fe37f052789bdc3ad49759abb3ecd0898"
+            },
+            "position": {
+              "type": "Float32Array",
+              "length": 72,
+              "sha256": "684624d0687cbb7ce0a1119f1588586e3d1d758cf5bee26b78af640572a1e1bd"
+            },
+            "normal": {
+              "type": "Float32Array",
+              "length": 72,
+              "sha256": "cf38d80691f04d52b9686807b830aec77584c7ecdc0ceed56144923548dd5593"
+            },
+            "uv": {
+              "type": "Float32Array",
+              "length": 48,
+              "sha256": "9acbda3fe508de1f96b8f061ef5888cfba15a3e6ae752467e73665e4dfe3182a"
+            },
+            "instanceMatrix": {
+              "type": "Float32Array",
+              "length": 144,
+              "sha256": "5a7b6f01cfb699e7ee204d5669f46de9e277fd733b8efb74636dcf9c6804ec3c"
+            },
+            "instanceColor": {
+              "type": "Float32Array",
+              "length": 27,
+              "sha256": "98c71c67ec1eb5e8da0680d93119f7ef4f6a6bc723082d3f404074b0d585234f"
+            }
+          }
+        },
+        {
+          "name": "PlannerTunnelLights",
+          "type": "Mesh",
+          "count": 8,
+          "arrays": {
+            "index": {
+              "type": "Uint16Array",
+              "length": 36,
+              "sha256": "7d2c65fffb490f18b89d5d949a36ac6fe37f052789bdc3ad49759abb3ecd0898"
+            },
+            "position": {
+              "type": "Float32Array",
+              "length": 72,
+              "sha256": "684624d0687cbb7ce0a1119f1588586e3d1d758cf5bee26b78af640572a1e1bd"
+            },
+            "normal": {
+              "type": "Float32Array",
+              "length": 72,
+              "sha256": "cf38d80691f04d52b9686807b830aec77584c7ecdc0ceed56144923548dd5593"
+            },
+            "uv": {
+              "type": "Float32Array",
+              "length": 48,
+              "sha256": "9acbda3fe508de1f96b8f061ef5888cfba15a3e6ae752467e73665e4dfe3182a"
+            },
+            "instanceMatrix": {
+              "type": "Float32Array",
+              "length": 128,
+              "sha256": "724ee2599e1a901cbf492c17b92cab29851b502db9098ec73c72b68f30367198"
+            }
+          }
+        }
+      ],
+      "enclosedSpans": [
+        {
+          "startM": 0,
+          "endM": 120.00000000009943,
+          "chunks": [
+            {
+              "x": 6.6666666666721905,
+              "z": -3.2657247977289815e-15,
+              "chainageM": 6.6666666666721905,
+              "lengthM": 13.333333333344381
+            },
+            {
+              "x": 20.00000000001657,
+              "z": -2.4492935982967363e-15,
+              "chainageM": 20.00000000001657,
+              "lengthM": 13.333333333344381
+            },
+            {
+              "x": 33.333333333360954,
+              "z": -1.6328623988644906e-15,
+              "chainageM": 33.333333333360954,
+              "lengthM": 13.333333333344381
+            },
+            {
+              "x": 46.66666666670533,
+              "z": -8.164311994322457e-16,
+              "chainageM": 46.66666666670533,
+              "lengthM": 13.333333333344381
+            },
+            {
+              "x": 60.00000000004972,
+              "z": 0,
+              "chainageM": 60.00000000004972,
+              "lengthM": 13.333333333344381
+            },
+            {
+              "x": 73.33333333339411,
+              "z": 8.164311994322461e-16,
+              "chainageM": 73.3333333333941,
+              "lengthM": 13.333333333344381
+            },
+            {
+              "x": 86.66666666673848,
+              "z": 1.6328623988644906e-15,
+              "chainageM": 86.66666666673848,
+              "lengthM": 13.333333333344381
+            },
+            {
+              "x": 100.00000000008285,
+              "z": 2.449293598296736e-15,
+              "chainageM": 100.00000000008286,
+              "lengthM": 13.333333333344381
+            },
+            {
+              "x": 113.33333333342723,
+              "z": 3.265724797728981e-15,
+              "chainageM": 113.33333333342725,
+              "lengthM": 13.333333333344381
+            }
+          ]
+        }
+      ],
+      "markers": []
+    },
+    {
+      "name": "descending",
+      "features": [
+        {
+          "type": "Feature",
+          "properties": {
+            "source": "user",
+            "trackId": "fixture"
+          },
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                16,
+                45,
+                0
+              ],
+              [
+                16.00152619937443,
+                45,
+                -10
+              ]
+            ]
+          }
+        }
+      ],
+      "meshes": [
+        {
+          "name": "PlannerTrenchWalls",
+          "type": "Mesh",
+          "count": 18,
+          "arrays": {
+            "index": {
+              "type": "Uint16Array",
+              "length": 36,
+              "sha256": "7d2c65fffb490f18b89d5d949a36ac6fe37f052789bdc3ad49759abb3ecd0898"
+            },
+            "position": {
+              "type": "Float32Array",
+              "length": 72,
+              "sha256": "684624d0687cbb7ce0a1119f1588586e3d1d758cf5bee26b78af640572a1e1bd"
+            },
+            "normal": {
+              "type": "Float32Array",
+              "length": 72,
+              "sha256": "cf38d80691f04d52b9686807b830aec77584c7ecdc0ceed56144923548dd5593"
+            },
+            "uv": {
+              "type": "Float32Array",
+              "length": 48,
+              "sha256": "9acbda3fe508de1f96b8f061ef5888cfba15a3e6ae752467e73665e4dfe3182a"
+            },
+            "instanceMatrix": {
+              "type": "Float32Array",
+              "length": 288,
+              "sha256": "7e25028098635f2260858ce44cf7e1d920943eda270b8f54e68891feec32f869"
+            },
+            "instanceColor": {
+              "type": "Float32Array",
+              "length": 54,
+              "sha256": "c1d2e0d0beafb939929ff2ad0c233427dab39a1f25fd0450214ddb212f4e6970"
+            }
+          }
+        },
+        {
+          "name": "PlannerTunnelFloors",
+          "type": "Mesh",
+          "count": 9,
+          "arrays": {
+            "index": {
+              "type": "Uint16Array",
+              "length": 36,
+              "sha256": "7d2c65fffb490f18b89d5d949a36ac6fe37f052789bdc3ad49759abb3ecd0898"
+            },
+            "position": {
+              "type": "Float32Array",
+              "length": 72,
+              "sha256": "684624d0687cbb7ce0a1119f1588586e3d1d758cf5bee26b78af640572a1e1bd"
+            },
+            "normal": {
+              "type": "Float32Array",
+              "length": 72,
+              "sha256": "cf38d80691f04d52b9686807b830aec77584c7ecdc0ceed56144923548dd5593"
+            },
+            "uv": {
+              "type": "Float32Array",
+              "length": 48,
+              "sha256": "9acbda3fe508de1f96b8f061ef5888cfba15a3e6ae752467e73665e4dfe3182a"
+            },
+            "instanceMatrix": {
+              "type": "Float32Array",
+              "length": 144,
+              "sha256": "af988b2e5f0b3e52cf6e11b4a0e0bffcab60f5ce60d031804a71739492a95400"
+            },
+            "instanceColor": {
+              "type": "Float32Array",
+              "length": 27,
+              "sha256": "98c71c67ec1eb5e8da0680d93119f7ef4f6a6bc723082d3f404074b0d585234f"
+            }
+          }
+        }
+      ],
+      "enclosedSpans": [],
+      "markers": []
+    },
+    {
+      "name": "elevated-bend",
+      "features": [
+        {
+          "type": "Feature",
+          "properties": {
+            "source": "user",
+            "trackId": "fixture"
+          },
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                16,
+                45,
+                10
+              ],
+              [
+                16.000763099687216,
+                45,
+                10
+              ],
+              [
+                16.001208241171422,
+                44.99968523743793,
+                10
+              ]
+            ]
+          }
+        }
+      ],
+      "meshes": [
+        {
+          "name": "PlannerViaductDeck",
+          "type": "Mesh",
+          "count": 1,
+          "arrays": {
+            "index": {
+              "type": "Uint16Array",
+              "length": 72,
+              "sha256": "e6cbfdfbcdfae460222aa85ca5ebf7967f8febf4ccc9c07000bb78ec895717c2"
+            },
+            "position": {
+              "type": "Float32Array",
+              "length": 36,
+              "sha256": "ba6ed6ce3a839d428a8a9ad5017a55abb9dbabaae46b9d74d70972dbe510a2be"
+            },
+            "normal": {
+              "type": "Float32Array",
+              "length": 36,
+              "sha256": "8becf48682881fe426fea988cfc9aa533671271f378608c95ccdffe0d15fb451"
+            }
+          }
+        },
+        {
+          "name": "PlannerEmergencyWalkway",
+          "type": "Mesh",
+          "count": 1,
+          "arrays": {
+            "index": {
+              "type": "Uint16Array",
+              "length": 72,
+              "sha256": "e6cbfdfbcdfae460222aa85ca5ebf7967f8febf4ccc9c07000bb78ec895717c2"
+            },
+            "position": {
+              "type": "Float32Array",
+              "length": 36,
+              "sha256": "600fad8a6071bb431f3714a4faa9086b647b0a3c2a7570c927dcba7d375b6a1d"
+            },
+            "normal": {
+              "type": "Float32Array",
+              "length": 36,
+              "sha256": "13f8aa555047c06c91131050c55426b21123666ef440b1e3ed2ca2f14b8e6512"
+            }
+          }
+        },
+        {
+          "name": "PlannerWalkwayCurbs",
+          "type": "Mesh",
+          "count": 92,
+          "arrays": {
+            "index": {
+              "type": "Uint16Array",
+              "length": 36,
+              "sha256": "7d2c65fffb490f18b89d5d949a36ac6fe37f052789bdc3ad49759abb3ecd0898"
+            },
+            "position": {
+              "type": "Float32Array",
+              "length": 72,
+              "sha256": "684624d0687cbb7ce0a1119f1588586e3d1d758cf5bee26b78af640572a1e1bd"
+            },
+            "normal": {
+              "type": "Float32Array",
+              "length": 72,
+              "sha256": "cf38d80691f04d52b9686807b830aec77584c7ecdc0ceed56144923548dd5593"
+            },
+            "uv": {
+              "type": "Float32Array",
+              "length": 48,
+              "sha256": "9acbda3fe508de1f96b8f061ef5888cfba15a3e6ae752467e73665e4dfe3182a"
+            },
+            "instanceMatrix": {
+              "type": "Float32Array",
+              "length": 1472,
+              "sha256": "1dc52e4bead17702d4ccb235c5083f0054dbf975609465e7824fb8825054a690"
+            }
+          }
+        },
+        {
+          "name": "PlannerWalkwayRails",
+          "type": "Mesh",
+          "count": 4,
+          "arrays": {
+            "index": {
+              "type": "Uint16Array",
+              "length": 36,
+              "sha256": "7d2c65fffb490f18b89d5d949a36ac6fe37f052789bdc3ad49759abb3ecd0898"
+            },
+            "position": {
+              "type": "Float32Array",
+              "length": 72,
+              "sha256": "684624d0687cbb7ce0a1119f1588586e3d1d758cf5bee26b78af640572a1e1bd"
+            },
+            "normal": {
+              "type": "Float32Array",
+              "length": 72,
+              "sha256": "cf38d80691f04d52b9686807b830aec77584c7ecdc0ceed56144923548dd5593"
+            },
+            "uv": {
+              "type": "Float32Array",
+              "length": 48,
+              "sha256": "9acbda3fe508de1f96b8f061ef5888cfba15a3e6ae752467e73665e4dfe3182a"
+            },
+            "instanceMatrix": {
+              "type": "Float32Array",
+              "length": 64,
+              "sha256": "8c524eb1a78f5f264ec421406dfd7639370f8ed7f29b78d9b2f79315cd3ef10b"
+            }
+          }
+        },
+        {
+          "name": "PlannerWalkwayRailPosts",
+          "type": "Mesh",
+          "count": 46,
+          "arrays": {
+            "index": {
+              "type": "Uint16Array",
+              "length": 36,
+              "sha256": "7d2c65fffb490f18b89d5d949a36ac6fe37f052789bdc3ad49759abb3ecd0898"
+            },
+            "position": {
+              "type": "Float32Array",
+              "length": 72,
+              "sha256": "684624d0687cbb7ce0a1119f1588586e3d1d758cf5bee26b78af640572a1e1bd"
+            },
+            "normal": {
+              "type": "Float32Array",
+              "length": 72,
+              "sha256": "cf38d80691f04d52b9686807b830aec77584c7ecdc0ceed56144923548dd5593"
+            },
+            "uv": {
+              "type": "Float32Array",
+              "length": 48,
+              "sha256": "9acbda3fe508de1f96b8f061ef5888cfba15a3e6ae752467e73665e4dfe3182a"
+            },
+            "instanceMatrix": {
+              "type": "Float32Array",
+              "length": 736,
+              "sha256": "e91559762853759a4907581923074cc2914ad223914a457979b326f6529b088e"
+            }
+          }
+        },
+        {
+          "name": "PlannerViaductPillars",
+          "type": "Mesh",
+          "count": 4,
+          "arrays": {
+            "index": {
+              "type": "Uint16Array",
+              "length": 36,
+              "sha256": "7d2c65fffb490f18b89d5d949a36ac6fe37f052789bdc3ad49759abb3ecd0898"
+            },
+            "position": {
+              "type": "Float32Array",
+              "length": 72,
+              "sha256": "684624d0687cbb7ce0a1119f1588586e3d1d758cf5bee26b78af640572a1e1bd"
+            },
+            "normal": {
+              "type": "Float32Array",
+              "length": 72,
+              "sha256": "cf38d80691f04d52b9686807b830aec77584c7ecdc0ceed56144923548dd5593"
+            },
+            "uv": {
+              "type": "Float32Array",
+              "length": 48,
+              "sha256": "9acbda3fe508de1f96b8f061ef5888cfba15a3e6ae752467e73665e4dfe3182a"
+            },
+            "instanceMatrix": {
+              "type": "Float32Array",
+              "length": 64,
+              "sha256": "2e148b0f53dfe8ab4c009da807b583b96925af2da52e152d1192e2345d5847b2"
+            }
+          }
+        },
+        {
+          "name": "PlannerViaductPierCaps",
+          "type": "Mesh",
+          "count": 4,
+          "arrays": {
+            "index": {
+              "type": "Uint16Array",
+              "length": 36,
+              "sha256": "7d2c65fffb490f18b89d5d949a36ac6fe37f052789bdc3ad49759abb3ecd0898"
+            },
+            "position": {
+              "type": "Float32Array",
+              "length": 72,
+              "sha256": "684624d0687cbb7ce0a1119f1588586e3d1d758cf5bee26b78af640572a1e1bd"
+            },
+            "normal": {
+              "type": "Float32Array",
+              "length": 72,
+              "sha256": "cf38d80691f04d52b9686807b830aec77584c7ecdc0ceed56144923548dd5593"
+            },
+            "uv": {
+              "type": "Float32Array",
+              "length": 48,
+              "sha256": "9acbda3fe508de1f96b8f061ef5888cfba15a3e6ae752467e73665e4dfe3182a"
+            },
+            "instanceMatrix": {
+              "type": "Float32Array",
+              "length": 64,
+              "sha256": "315eb3a05f36602ec7a5c6baf3d3e12ecf89e9745a5e2da26d785fd7e5a2ba25"
+            }
+          }
+        }
+      ],
+      "enclosedSpans": [],
+      "markers": []
+    },
+    {
+      "name": "tunnel-bend",
+      "features": [
+        {
+          "type": "Feature",
+          "properties": {
+            "source": "user",
+            "trackId": "fixture"
+          },
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                16,
+                45,
+                -10
+              ],
+              [
+                16.000763099687216,
+                45,
+                -10
+              ],
+              [
+                16.001208241171422,
+                44.99968523743793,
+                -10
+              ]
+            ]
+          }
+        }
+      ],
+      "meshes": [
+        {
+          "name": "PlannerTunnelInteriorWalls",
+          "type": "Mesh",
+          "count": 18,
+          "arrays": {
+            "index": {
+              "type": "Uint16Array",
+              "length": 36,
+              "sha256": "7d2c65fffb490f18b89d5d949a36ac6fe37f052789bdc3ad49759abb3ecd0898"
+            },
+            "position": {
+              "type": "Float32Array",
+              "length": 72,
+              "sha256": "684624d0687cbb7ce0a1119f1588586e3d1d758cf5bee26b78af640572a1e1bd"
+            },
+            "normal": {
+              "type": "Float32Array",
+              "length": 72,
+              "sha256": "cf38d80691f04d52b9686807b830aec77584c7ecdc0ceed56144923548dd5593"
+            },
+            "uv": {
+              "type": "Float32Array",
+              "length": 48,
+              "sha256": "9acbda3fe508de1f96b8f061ef5888cfba15a3e6ae752467e73665e4dfe3182a"
+            },
+            "instanceMatrix": {
+              "type": "Float32Array",
+              "length": 288,
+              "sha256": "f99f4846e53f6bb45fa08abe0f6bad29e0855cf59cd9a47f1f1cddde54910b74"
+            },
+            "instanceColor": {
+              "type": "Float32Array",
+              "length": 54,
+              "sha256": "c1d2e0d0beafb939929ff2ad0c233427dab39a1f25fd0450214ddb212f4e6970"
+            }
+          }
+        },
+        {
+          "name": "PlannerTunnelCeilings",
+          "type": "Mesh",
+          "count": 9,
+          "arrays": {
+            "index": {
+              "type": "Uint16Array",
+              "length": 36,
+              "sha256": "7d2c65fffb490f18b89d5d949a36ac6fe37f052789bdc3ad49759abb3ecd0898"
+            },
+            "position": {
+              "type": "Float32Array",
+              "length": 72,
+              "sha256": "684624d0687cbb7ce0a1119f1588586e3d1d758cf5bee26b78af640572a1e1bd"
+            },
+            "normal": {
+              "type": "Float32Array",
+              "length": 72,
+              "sha256": "cf38d80691f04d52b9686807b830aec77584c7ecdc0ceed56144923548dd5593"
+            },
+            "uv": {
+              "type": "Float32Array",
+              "length": 48,
+              "sha256": "9acbda3fe508de1f96b8f061ef5888cfba15a3e6ae752467e73665e4dfe3182a"
+            },
+            "instanceMatrix": {
+              "type": "Float32Array",
+              "length": 144,
+              "sha256": "e9c67e83e1b387883719015c540ae15cef86edc506b9c1a01524ca02fedc5148"
+            },
+            "instanceColor": {
+              "type": "Float32Array",
+              "length": 27,
+              "sha256": "98c71c67ec1eb5e8da0680d93119f7ef4f6a6bc723082d3f404074b0d585234f"
+            }
+          }
+        },
+        {
+          "name": "PlannerTunnelInteriorFloors",
+          "type": "Mesh",
+          "count": 9,
+          "arrays": {
+            "index": {
+              "type": "Uint16Array",
+              "length": 36,
+              "sha256": "7d2c65fffb490f18b89d5d949a36ac6fe37f052789bdc3ad49759abb3ecd0898"
+            },
+            "position": {
+              "type": "Float32Array",
+              "length": 72,
+              "sha256": "684624d0687cbb7ce0a1119f1588586e3d1d758cf5bee26b78af640572a1e1bd"
+            },
+            "normal": {
+              "type": "Float32Array",
+              "length": 72,
+              "sha256": "cf38d80691f04d52b9686807b830aec77584c7ecdc0ceed56144923548dd5593"
+            },
+            "uv": {
+              "type": "Float32Array",
+              "length": 48,
+              "sha256": "9acbda3fe508de1f96b8f061ef5888cfba15a3e6ae752467e73665e4dfe3182a"
+            },
+            "instanceMatrix": {
+              "type": "Float32Array",
+              "length": 144,
+              "sha256": "48bbc37d615cd2294880b18dc3ef3eb2076106d92016592e6b0c5e55298f4909"
+            },
+            "instanceColor": {
+              "type": "Float32Array",
+              "length": 27,
+              "sha256": "98c71c67ec1eb5e8da0680d93119f7ef4f6a6bc723082d3f404074b0d585234f"
+            }
+          }
+        },
+        {
+          "name": "PlannerTunnelLights",
+          "type": "Mesh",
+          "count": 7,
+          "arrays": {
+            "index": {
+              "type": "Uint16Array",
+              "length": 36,
+              "sha256": "7d2c65fffb490f18b89d5d949a36ac6fe37f052789bdc3ad49759abb3ecd0898"
+            },
+            "position": {
+              "type": "Float32Array",
+              "length": 72,
+              "sha256": "684624d0687cbb7ce0a1119f1588586e3d1d758cf5bee26b78af640572a1e1bd"
+            },
+            "normal": {
+              "type": "Float32Array",
+              "length": 72,
+              "sha256": "cf38d80691f04d52b9686807b830aec77584c7ecdc0ceed56144923548dd5593"
+            },
+            "uv": {
+              "type": "Float32Array",
+              "length": 48,
+              "sha256": "9acbda3fe508de1f96b8f061ef5888cfba15a3e6ae752467e73665e4dfe3182a"
+            },
+            "instanceMatrix": {
+              "type": "Float32Array",
+              "length": 112,
+              "sha256": "cfa69073b18fe84bf6ce02e8e68a524b117e6aa50f0b8863830237fc00d28ef1"
+            }
+          }
+        }
+      ],
+      "enclosedSpans": [
+        {
+          "startM": 0,
+          "endM": 109.49747468284701,
+          "chunks": [
+            {
+              "x": 6.000000000004972,
+              "z": -1.4695761589780418e-15,
+              "chainageM": 6.000000000004972,
+              "lengthM": 12.000000000009944
+            },
+            {
+              "x": 18.000000000014918,
+              "z": -7.347880794890207e-16,
+              "chainageM": 18.000000000014914,
+              "lengthM": 12.000000000009944
+            },
+            {
+              "x": 30.00000000002486,
+              "z": 0,
+              "chainageM": 30.000000000024862,
+              "lengthM": 12.000000000009944
+            },
+            {
+              "x": 42.0000000000348,
+              "z": 7.347880794890207e-16,
+              "chainageM": 42.0000000000348,
+              "lengthM": 12.000000000009944
+            },
+            {
+              "x": 54.00000000004474,
+              "z": 1.4695761589780418e-15,
+              "chainageM": 54.00000000004475,
+              "lengthM": 12.000000000009944
+            },
+            {
+              "x": 64.37500000002714,
+              "z": 4.374999999976419,
+              "chainageM": 66.18718433539938,
+              "lengthM": 12.374368670699322
+            },
+            {
+              "x": 73.12499999998201,
+              "z": 13.124999999929257,
+              "chainageM": 78.5615530060987,
+              "lengthM": 12.374368670699322
+            },
+            {
+              "x": 81.87499999993689,
+              "z": 21.874999999882093,
+              "chainageM": 90.93592167679803,
+              "lengthM": 12.374368670699322
+            },
+            {
+              "x": 90.62499999989176,
+              "z": 30.624999999834934,
+              "chainageM": 103.31029034749736,
+              "lengthM": 12.374368670699322
+            }
+          ]
+        }
+      ],
+      "markers": [
+        {
+          "x": 50,
+          "y": -8.15,
+          "z": 3.1200000000000014,
+          "dirX": -1,
+          "dirZ": -6.123233995736766e-17,
+          "text": 60
+        },
+        {
+          "x": 50,
+          "y": -8.15,
+          "z": -3.1199999999999988,
+          "dirX": 1,
+          "dirZ": 6.123233995736766e-17,
+          "text": 50
+        },
+        {
+          "x": 86.07809809017797,
+          "y": -8.15,
+          "z": 30.490444404725743,
+          "dirX": -0.7071067811866297,
+          "dirZ": -0.7071067811864653,
+          "text": 10
+        },
+        {
+          "x": 90.49044440478153,
+          "y": -8.15,
+          "z": 26.078098090121173,
+          "dirX": 0.7071067811866297,
+          "dirZ": 0.7071067811864653,
+          "text": 100
+        }
+      ]
+    },
+    {
+      "name": "absolute",
+      "features": [
+        {
+          "type": "Feature",
+          "properties": {
+            "source": "user",
+            "trackId": "fixture",
+            "elevationMode": "absolute"
+          },
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                16,
+                45,
+                110
+              ],
+              [
+                16.00152619937443,
+                45,
+                110
+              ]
+            ]
+          }
+        }
+      ],
+      "meshes": [],
+      "enclosedSpans": [],
+      "markers": []
+    },
+    {
+      "name": "relative",
+      "features": [
+        {
+          "type": "Feature",
+          "properties": {
+            "source": "user",
+            "trackId": "fixture",
+            "elevationMode": "ground-relative"
+          },
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                16,
+                45,
+                10
+              ],
+              [
+                16.00152619937443,
+                45,
+                10
+              ]
+            ]
+          }
+        }
+      ],
+      "meshes": [],
+      "enclosedSpans": [],
+      "markers": []
+    }
+  ]
+}

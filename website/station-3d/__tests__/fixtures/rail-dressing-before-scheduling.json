@@ -1,0 +1,47 @@
+{
+  "purpose": "Independent pre-scheduling v31 geometry and collider hashes; includes clipped openings, cut/fill, shared walls, steep UVs and window filtering.",
+  "sources": {
+    "world/rails.js": "d76b361acf988e79eadf01bd8d0e00b8ca27d259cb97ab27461bac57ccce9152",
+    "core/road-formation.js": "fda7a46d11f062987eac6922796658865186a1be8d367a805bbbcd9c0fd36e2f",
+    "core/render-budgets.js": "4c2d644de0673ef5d2567aca09afb05c53b7f81b0d105fd15b16508a5f6958c4"
+  },
+  "inputsSha256": "ba6d9b7227e37f58f2ac7aa6fdbe346972f2dd54fe5e4920ed05ae905913e305",
+  "meshes": [
+    {
+      "name": "RailFormationTerrainCollar",
+      "count": 24000,
+      "positions": "b6f02496fd558c8ad81cfbd74793e877823cdcc13cf447e8fd81b2c2a5738089",
+      "uvs": "0e9b766e844896d4394f6b216bc138be0955c4e2affe2af03554fc11a70b6024",
+      "normals": "896563310e8ab2653decf430f75ae567814acd967d4eaa1f8608de701e45ac2f",
+      "boxes": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "renderOrder": 2
+    },
+    {
+      "name": "RailFormationTerrainCollar:2",
+      "count": 8508,
+      "positions": "5360ab68f4da47ec1ac8221110f2158fb81b0d0be0c1698e235684c207a88a84",
+      "uvs": "01d7722037051a09ceef1dd79161dba328397db192eaa27b26f7f29337952450",
+      "normals": "27dbb874b182f45f8c91b470380ce9cc75c1f94595a43059058238418aaf0bcf",
+      "boxes": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "renderOrder": 2
+    },
+    {
+      "name": "RailFormationRetainingWalls",
+      "count": 24000,
+      "positions": "82e98507e7fc36cdd9069b10e1154e33d718222e1edae683f474d1141915c3d0",
+      "uvs": "e38b80916f9a8ddd2a195cfb10828390ff97b82c7d881baf05ef72248fc3f4e3",
+      "normals": "b6b2c448cb227c29127e049bc681e34ab2d8a22e12075a752088c576dce34fd1",
+      "boxes": "67529e7131ef225b72e420db702b5a813696e356ab48b61494736d5c998c48c3",
+      "renderOrder": 3
+    },
+    {
+      "name": "RailFormationRetainingWalls:2",
+      "count": 8532,
+      "positions": "42cb0f391d49b4af6b45e08cb5343ed4faad8b5cfb8d9fdacc78a7413cf89fea",
+      "uvs": "6e705b06db06c74dcff03ec4aae0476e25427d58a01f2b33ed941e6de8360a4a",
+      "normals": "66a7500a83cd35a0261c967ec7277f539a11c02880e63d3ab90aed34a9763d82",
+      "boxes": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "renderOrder": 3
+    }
+  ]
+}

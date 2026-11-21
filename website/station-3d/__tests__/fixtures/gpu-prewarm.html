@@ -1,0 +1,168 @@
+<!doctype html>
+<!-- Manual, local-only real-GPU regression fixture. Serve website/ with serve.py;
+     optional ?baseline uses a frozen checkout exposed at /baseline-station-3d/.
+     No API traffic. Link counts and pixel parity are not frame-time acceptance. -->
+<meta charset="utf-8">
+<title>Station3D real-GPU prewarm contract</title>
+<script type="importmap">{"imports":{"three":"/__station3d_vendor__/three/build/three.module.js"}}</script>
+<style>body{font:14px monospace;background:#18202a;color:#eee}canvas{margin:8px}pre{white-space:pre-wrap}</style>
+<h1>Station3D real-GPU prewarm contract</h1>
+<p>Local synthetic geometry only; no API requests. Shader-link counts, not frame-time benchmarks.</p>
+<div id="views"></div><pre id="result">Running…</pre>
+<script type="module">
+import * as THREE from 'three';
+const baseline = new URLSearchParams(location.search).has('baseline');
+const { prewarmDetachedObject } = await import(baseline ? '/baseline-station-3d/core/detached-gpu-prewarm.js' : '../../core/detached-gpu-prewarm.js');
+const evidence = window.auditResult = { done: false, baseline, cases: [], errors: [] };
+addEventListener('error', event => evidence.errors.push(event.message));
+addEventListener('unhandledrejection', event => evidence.errors.push(String(event.reason)));
+const originalError = console.error.bind(console);
+console.error = (...args) => { evidence.errors.push(args.map(String).join(' ')); originalError(...args); };
+const nextFrame = () => new Promise(resolve => requestAnimationFrame(resolve));
+function makeObject(kind) {
+    const geometry = new THREE.BoxGeometry(1.4, 1.4, 1.4);
+    const material = new THREE.MeshStandardMaterial({ color: 0x88bb55, roughness: 0.7 });
+    let object;
+    if (kind === 'instance-color') {
+        object = new THREE.InstancedMesh(geometry, material, 1);
+        object.setColorAt(0, new THREE.Color(0.4, 0.8, 1));
+    } else if (kind === 'batch-color') {
+        object = new THREE.BatchedMesh(1, 24, 36, material);
+        const id = object.addInstance(object.addGeometry(geometry));
+        object.setColorAt(id, new THREE.Color(0.4, 0.8, 1));
+        object.perObjectFrustumCulled = false;
+    } else if (kind === 'points') {
+        object = new THREE.Points(geometry, new THREE.PointsMaterial({ size: 0.16, color: 0x88bb55 }));
+    } else if (kind === 'line-segments') {
+        object = new THREE.LineSegments(new THREE.EdgesGeometry(geometry), new THREE.LineBasicMaterial({ color: 0x88bb55 }));
+    } else {
+        if (kind === 'vertex-alpha') {
+            const colors = new Float32Array(geometry.attributes.position.count * 4).fill(0.8);
+            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 4));
+            material.vertexColors = true;
+        }
+        if (kind === 'morph') {
+            const target = geometry.attributes.position.clone();
+            for (let i = 0; i < target.count; i++) target.setY(i, target.getY(i) * 1.5);
+            geometry.morphAttributes.position = [target];
+        }
+        if (kind === 'double-transparent') {
+            material.side = THREE.DoubleSide;
+            material.transparent = true;
+            material.opacity = 0.65;
+        }
+        if (kind.startsWith('local-')) {
+            material.clippingPlanes = [new THREE.Plane(new THREE.Vector3(1, 0, 0), 0.2)];
+            material.clipIntersection = kind === 'local-intersection';
+        }
+        object = new THREE.Mesh(geometry, material);
+        if (kind === 'morph') object.morphTargetInfluences[0] = 0.3;
+    }
+    object.receiveShadow = true;
+    return object;
+}
+function makeRenderer() {
+    const renderer = new THREE.WebGLRenderer({ antialias: false, preserveDrawingBuffer: true });
+    renderer.setSize(128, 128);
+    renderer.shadowMap.enabled = true;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.localClippingEnabled = true;
+    return renderer;
+}
+function readPixels(renderer) {
+    const gl = renderer.getContext();
+    const pixels = new Uint8Array(128 * 128 * 4);
+    gl.readPixels(0, 0, 128, 128, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+    return pixels;
+}
+function watchLinks(gl, result) {
+    const sources = new WeakMap(), attached = new WeakMap();
+    const shaderSource = gl.shaderSource.bind(gl), attachShader = gl.attachShader.bind(gl), linkProgram = gl.linkProgram.bind(gl);
+    gl.shaderSource = (shader, source) => { sources.set(shader, source); return shaderSource(shader, source); };
+    gl.attachShader = (program, shader) => {
+        const list = attached.get(program) || []; list.push(shader); attached.set(program, list);
+        return attachShader(program, shader);
+    };
+    gl.linkProgram = program => {
+        const text = (attached.get(program) || []).map(shader => sources.get(shader) || '').join('\n');
+        result.links.push({ phase: result.phase, drawScene: result.drawScene || null, shadow: /#define USE_SHADOWMAP\b/.test(text), tone: /#define TONE_MAPPING\b/.test(text),
+            clipping: [...new Set([...text.matchAll(/uniform vec4 clippingPlanes\[\s*(\d+)\s*\]/g)].map(m => Number(m[1])))],
+            batching: /#define USE_BATCHING\b/.test(text), instancing: /#define USE_INSTANCING\b/.test(text) });
+        return linkProgram(program);
+    };
+}
+try {
+    for (const kind of ['mesh', 'instance-color', 'batch-color', 'vertex-alpha', 'morph', 'double-transparent', 'local-clipping', 'local-intersection', 'global-clipping', 'points', 'line-segments']) {
+        const result = { kind, phase: 'setup', links: [], steps: [] };
+        evidence.cases.push(result);
+        const renderer = makeRenderer(), gl = renderer.getContext();
+        const debug = gl.getExtension('WEBGL_debug_renderer_info');
+        evidence.renderer ||= debug ? gl.getParameter(debug.UNMASKED_RENDERER_WEBGL) : 'unknown';
+        evidence.parallelShaderCompile = !!gl.getExtension('KHR_parallel_shader_compile');
+        watchLinks(gl, result);
+        const render = renderer.render.bind(renderer);
+        renderer.render = (scene, camera) => {
+            result.drawScene = scene.name || 'visible';
+            try { return render(scene, camera); }
+            finally { delete result.drawScene; }
+        };
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x203044);
+        scene.fog = new THREE.Fog(0x506070, 6, 20);
+        scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+        const sun = new THREE.DirectionalLight(0xffffff, 2);
+        sun.position.set(2, 5, 3); sun.castShadow = true; scene.add(sun);
+        const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 100);
+        camera.position.set(2, 1, 4); camera.lookAt(0, 0, 0); camera.updateMatrixWorld();
+        // Prime clipping state as a real preceding visible frame would.
+        if (kind.startsWith('local-') || kind === 'global-clipping') {
+            if (kind === 'global-clipping') renderer.clippingPlanes = [new THREE.Plane(new THREE.Vector3(1, 0, 0), 0.2)];
+            const previous = makeObject(kind); scene.add(previous);
+            result.phase = 'prior-clipped-frame'; renderer.render(scene, camera);
+            result.previous = previous;
+        }
+        const root = new THREE.Group(), object = makeObject(kind), originalMaterial = object.material;
+        root.add(object);
+        const iterator = prewarmDetachedObject(root, { renderer, camera, targetScene: scene, label: kind, uploadBatchedGeometry: true });
+        for (let visit = 0; visit < 100; visit++) {
+            result.phase = 'visit-' + visit;
+            const first = result.links.length;
+            const next = iterator.next();
+            const phase = next.value?.phase || 'done';
+            for (const link of result.links.slice(first)) link.phase = phase;
+            result.steps.push({ phase, links: result.links.length - first });
+            if (renderer.getRenderTarget() !== null || !renderer.shadowMap.enabled || object.material !== originalMaterial || object.parent !== root) throw new Error(kind + ' changed live state across a yield');
+            if (next.done) break;
+            if (next.value?.ready) await next.value.ready;
+            await nextFrame();
+            result.phase = 'intervening-visible'; renderer.render(scene, camera);
+            if (visit === 99) throw new Error(kind + ' did not complete');
+        }
+        if (result.previous) {
+            scene.remove(result.previous); result.previous.geometry.dispose(); result.previous.material.dispose(); delete result.previous;
+        }
+        result.phase = 'first-visible'; scene.add(root); renderer.render(scene, camera);
+        const actual = readPixels(renderer);
+        result.geometryLinks = result.links.filter(x => x.phase.endsWith(':geometry')).length;
+        result.primerLinks = result.links.filter(x => x.drawScene === 'Station3DGpuUploadStatePrimer').length;
+        result.firstVisibleLinks = result.links.filter(x => x.phase === 'first-visible').length;
+        result.programs = renderer.info.programs.length;
+        result.glError = gl.getError();
+        // Independent renderer/program cache: comparison cannot accidentally prewarm the test.
+        const reference = makeRenderer(); reference.clippingPlanes = renderer.clippingPlanes; reference.render(scene, camera);
+        const expected = readPixels(reference);
+        result.pixelDifference = actual.reduce((sum, value, index) => sum + (value !== expected[index] ? 1 : 0), 0);
+        result.foregroundPixels = 0;
+        for (let i = 0; i < actual.length; i += 4) if (actual[i] !== actual[0] || actual[i + 1] !== actual[1] || actual[i + 2] !== actual[2]) result.foregroundPixels++;
+        const image = new Image(); image.src = renderer.domElement.toDataURL(); image.title = kind; image.alt = kind; document.querySelector('#views').append(image);
+        renderer.dispose(); renderer.forceContextLoss(); reference.dispose(); reference.forceContextLoss();
+        object.geometry.dispose(); originalMaterial.dispose(); object.dispose?.(); sun.shadow.dispose();
+        delete result.phase;
+        document.querySelector('#result').textContent = JSON.stringify(evidence, null, 2);
+    }
+} catch (error) { evidence.errors.push(String(error.stack || error)); }
+evidence.done = true;
+evidence.passed = evidence.errors.length === 0 && evidence.cases.length === 11 && evidence.cases.every(result =>
+    result.geometryLinks === 0 && result.primerLinks === 0 && result.firstVisibleLinks === 0 && result.pixelDifference === 0 && result.foregroundPixels > 0 && result.glError === 0);
+document.querySelector('#result').textContent = JSON.stringify(evidence, null, 2);
+</script>

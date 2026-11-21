@@ -1,0 +1,91 @@
+{
+  "schema": "station3d-receiver-degenerate-source-fixture-v1",
+  "source": {
+    "url": "http://localhost:8309/sloboda/@45.81491,15.97097/?lang=hr&heading=90&elevation=1&pitch=-20&time=12",
+    "capturedAt": "2026-09-13T22:32:57.124Z",
+    "featureId": "osm:way:1118363870",
+    "note": "Actual Float32 buffered sidewalk face captured from the rejected native v60 ground candidate; the last two vertices coincide."
+  },
+  "triangle": [
+    {
+      "x": 11.638633728027344,
+      "y": 2.3687326908111572,
+      "z": -24.772838592529297
+    },
+    {
+      "x": 9.668184280395508,
+      "y": 1.9746479988098145,
+      "z": -20.785112380981445
+    },
+    {
+      "x": 9.668184280395508,
+      "y": 1.9746479988098145,
+      "z": -20.785112380981445
+    }
+  ],
+  "regions": [
+    {
+      "bounds": {
+        "maxX": 20.820041821993993,
+        "maxZ": 5.4194325786969735,
+        "minX": 1.920041821993994,
+        "minZ": 1.9194325786969737
+      },
+      "maxY": 4.523443393283803,
+      "maxYExclusive": false,
+      "minY": -1.2265566067161973,
+      "replacementKey": "landmark:gric-tunnel-mesnicka",
+      "ring": [
+        {
+          "x": 1.920041821993994,
+          "z": 1.9194325786969737
+        },
+        {
+          "x": 20.820041821993993,
+          "z": 1.9194325786969737
+        },
+        {
+          "x": 20.820041821993993,
+          "z": 5.4194325786969735
+        },
+        {
+          "x": 1.920041821993994,
+          "z": 5.4194325786969735
+        }
+      ],
+      "targetMask": 1
+    }
+  ],
+  "claim": {
+    "capabilities": {
+      "backstopCut": true,
+      "color": true,
+      "support": true
+    },
+    "contract": "station3d-surface-claim-v1",
+    "coverageState": "building",
+    "featureId": "osm:way:1118363870",
+    "generation": null,
+    "ownerId": "osm:way:1118363870",
+    "rank": 40,
+    "replacementBackstopReady": false,
+    "replacementKey": null,
+    "role": "firm-surface",
+    "sceneY": null,
+    "sourceId": "world/roads.js",
+    "structureId": null,
+    "surfaceClass": "buffered-sidewalk",
+    "technical": {
+      "depthTest": null,
+      "depthWrite": null,
+      "polygonOffset": {
+        "factor": -1,
+        "units": 1
+      },
+      "renderOrder": -9,
+      "sceneOffsetM": 0.043
+    },
+    "verticalBand": "ground",
+    "verticalRelation": "same-level"
+  }
+}

@@ -1,0 +1,540 @@
+{
+  "provenance": "Savska native published underpass osm-1027705611; candidate eb65a388 + appearance v3; sealed movement-sources-v14; 2026-09-15. Axis terrain samples reproduce the old compiled opening exactly.",
+  "anchorLat": 45.80305,
+  "anchorLon": 15.96705,
+  "anchorElevationM": 119.5,
+  "definition": {
+    "kind": "underpass",
+    "id": "osm-1027705611",
+    "memberOsmIds": [
+      "1027705611",
+      "699379004"
+    ],
+    "structureOsmIds": [
+      "1027705611"
+    ],
+    "profile": {
+      "type": "coupled-clearance-peak",
+      "peakElevationAslM": 109.50729138053606,
+      "fallbackOffsetM": -6.5,
+      "peakRange": {
+        "start": {
+          "coordinate": [
+            15.9672025,
+            45.8024175
+          ]
+        },
+        "end": {
+          "coordinate": [
+            15.968655,
+            45.8024934
+          ]
+        }
+      },
+      "approachRunoutM": {
+        "start": 0,
+        "end": 0
+      }
+    },
+    "structureRange": {
+      "start": {
+        "coordinate": [
+          15.9672025,
+          45.8024175
+        ]
+      },
+      "end": {
+        "coordinate": [
+          15.968655,
+          45.8024934
+        ]
+      }
+    },
+    "clearHeightM": null,
+    "roofDepthM": 0.7,
+    "maxGrade": 0.08,
+    "approachLengthM": 122.86548709965884,
+    "approachLengthsM": {
+      "start": 107.1605677798785,
+      "end": 122.86548709965884
+    },
+    "crossings": [
+      {
+        "coordinate": [
+          15.967648646368698,
+          45.80243932339719
+        ],
+        "angleDeg": 89.55988955442093,
+        "stationM": 34.67026280805581,
+        "candidateStationM": 11.763793324457783,
+        "clearStartM": 31.920211178686742,
+        "clearEndM": 37.42031443742488,
+        "upperOsmIds": [
+          "992989900"
+        ],
+        "lowerOsmIds": [
+          "1027705611"
+        ],
+        "upperComposition": {
+          "mode": "road",
+          "osmId": "992989900",
+          "ref": null,
+          "name": null,
+          "highway": "footway",
+          "railway": null,
+          "laneCount": null,
+          "carriagewayWidthM": 2.5,
+          "formationWidthM": 3.5,
+          "electrified": null
+        },
+        "lowerComposition": {
+          "mode": "road",
+          "osmId": "1027705611",
+          "ref": null,
+          "name": null,
+          "highway": "service",
+          "railway": null,
+          "laneCount": null,
+          "carriagewayWidthM": 6.5,
+          "formationWidthM": 9.5,
+          "electrified": null
+        },
+        "requiredClearanceM": 4.5,
+        "requiredSurfaceSeparationM": 5.3,
+        "evidence": {
+          "ownerLayer": -1,
+          "counterpartLayer": 0,
+          "source": "osm-centerline-intersection"
+        },
+        "elevationEvidence": {
+          "upper": {
+            "elevationAslM": 116.00729138053606,
+            "source": "dgu-dtm"
+          },
+          "lower": {
+            "elevationAslM": 116.00729138053606,
+            "source": "dgu-dtm"
+          }
+        },
+        "elevationSolution": {
+          "status": "solved",
+          "feasible": true,
+          "allocation": "lower-only",
+          "upperBaseElevationAslM": 116.00729138053606,
+          "lowerBaseElevationAslM": 116.00729138053606,
+          "upperElevationAslM": 116.00729138053606,
+          "lowerElevationAslM": 110.70729138053606,
+          "upperLiftM": 0,
+          "lowerCutM": 5.3,
+          "initialSeparationM": 0,
+          "achievedSeparationM": 5.299999999999997,
+          "requiredSurfaceSeparationM": 5.3,
+          "remainingDeficitM": 2.6645352591003757e-15,
+          "solver": "minimum-weighted-movement-v1",
+          "upperBaseSource": "dgu-dtm",
+          "lowerBaseSource": "dgu-dtm",
+          "upperOwnership": "fixed-counterpart",
+          "lowerOwnership": "authored-owner"
+        }
+      },
+      {
+        "coordinate": [
+          15.968042505640573,
+          45.80246076189227
+        ],
+        "angleDeg": 88.15834090345469,
+        "stationM": 65.29431126369147,
+        "candidateStationM": 12.773121367242727,
+        "clearStartM": 62.543406847621476,
+        "clearEndM": 68.04521567976145,
+        "upperOsmIds": [
+          "992989901"
+        ],
+        "lowerOsmIds": [
+          "1027705611"
+        ],
+        "upperComposition": {
+          "mode": "road",
+          "osmId": "992989901",
+          "ref": null,
+          "name": null,
+          "highway": "footway",
+          "railway": null,
+          "laneCount": null,
+          "carriagewayWidthM": 2.5,
+          "formationWidthM": 3.5,
+          "electrified": null
+        },
+        "lowerComposition": {
+          "mode": "road",
+          "osmId": "1027705611",
+          "ref": null,
+          "name": null,
+          "highway": "service",
+          "railway": null,
+          "laneCount": null,
+          "carriagewayWidthM": 6.5,
+          "formationWidthM": 9.5,
+          "electrified": null
+        },
+        "requiredClearanceM": 4.5,
+        "requiredSurfaceSeparationM": 5.3,
+        "evidence": {
+          "ownerLayer": -1,
+          "counterpartLayer": 0,
+          "source": "osm-centerline-intersection"
+        },
+        "elevationEvidence": {
+          "upper": {
+            "elevationAslM": 116.07385113408526,
+            "source": "dgu-dtm"
+          },
+          "lower": {
+            "elevationAslM": 116.07385113408526,
+            "source": "dgu-dtm"
+          }
+        },
+        "elevationSolution": {
+          "status": "solved",
+          "feasible": true,
+          "allocation": "lower-only",
+          "upperBaseElevationAslM": 116.07385113408526,
+          "lowerBaseElevationAslM": 116.07385113408526,
+          "upperElevationAslM": 116.07385113408526,
+          "lowerElevationAslM": 110.77385113408526,
+          "upperLiftM": 0,
+          "lowerCutM": 5.3,
+          "initialSeparationM": 0,
+          "achievedSeparationM": 5.299999999999997,
+          "requiredSurfaceSeparationM": 5.3,
+          "remainingDeficitM": 2.6645352591003757e-15,
+          "solver": "minimum-weighted-movement-v1",
+          "upperBaseSource": "dgu-dtm",
+          "lowerBaseSource": "dgu-dtm",
+          "upperOwnership": "fixed-counterpart",
+          "lowerOwnership": "authored-owner"
+        }
+      },
+      {
+        "coordinate": [
+          15.968437309418034,
+          45.802481799879025
+        ],
+        "angleDeg": 87.87947547236085,
+        "stationM": 95.98789923670113,
+        "candidateStationM": 7.088570945059009,
+        "clearStartM": 93.23670002095992,
+        "clearEndM": 98.73909845244233,
+        "upperOsmIds": [
+          "992989902"
+        ],
+        "lowerOsmIds": [
+          "1027705611"
+        ],
+        "upperComposition": {
+          "mode": "road",
+          "osmId": "992989902",
+          "ref": null,
+          "name": null,
+          "highway": "footway",
+          "railway": null,
+          "laneCount": null,
+          "carriagewayWidthM": 2.5,
+          "formationWidthM": 3.5,
+          "electrified": null
+        },
+        "lowerComposition": {
+          "mode": "road",
+          "osmId": "1027705611",
+          "ref": null,
+          "name": null,
+          "highway": "service",
+          "railway": null,
+          "laneCount": null,
+          "carriagewayWidthM": 6.5,
+          "formationWidthM": 9.5,
+          "electrified": null
+        },
+        "requiredClearanceM": 4.5,
+        "requiredSurfaceSeparationM": 5.3,
+        "evidence": {
+          "ownerLayer": -1,
+          "counterpartLayer": 0,
+          "source": "osm-centerline-intersection"
+        },
+        "elevationEvidence": {
+          "upper": {
+            "elevationAslM": 116.07354560763011,
+            "source": "dgu-dtm"
+          },
+          "lower": {
+            "elevationAslM": 116.07354560763011,
+            "source": "dgu-dtm"
+          }
+        },
+        "elevationSolution": {
+          "status": "solved",
+          "feasible": true,
+          "allocation": "lower-only",
+          "upperBaseElevationAslM": 116.07354560763011,
+          "lowerBaseElevationAslM": 116.07354560763011,
+          "upperElevationAslM": 116.07354560763011,
+          "lowerElevationAslM": 110.77354560763011,
+          "upperLiftM": 0,
+          "lowerCutM": 5.3,
+          "initialSeparationM": 0,
+          "achievedSeparationM": 5.299999999999997,
+          "requiredSurfaceSeparationM": 5.3,
+          "remainingDeficitM": 2.6645352591003757e-15,
+          "solver": "minimum-weighted-movement-v1",
+          "upperBaseSource": "dgu-dtm",
+          "lowerBaseSource": "dgu-dtm",
+          "upperOwnership": "fixed-counterpart",
+          "lowerOwnership": "authored-owner"
+        }
+      }
+    ],
+    "crossingElevationPairSolved": true,
+    "widthM": null,
+    "laneCountOverride": null,
+    "junctions": [],
+    "replaceRoadSurface": true,
+    "replaceRoadSurfaceOsmIds": [
+      "1027705611",
+      "699379004"
+    ],
+    "replaceRoadSurfaceRange": "profile",
+    "replacementCarriagewayOnly": true,
+    "crossSection": {
+      "carriagewayHalfWidthM": null,
+      "formationHalfWidthM": null,
+      "terrainClearHalfWidthM": null,
+      "terrainCutoutHalfWidthM": null
+    },
+    "source": "osm",
+    "axis": [
+      [
+        15.9670188,
+        45.8023796
+      ],
+      [
+        15.9671279,
+        45.8024063
+      ],
+      [
+        15.9672025,
+        45.8024175
+      ],
+      [
+        15.9674587,
+        45.8024289
+      ],
+      [
+        15.9679325,
+        45.8024549
+      ],
+      [
+        15.968655,
+        45.8024934
+      ]
+    ],
+    "osm": null,
+    "renderStructure": true
+  },
+  "samples": [
+    {
+      "x": -2.4185297395970364,
+      "z": 74.54507882218675,
+      "s": 0,
+      "y": -3.8395367565100416,
+      "terrainY": -3.8395367565100416,
+      "structure": false
+    },
+    {
+      "x": 5.117423736024094,
+      "z": 71.89954782777517,
+      "s": 7.986828471246804,
+      "y": -7.255215033000862,
+      "terrainY": -4.053752259295896,
+      "structure": false
+    },
+    {
+      "x": 11.82133927193159,
+      "z": 70.3307911028849,
+      "s": 14.878439881134616,
+      "y": -9.99270861946394,
+      "terrainY": -4.277478337870416,
+      "structure": true
+    },
+    {
+      "x": 12.914332135573236,
+      "z": 70.26102713281252,
+      "s": 15.973656942493609,
+      "y": -9.99270861946394,
+      "terrainY": -4.2225052912822845,
+      "structure": true
+    },
+    {
+      "x": 20.884940730156927,
+      "z": 69.7522760531407,
+      "s": 23.960485413740415,
+      "y": -9.99270861946394,
+      "terrainY": -3.9062976838351093,
+      "structure": true
+    },
+    {
+      "x": 28.855549324740608,
+      "z": 69.24352497346891,
+      "s": 31.947313884987217,
+      "y": -9.99270861946394,
+      "terrainY": -3.156960491970383,
+      "structure": true
+    },
+    {
+      "x": 36.820729238164326,
+      "z": 68.65860173298061,
+      "s": 39.93414235623402,
+      "y": -9.99270861946394,
+      "terrainY": -3.440868427365199,
+      "structure": true
+    },
+    {
+      "x": 44.78292769548955,
+      "z": 68.03184439932872,
+      "s": 47.92097082748083,
+      "y": -9.99270861946394,
+      "terrainY": -3.496992465347251,
+      "structure": true
+    },
+    {
+      "x": 52.74512615281477,
+      "z": 67.40508706567681,
+      "s": 55.90779929872763,
+      "y": -9.99270861946394,
+      "terrainY": -3.513820891260502,
+      "structure": true
+    },
+    {
+      "x": 60.70732461013999,
+      "z": 66.7783297320249,
+      "s": 63.894627769974434,
+      "y": -9.99270861946394,
+      "terrainY": -3.4775537680859436,
+      "structure": true
+    },
+    {
+      "x": 68.66956888919898,
+      "z": 66.1521630569723,
+      "s": 71.88145624122124,
+      "y": -9.99270861946394,
+      "terrainY": -3.469474983380006,
+      "structure": true
+    },
+    {
+      "x": 76.63316633724375,
+      "z": 65.54343921596292,
+      "s": 79.86828471246804,
+      "y": -9.99270861946394,
+      "terrainY": -3.419074988966322,
+      "structure": true
+    },
+    {
+      "x": 84.59676378528854,
+      "z": 64.93471537495354,
+      "s": 87.85511318371485,
+      "y": -9.99270861946394,
+      "terrainY": -3.4501172079699685,
+      "structure": true
+    },
+    {
+      "x": 92.56036123333334,
+      "z": 64.32599153394416,
+      "s": 95.84194165496166,
+      "y": -9.99270861946394,
+      "terrainY": -3.491850211660676,
+      "structure": true
+    },
+    {
+      "x": 100.5239586813781,
+      "z": 63.71726769293478,
+      "s": 103.82877012620845,
+      "y": -9.99270861946394,
+      "terrainY": -3.500000000000001,
+      "structure": true
+    },
+    {
+      "x": 108.4875561294229,
+      "z": 63.108543851925404,
+      "s": 111.81559859745526,
+      "y": -9.99270861946394,
+      "terrainY": -3.419564013239287,
+      "structure": true
+    },
+    {
+      "x": 116.45115357746766,
+      "z": 62.499820010916025,
+      "s": 119.80242706870206,
+      "y": -9.99270861946394,
+      "terrainY": -3.470561320552929,
+      "structure": true
+    },
+    {
+      "x": 124.41475102551246,
+      "z": 61.891096169906646,
+      "s": 127.78925553994887,
+      "y": -9.99270861946394,
+      "terrainY": -3.4398826408154677,
+      "structure": true
+    }
+  ],
+  "oldCutRing": [
+    {
+      "x": 1.556311093310347,
+      "z": 85.86765098371667
+    },
+    {
+      "x": 8.522819270771931,
+      "z": 83.40621030009612
+    },
+    {
+      "x": 14.289233748493588,
+      "z": 82.0742785258166
+    },
+    {
+      "x": 13.678717270178318,
+      "z": 82.23665719414936
+    },
+    {
+      "x": 21.649325864762005,
+      "z": 81.72790611447755
+    },
+    {
+      "x": 29.619934459345675,
+      "z": 81.21915503480575
+    },
+    {
+      "x": 28.09116419013554,
+      "z": 57.26789491213206
+    },
+    {
+      "x": 20.12055559555185,
+      "z": 57.77664599180386
+    },
+    {
+      "x": 12.149947000968154,
+      "z": 58.28539707147567
+    },
+    {
+      "x": 9.353444795369592,
+      "z": 58.58730367995321
+    },
+    {
+      "x": 1.7120282012762562,
+      "z": 60.39288535545421
+    },
+    {
+      "x": -6.39337057250442,
+      "z": 63.22250666065684
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+<!doctype html>
+<!-- Stage 3: real local HTTP/Worker/GPU delivery, followed by an operator-controlled rollback. -->
+<html lang="en">
+<meta charset="utf-8">
+<title>Station3D baked-world delivery gate</title>
+<script type="importmap">{"imports":{"three":"/__station3d_vendor__/three/build/three.module.js"}}</script>
+<link rel="stylesheet" href="./baked-world.css">
+<h1>Baked-world delivery and rollback gate</h1>
+<p>Isolated local API → stored gzip bytes → Worker integrity/decode → bounded GPU upload. Foundation-relative display; not a city performance test.</p>
+<div id="views"></div>
+<button id="rollback" disabled>Verify rollback to local release A</button>
+<pre id="result">Running…</pre>
+<script type="module" src="./baked-delivery.js"></script>
+</html>

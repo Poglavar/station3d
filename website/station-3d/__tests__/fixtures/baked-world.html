@@ -1,0 +1,13 @@
+<!doctype html>
+<!-- Stage 1 headed gate: synthetic tiles only, no API traffic or runtime authority change. -->
+<html lang="en">
+<meta charset="utf-8">
+<title>Station3D baked tile placement gate</title>
+<script type="importmap">{"imports":{"three":"/__station3d_vendor__/three/build/three.module.js"}}</script>
+<link rel="stylesheet" href="./baked-world.css">
+<h1>Baked tile placement gate</h1>
+<p>Direct compiler (left) and binary decoded in a Worker (right). Synthetic data; this is a correctness gate, not a city smoothness result.</p>
+<div id="views"></div>
+<pre id="result">Running…</pre>
+<script type="module" src="./baked-world.js"></script>
+</html>

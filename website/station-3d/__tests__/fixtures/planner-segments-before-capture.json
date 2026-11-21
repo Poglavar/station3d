@@ -1,0 +1,481 @@
+{
+  "schema": "planner-segment-capture-v1",
+  "sourcePath": "output/surface-audit/ground-implementation/ground-source-dependencies-v72/native/site/website/station-3d/world/planner-elevation.js",
+  "sourceSha256": "9b5ee498f9e83113290a7adcc97d4f79bac18d739abe8255f54f0e104af6aa14",
+  "anchor": {
+    "lat": 45.81,
+    "lon": 15.97
+  },
+  "samplerDefinitions": {
+    "ground": "groundSceneYAtLocal(x,z)=100+0.1*x+0.05*z (finite everywhere)",
+    "ground-missing": "same sampler, null when x>3",
+    "ground-missing-interior": "same sampler, null only when 300<x<400"
+  },
+  "elevEps": 0.5,
+  "cases": [
+    {
+      "name": "raw-viaduct-right-angle",
+      "features": [
+        {
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                15.97,
+                45.81,
+                10
+              ],
+              [
+                15.9701,
+                45.81,
+                10
+              ],
+              [
+                15.9701,
+                45.8099,
+                10
+              ]
+            ]
+          },
+          "properties": {
+            "trackId": "v1"
+          }
+        }
+      ],
+      "options": "none",
+      "segments": [
+        {
+          "featureIndex": 0,
+          "featureSegmentIndex": 0,
+          "routeStartM": 0,
+          "trackId": "v1",
+          "trackIds": [],
+          "properties": {
+            "trackId": "v1"
+          },
+          "structuresBuiltElsewhere": false,
+          "cx": 3.8753654040013896,
+          "cz": 0,
+          "angle": 1.5707963267948966,
+          "len": 7.750730808002779,
+          "e1": 10,
+          "e2": 10,
+          "x1": 0,
+          "z1": 0,
+          "x2": 7.750730808002779,
+          "z2": 0,
+          "startJoinX": 0,
+          "startJoinZ": 1,
+          "endJoinX": -1,
+          "endJoinZ": 1
+        },
+        {
+          "featureIndex": 0,
+          "featureSegmentIndex": 1,
+          "routeStartM": 7.750730808002779,
+          "trackId": "v1",
+          "trackIds": [],
+          "properties": {
+            "trackId": "v1"
+          },
+          "structuresBuiltElsewhere": false,
+          "cx": 7.750730808002779,
+          "cz": 5.559746332412502,
+          "angle": 0,
+          "len": 11.119492664825003,
+          "e1": 10,
+          "e2": 10,
+          "x1": 7.750730808002779,
+          "z1": 0,
+          "x2": 7.750730808002779,
+          "z2": 11.119492664825003,
+          "startJoinX": -1,
+          "startJoinZ": 1,
+          "endJoinX": -1,
+          "endJoinZ": 0
+        }
+      ],
+      "terrainEvidenceIncomplete": false
+    },
+    {
+      "name": "negative-ramp-level0",
+      "features": [
+        {
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                15.97,
+                45.81,
+                -10
+              ],
+              [
+                15.9702,
+                45.81,
+                0
+              ]
+            ]
+          },
+          "properties": {
+            "trackId": "r1"
+          }
+        }
+      ],
+      "options": "none",
+      "segments": [
+        {
+          "featureIndex": 0,
+          "featureSegmentIndex": 0,
+          "routeStartM": 0,
+          "trackId": "r1",
+          "trackIds": [],
+          "properties": {
+            "trackId": "r1"
+          },
+          "structuresBuiltElsewhere": false,
+          "cx": 7.750730808002779,
+          "cz": 0,
+          "angle": 1.5707963267948966,
+          "len": 15.501461616005558,
+          "e1": -10,
+          "e2": 0,
+          "x1": 0,
+          "z1": 0,
+          "x2": 15.501461616005558,
+          "z2": 0,
+          "startJoinX": 0,
+          "startJoinZ": 1,
+          "endJoinX": 0,
+          "endJoinZ": 1
+        }
+      ],
+      "terrainEvidenceIncomplete": false
+    },
+    {
+      "name": "absolute-converted",
+      "features": [
+        {
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                15.97,
+                45.81,
+                100
+              ],
+              [
+                15.9701,
+                45.81,
+                101
+              ]
+            ]
+          },
+          "properties": {
+            "elevationMode": "absolute"
+          }
+        }
+      ],
+      "options": "absolute",
+      "segments": [
+        {
+          "featureIndex": 0,
+          "featureSegmentIndex": 0,
+          "routeStartM": 0,
+          "trackId": null,
+          "trackIds": [],
+          "properties": {
+            "elevationMode": "absolute"
+          },
+          "structuresBuiltElsewhere": true,
+          "cx": 3.8753654040013896,
+          "cz": 0,
+          "angle": 1.5707963267948966,
+          "len": 7.750730808002779,
+          "e1": -20,
+          "e2": -19,
+          "x1": 0,
+          "z1": 0,
+          "x2": 7.750730808002779,
+          "z2": 0,
+          "startJoinX": 0,
+          "startJoinZ": 1,
+          "endJoinX": 0,
+          "endJoinZ": 1
+        }
+      ],
+      "terrainEvidenceIncomplete": false
+    },
+    {
+      "name": "ground-relative-sampler",
+      "features": [
+        {
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                15.97,
+                45.81,
+                2
+              ],
+              [
+                15.9701,
+                45.81,
+                3
+              ]
+            ]
+          },
+          "properties": {
+            "elevationMode": "ground-relative",
+            "trackIds": [
+              "g1"
+            ]
+          }
+        }
+      ],
+      "options": "ground",
+      "segments": [
+        {
+          "featureIndex": 0,
+          "featureSegmentIndex": 0,
+          "routeStartM": 0,
+          "trackId": null,
+          "trackIds": [
+            "g1"
+          ],
+          "properties": {
+            "elevationMode": "ground-relative",
+            "trackIds": [
+              "g1"
+            ]
+          },
+          "structuresBuiltElsewhere": true,
+          "cx": 3.8753654040013896,
+          "cz": 0,
+          "angle": 1.5707963267948966,
+          "len": 7.750730808002779,
+          "e1": 102,
+          "e2": 103.77507308080028,
+          "x1": 0,
+          "z1": 0,
+          "x2": 7.750730808002779,
+          "z2": 0,
+          "startJoinX": 0,
+          "startJoinZ": 1,
+          "endJoinX": 0,
+          "endJoinZ": 1
+        }
+      ],
+      "terrainEvidenceIncomplete": false
+    },
+    {
+      "name": "ground-relative-missing-evidence",
+      "features": [
+        {
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                15.97,
+                45.81,
+                2
+              ],
+              [
+                15.9705,
+                45.81,
+                2
+              ]
+            ]
+          },
+          "properties": {
+            "elevationMode": "ground-relative"
+          }
+        }
+      ],
+      "options": "ground-missing",
+      "segments": [],
+      "terrainEvidenceIncomplete": true
+    },
+    {
+      "name": "ground-relative-missing-interior",
+      "features": [
+        {
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                15.97,
+                45.81,
+                2
+              ],
+              [
+                15.98,
+                45.81,
+                2
+              ]
+            ]
+          },
+          "properties": {
+            "elevationMode": "ground-relative"
+          }
+        }
+      ],
+      "options": "ground-missing-interior",
+      "segments": [],
+      "terrainEvidenceIncomplete": true
+    },
+    {
+      "name": "skip-2d-and-asl",
+      "features": [
+        {
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                15.97,
+                45.81,
+                0
+              ],
+              [
+                15.9701,
+                45.81,
+                0
+              ]
+            ]
+          },
+          "properties": {}
+        },
+        {
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                15.97,
+                45.81,
+                10
+              ],
+              [
+                15.9701,
+                45.81,
+                10
+              ]
+            ]
+          },
+          "properties": {
+            "elevationDatum": "asl"
+          }
+        }
+      ],
+      "options": "none",
+      "segments": [],
+      "terrainEvidenceIncomplete": false
+    },
+    {
+      "name": "mixed-routes",
+      "features": [
+        {
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                15.97,
+                45.81,
+                5
+              ],
+              [
+                15.9701,
+                45.81,
+                6
+              ]
+            ]
+          },
+          "properties": {
+            "trackId": "a"
+          }
+        },
+        {
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                15.97,
+                45.81,
+                -5
+              ],
+              [
+                15.9701,
+                45.81,
+                -6
+              ]
+            ]
+          },
+          "properties": {
+            "trackIds": [
+              "b",
+              "shared"
+            ]
+          }
+        }
+      ],
+      "options": "none",
+      "segments": [
+        {
+          "featureIndex": 0,
+          "featureSegmentIndex": 0,
+          "routeStartM": 0,
+          "trackId": "a",
+          "trackIds": [],
+          "properties": {
+            "trackId": "a"
+          },
+          "structuresBuiltElsewhere": false,
+          "cx": 3.8753654040013896,
+          "cz": 0,
+          "angle": 1.5707963267948966,
+          "len": 7.750730808002779,
+          "e1": 5,
+          "e2": 6,
+          "x1": 0,
+          "z1": 0,
+          "x2": 7.750730808002779,
+          "z2": 0,
+          "startJoinX": 0,
+          "startJoinZ": 1,
+          "endJoinX": 0,
+          "endJoinZ": 1
+        },
+        {
+          "featureIndex": 1,
+          "featureSegmentIndex": 0,
+          "routeStartM": 0,
+          "trackId": null,
+          "trackIds": [
+            "b",
+            "shared"
+          ],
+          "properties": {
+            "trackIds": [
+              "b",
+              "shared"
+            ]
+          },
+          "structuresBuiltElsewhere": false,
+          "cx": 3.8753654040013896,
+          "cz": 0,
+          "angle": 1.5707963267948966,
+          "len": 7.750730808002779,
+          "e1": -5,
+          "e2": -6,
+          "x1": 0,
+          "z1": 0,
+          "x2": 7.750730808002779,
+          "z2": 0,
+          "startJoinX": 0,
+          "startJoinZ": 1,
+          "endJoinX": 0,
+          "endJoinZ": 1
+        }
+      ],
+      "terrainEvidenceIncomplete": false
+    }
+  ]
+}

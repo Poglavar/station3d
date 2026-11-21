@@ -1,0 +1,2005 @@
+{
+  "sourceHash": "1b5b5cebd71428946ff699ffe3dc4c35d7e6d3705924fd3d9cb2f25004bd52c7",
+  "source": "frozen v76 planner-elevation.js",
+  "fixtures": [
+    {
+      "name": "elevated",
+      "features": [
+        {
+          "type": "Feature",
+          "properties": {
+            "source": "user",
+            "trackId": "fixture"
+          },
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                16,
+                45,
+                10
+              ],
+              [
+                16.00152619937443,
+                45,
+                10
+              ]
+            ]
+          }
+        }
+      ],
+      "stops": [],
+      "expected": {
+        "segments": [
+          {
+            "featureIndex": 0,
+            "featureSegmentIndex": 0,
+            "routeStartM": 0,
+            "trackId": "fixture",
+            "trackIds": [],
+            "properties": {
+              "source": "user",
+              "trackId": "fixture"
+            },
+            "structuresBuiltElsewhere": false,
+            "cx": 60.00000000004972,
+            "cz": 0,
+            "angle": 1.5707963267948966,
+            "len": 120.00000000009943,
+            "e1": 10,
+            "e2": 10,
+            "x1": 0,
+            "z1": 0,
+            "x2": 120.00000000009943,
+            "z2": 0,
+            "startJoinX": 0,
+            "startJoinZ": 1,
+            "endJoinX": 0,
+            "endJoinZ": 1
+          }
+        ],
+        "cuts": [],
+        "index": [
+          [
+            "-1|-1",
+            [
+              0
+            ]
+          ],
+          [
+            "-1|0",
+            [
+              0
+            ]
+          ],
+          [
+            "0|-1",
+            [
+              0
+            ]
+          ],
+          [
+            "0|0",
+            [
+              0
+            ]
+          ],
+          [
+            "1|-1",
+            [
+              0
+            ]
+          ],
+          [
+            "1|0",
+            [
+              0
+            ]
+          ],
+          [
+            "2|-1",
+            [
+              0
+            ]
+          ],
+          [
+            "2|0",
+            [
+              0
+            ]
+          ],
+          [
+            "3|-1",
+            [
+              0
+            ]
+          ],
+          [
+            "3|0",
+            [
+              0
+            ]
+          ],
+          [
+            "4|-1",
+            [
+              0
+            ]
+          ],
+          [
+            "4|0",
+            [
+              0
+            ]
+          ],
+          [
+            "5|-1",
+            [
+              0
+            ]
+          ],
+          [
+            "5|0",
+            [
+              0
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "name": "ascending",
+      "features": [
+        {
+          "type": "Feature",
+          "properties": {
+            "source": "user",
+            "trackId": "fixture"
+          },
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                16,
+                45,
+                0
+              ],
+              [
+                16.00152619937443,
+                45,
+                10
+              ]
+            ]
+          }
+        }
+      ],
+      "stops": [],
+      "expected": {
+        "segments": [
+          {
+            "featureIndex": 0,
+            "featureSegmentIndex": 0,
+            "routeStartM": 0,
+            "trackId": "fixture",
+            "trackIds": [],
+            "properties": {
+              "source": "user",
+              "trackId": "fixture"
+            },
+            "structuresBuiltElsewhere": false,
+            "cx": 60.00000000004972,
+            "cz": 0,
+            "angle": 1.5707963267948966,
+            "len": 120.00000000009943,
+            "e1": 0,
+            "e2": 10,
+            "x1": 0,
+            "z1": 0,
+            "x2": 120.00000000009943,
+            "z2": 0,
+            "startJoinX": 0,
+            "startJoinZ": 1,
+            "endJoinX": 0,
+            "endJoinZ": 1
+          }
+        ],
+        "cuts": [],
+        "index": [
+          [
+            "-1|-1",
+            [
+              0
+            ]
+          ],
+          [
+            "-1|0",
+            [
+              0
+            ]
+          ],
+          [
+            "0|-1",
+            [
+              0
+            ]
+          ],
+          [
+            "0|0",
+            [
+              0
+            ]
+          ],
+          [
+            "1|-1",
+            [
+              0
+            ]
+          ],
+          [
+            "1|0",
+            [
+              0
+            ]
+          ],
+          [
+            "2|-1",
+            [
+              0
+            ]
+          ],
+          [
+            "2|0",
+            [
+              0
+            ]
+          ],
+          [
+            "3|-1",
+            [
+              0
+            ]
+          ],
+          [
+            "3|0",
+            [
+              0
+            ]
+          ],
+          [
+            "4|-1",
+            [
+              0
+            ]
+          ],
+          [
+            "4|0",
+            [
+              0
+            ]
+          ],
+          [
+            "5|-1",
+            [
+              0
+            ]
+          ],
+          [
+            "5|0",
+            [
+              0
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "name": "tunnel",
+      "features": [
+        {
+          "type": "Feature",
+          "properties": {
+            "source": "user",
+            "trackId": "fixture"
+          },
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                16,
+                45,
+                -10
+              ],
+              [
+                16.00152619937443,
+                45,
+                -10
+              ]
+            ]
+          }
+        }
+      ],
+      "stops": [],
+      "expected": {
+        "segments": [
+          {
+            "featureIndex": 0,
+            "featureSegmentIndex": 0,
+            "routeStartM": 0,
+            "trackId": "fixture",
+            "trackIds": [],
+            "properties": {
+              "source": "user",
+              "trackId": "fixture"
+            },
+            "structuresBuiltElsewhere": false,
+            "cx": 60.00000000004972,
+            "cz": 0,
+            "angle": 1.5707963267948966,
+            "len": 120.00000000009943,
+            "e1": -10,
+            "e2": -10,
+            "x1": 0,
+            "z1": 0,
+            "x2": 120.00000000009943,
+            "z2": 0,
+            "startJoinX": 0,
+            "startJoinZ": 1,
+            "endJoinX": 0,
+            "endJoinZ": 1
+          }
+        ],
+        "cuts": [],
+        "index": [
+          [
+            "-1|-1",
+            [
+              0
+            ]
+          ],
+          [
+            "-1|0",
+            [
+              0
+            ]
+          ],
+          [
+            "0|-1",
+            [
+              0
+            ]
+          ],
+          [
+            "0|0",
+            [
+              0
+            ]
+          ],
+          [
+            "1|-1",
+            [
+              0
+            ]
+          ],
+          [
+            "1|0",
+            [
+              0
+            ]
+          ],
+          [
+            "2|-1",
+            [
+              0
+            ]
+          ],
+          [
+            "2|0",
+            [
+              0
+            ]
+          ],
+          [
+            "3|-1",
+            [
+              0
+            ]
+          ],
+          [
+            "3|0",
+            [
+              0
+            ]
+          ],
+          [
+            "4|-1",
+            [
+              0
+            ]
+          ],
+          [
+            "4|0",
+            [
+              0
+            ]
+          ],
+          [
+            "5|-1",
+            [
+              0
+            ]
+          ],
+          [
+            "5|0",
+            [
+              0
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "name": "descending",
+      "features": [
+        {
+          "type": "Feature",
+          "properties": {
+            "source": "user",
+            "trackId": "fixture"
+          },
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                16,
+                45,
+                0
+              ],
+              [
+                16.00152619937443,
+                45,
+                -10
+              ]
+            ]
+          }
+        }
+      ],
+      "stops": [],
+      "expected": {
+        "segments": [
+          {
+            "featureIndex": 0,
+            "featureSegmentIndex": 0,
+            "routeStartM": 0,
+            "trackId": "fixture",
+            "trackIds": [],
+            "properties": {
+              "source": "user",
+              "trackId": "fixture"
+            },
+            "structuresBuiltElsewhere": false,
+            "cx": 60.00000000004972,
+            "cz": 0,
+            "angle": 1.5707963267948966,
+            "len": 120.00000000009943,
+            "e1": 0,
+            "e2": -10,
+            "x1": 0,
+            "z1": 0,
+            "x2": 120.00000000009943,
+            "z2": 0,
+            "startJoinX": 0,
+            "startJoinZ": 1,
+            "endJoinX": 0,
+            "endJoinZ": 1
+          }
+        ],
+        "cuts": [
+          {
+            "kind": "ramp",
+            "x1": 0,
+            "z1": 0,
+            "x2": 120.00000000009943,
+            "z2": 0,
+            "widthM": 7.3999999999999995,
+            "startJoinX": 0,
+            "startJoinZ": 1,
+            "endJoinX": 0,
+            "endJoinZ": 1,
+            "pathId": "ramp:0:0",
+            "pathOrder": 0
+          }
+        ],
+        "index": [
+          [
+            "-1|-1",
+            [
+              0
+            ]
+          ],
+          [
+            "-1|0",
+            [
+              0
+            ]
+          ],
+          [
+            "0|-1",
+            [
+              0
+            ]
+          ],
+          [
+            "0|0",
+            [
+              0
+            ]
+          ],
+          [
+            "1|-1",
+            [
+              0
+            ]
+          ],
+          [
+            "1|0",
+            [
+              0
+            ]
+          ],
+          [
+            "2|-1",
+            [
+              0
+            ]
+          ],
+          [
+            "2|0",
+            [
+              0
+            ]
+          ],
+          [
+            "3|-1",
+            [
+              0
+            ]
+          ],
+          [
+            "3|0",
+            [
+              0
+            ]
+          ],
+          [
+            "4|-1",
+            [
+              0
+            ]
+          ],
+          [
+            "4|0",
+            [
+              0
+            ]
+          ],
+          [
+            "5|-1",
+            [
+              0
+            ]
+          ],
+          [
+            "5|0",
+            [
+              0
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "name": "elevated-bend",
+      "features": [
+        {
+          "type": "Feature",
+          "properties": {
+            "source": "user",
+            "trackId": "fixture"
+          },
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                16,
+                45,
+                10
+              ],
+              [
+                16.000763099687216,
+                45,
+                10
+              ],
+              [
+                16.001208241171422,
+                44.99968523743793,
+                10
+              ]
+            ]
+          }
+        }
+      ],
+      "stops": [],
+      "expected": {
+        "segments": [
+          {
+            "featureIndex": 0,
+            "featureSegmentIndex": 0,
+            "routeStartM": 0,
+            "trackId": "fixture",
+            "trackIds": [],
+            "properties": {
+              "source": "user",
+              "trackId": "fixture"
+            },
+            "structuresBuiltElsewhere": false,
+            "cx": 30.00000000002486,
+            "cz": 0,
+            "angle": 1.5707963267948966,
+            "len": 60.00000000004972,
+            "e1": 10,
+            "e2": 10,
+            "x1": 0,
+            "z1": 0,
+            "x2": 60.00000000004972,
+            "z2": 0,
+            "startJoinX": 0,
+            "startJoinZ": 1,
+            "endJoinX": -0.41421356237302703,
+            "endJoinZ": 1
+          },
+          {
+            "featureIndex": 0,
+            "featureSegmentIndex": 1,
+            "routeStartM": 60.00000000004972,
+            "trackId": "fixture",
+            "trackIds": [],
+            "properties": {
+              "source": "user",
+              "trackId": "fixture"
+            },
+            "structuresBuiltElsewhere": false,
+            "cx": 77.49999999995946,
+            "cz": 17.499999999905675,
+            "angle": 0.7853981633975645,
+            "len": 49.49747468279729,
+            "e1": 10,
+            "e2": 10,
+            "x1": 60.00000000004972,
+            "z1": 0,
+            "x2": 94.9999999998692,
+            "z2": 34.99999999981135,
+            "startJoinX": -0.41421356237302703,
+            "startJoinZ": 1,
+            "endJoinX": -0.7071067811864653,
+            "endJoinZ": 0.7071067811866297
+          }
+        ],
+        "cuts": [],
+        "index": [
+          [
+            "-1|-1",
+            [
+              0
+            ]
+          ],
+          [
+            "-1|0",
+            [
+              0
+            ]
+          ],
+          [
+            "0|-1",
+            [
+              0
+            ]
+          ],
+          [
+            "0|0",
+            [
+              0
+            ]
+          ],
+          [
+            "1|-1",
+            [
+              0
+            ]
+          ],
+          [
+            "1|0",
+            [
+              0
+            ]
+          ],
+          [
+            "2|-1",
+            [
+              0,
+              1
+            ]
+          ],
+          [
+            "2|0",
+            [
+              0,
+              1
+            ]
+          ],
+          [
+            "2|1",
+            [
+              1
+            ]
+          ],
+          [
+            "3|-1",
+            [
+              1
+            ]
+          ],
+          [
+            "3|0",
+            [
+              1
+            ]
+          ],
+          [
+            "3|1",
+            [
+              1
+            ]
+          ],
+          [
+            "4|-1",
+            [
+              1
+            ]
+          ],
+          [
+            "4|0",
+            [
+              1
+            ]
+          ],
+          [
+            "4|1",
+            [
+              1
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "name": "tunnel-bend",
+      "features": [
+        {
+          "type": "Feature",
+          "properties": {
+            "source": "user",
+            "trackId": "fixture"
+          },
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                16,
+                45,
+                -10
+              ],
+              [
+                16.000763099687216,
+                45,
+                -10
+              ],
+              [
+                16.001208241171422,
+                44.99968523743793,
+                -10
+              ]
+            ]
+          }
+        }
+      ],
+      "stops": [],
+      "expected": {
+        "segments": [
+          {
+            "featureIndex": 0,
+            "featureSegmentIndex": 0,
+            "routeStartM": 0,
+            "trackId": "fixture",
+            "trackIds": [],
+            "properties": {
+              "source": "user",
+              "trackId": "fixture"
+            },
+            "structuresBuiltElsewhere": false,
+            "cx": 30.00000000002486,
+            "cz": 0,
+            "angle": 1.5707963267948966,
+            "len": 60.00000000004972,
+            "e1": -10,
+            "e2": -10,
+            "x1": 0,
+            "z1": 0,
+            "x2": 60.00000000004972,
+            "z2": 0,
+            "startJoinX": 0,
+            "startJoinZ": 1,
+            "endJoinX": -0.41421356237302703,
+            "endJoinZ": 1
+          },
+          {
+            "featureIndex": 0,
+            "featureSegmentIndex": 1,
+            "routeStartM": 60.00000000004972,
+            "trackId": "fixture",
+            "trackIds": [],
+            "properties": {
+              "source": "user",
+              "trackId": "fixture"
+            },
+            "structuresBuiltElsewhere": false,
+            "cx": 77.49999999995946,
+            "cz": 17.499999999905675,
+            "angle": 0.7853981633975645,
+            "len": 49.49747468279729,
+            "e1": -10,
+            "e2": -10,
+            "x1": 60.00000000004972,
+            "z1": 0,
+            "x2": 94.9999999998692,
+            "z2": 34.99999999981135,
+            "startJoinX": -0.41421356237302703,
+            "startJoinZ": 1,
+            "endJoinX": -0.7071067811864653,
+            "endJoinZ": 0.7071067811866297
+          }
+        ],
+        "cuts": [],
+        "index": [
+          [
+            "-1|-1",
+            [
+              0
+            ]
+          ],
+          [
+            "-1|0",
+            [
+              0
+            ]
+          ],
+          [
+            "0|-1",
+            [
+              0
+            ]
+          ],
+          [
+            "0|0",
+            [
+              0
+            ]
+          ],
+          [
+            "1|-1",
+            [
+              0
+            ]
+          ],
+          [
+            "1|0",
+            [
+              0
+            ]
+          ],
+          [
+            "2|-1",
+            [
+              0,
+              1
+            ]
+          ],
+          [
+            "2|0",
+            [
+              0,
+              1
+            ]
+          ],
+          [
+            "2|1",
+            [
+              1
+            ]
+          ],
+          [
+            "3|-1",
+            [
+              1
+            ]
+          ],
+          [
+            "3|0",
+            [
+              1
+            ]
+          ],
+          [
+            "3|1",
+            [
+              1
+            ]
+          ],
+          [
+            "4|-1",
+            [
+              1
+            ]
+          ],
+          [
+            "4|0",
+            [
+              1
+            ]
+          ],
+          [
+            "4|1",
+            [
+              1
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "name": "absolute",
+      "features": [
+        {
+          "type": "Feature",
+          "properties": {
+            "source": "user",
+            "trackId": "fixture",
+            "elevationMode": "absolute"
+          },
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                16,
+                45,
+                110
+              ],
+              [
+                16.00152619937443,
+                45,
+                110
+              ]
+            ]
+          }
+        }
+      ],
+      "stops": [],
+      "expected": {
+        "segments": [
+          {
+            "featureIndex": 0,
+            "featureSegmentIndex": 0,
+            "routeStartM": 0,
+            "trackId": "fixture",
+            "trackIds": [],
+            "properties": {
+              "source": "user",
+              "trackId": "fixture",
+              "elevationMode": "absolute"
+            },
+            "structuresBuiltElsewhere": true,
+            "cx": 60.00000000004972,
+            "cz": 0,
+            "angle": 1.5707963267948966,
+            "len": 120.00000000009943,
+            "e1": 10,
+            "e2": 10,
+            "x1": 0,
+            "z1": 0,
+            "x2": 120.00000000009943,
+            "z2": 0,
+            "startJoinX": 0,
+            "startJoinZ": 1,
+            "endJoinX": 0,
+            "endJoinZ": 1
+          }
+        ],
+        "cuts": [],
+        "index": [
+          [
+            "-1|-1",
+            [
+              0
+            ]
+          ],
+          [
+            "-1|0",
+            [
+              0
+            ]
+          ],
+          [
+            "0|-1",
+            [
+              0
+            ]
+          ],
+          [
+            "0|0",
+            [
+              0
+            ]
+          ],
+          [
+            "1|-1",
+            [
+              0
+            ]
+          ],
+          [
+            "1|0",
+            [
+              0
+            ]
+          ],
+          [
+            "2|-1",
+            [
+              0
+            ]
+          ],
+          [
+            "2|0",
+            [
+              0
+            ]
+          ],
+          [
+            "3|-1",
+            [
+              0
+            ]
+          ],
+          [
+            "3|0",
+            [
+              0
+            ]
+          ],
+          [
+            "4|-1",
+            [
+              0
+            ]
+          ],
+          [
+            "4|0",
+            [
+              0
+            ]
+          ],
+          [
+            "5|-1",
+            [
+              0
+            ]
+          ],
+          [
+            "5|0",
+            [
+              0
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "name": "relative",
+      "features": [
+        {
+          "type": "Feature",
+          "properties": {
+            "source": "user",
+            "trackId": "fixture",
+            "elevationMode": "ground-relative"
+          },
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                16,
+                45,
+                10
+              ],
+              [
+                16.00152619937443,
+                45,
+                10
+              ]
+            ]
+          }
+        }
+      ],
+      "stops": [],
+      "expected": {
+        "segments": [
+          {
+            "featureIndex": 0,
+            "featureSegmentIndex": 0,
+            "routeStartM": 0,
+            "trackId": "fixture",
+            "trackIds": [],
+            "properties": {
+              "source": "user",
+              "trackId": "fixture",
+              "elevationMode": "ground-relative"
+            },
+            "structuresBuiltElsewhere": true,
+            "cx": 60.00000000004972,
+            "cz": 0,
+            "angle": 1.5707963267948966,
+            "len": 120.00000000009943,
+            "e1": 13,
+            "e2": 13,
+            "x1": 0,
+            "z1": 0,
+            "x2": 120.00000000009943,
+            "z2": 0,
+            "startJoinX": 0,
+            "startJoinZ": 1,
+            "endJoinX": 0,
+            "endJoinZ": 1
+          }
+        ],
+        "cuts": [],
+        "index": [
+          [
+            "-1|-1",
+            [
+              0
+            ]
+          ],
+          [
+            "-1|0",
+            [
+              0
+            ]
+          ],
+          [
+            "0|-1",
+            [
+              0
+            ]
+          ],
+          [
+            "0|0",
+            [
+              0
+            ]
+          ],
+          [
+            "1|-1",
+            [
+              0
+            ]
+          ],
+          [
+            "1|0",
+            [
+              0
+            ]
+          ],
+          [
+            "2|-1",
+            [
+              0
+            ]
+          ],
+          [
+            "2|0",
+            [
+              0
+            ]
+          ],
+          [
+            "3|-1",
+            [
+              0
+            ]
+          ],
+          [
+            "3|0",
+            [
+              0
+            ]
+          ],
+          [
+            "4|-1",
+            [
+              0
+            ]
+          ],
+          [
+            "4|0",
+            [
+              0
+            ]
+          ],
+          [
+            "5|-1",
+            [
+              0
+            ]
+          ],
+          [
+            "5|0",
+            [
+              0
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "name": "surface-bend-and-ground-intervals",
+      "stops": [],
+      "features": [
+        {
+          "type": "Feature",
+          "properties": {
+            "source": "user",
+            "trackId": "fixture"
+          },
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                16,
+                45,
+                0
+              ],
+              [
+                16.000763099687216,
+                45,
+                0
+              ],
+              [
+                16.001208241171422,
+                44.99968523743793,
+                0
+              ],
+              [
+                16.001653382655633,
+                44.99968523743793,
+                5
+              ],
+              [
+                16.002162115780443,
+                44.99968523743793,
+                0
+              ],
+              [
+                16.00292521546766,
+                44.99968523743793,
+                0
+              ]
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "segments": [
+          {
+            "featureIndex": 0,
+            "featureSegmentIndex": 0,
+            "routeStartM": 0,
+            "trackId": "fixture",
+            "trackIds": [],
+            "properties": {
+              "source": "user",
+              "trackId": "fixture"
+            },
+            "structuresBuiltElsewhere": false,
+            "cx": 30.00000000002486,
+            "cz": 0,
+            "angle": 1.5707963267948966,
+            "len": 60.00000000004972,
+            "e1": 0,
+            "e2": 0,
+            "x1": 0,
+            "z1": 0,
+            "x2": 60.00000000004972,
+            "z2": 0,
+            "startJoinX": 0,
+            "startJoinZ": 1,
+            "endJoinX": -0.41421356237302703,
+            "endJoinZ": 1
+          },
+          {
+            "featureIndex": 0,
+            "featureSegmentIndex": 1,
+            "routeStartM": 60.00000000004972,
+            "trackId": "fixture",
+            "trackIds": [],
+            "properties": {
+              "source": "user",
+              "trackId": "fixture"
+            },
+            "structuresBuiltElsewhere": false,
+            "cx": 77.49999999995946,
+            "cz": 17.499999999905675,
+            "angle": 0.7853981633975645,
+            "len": 49.49747468279729,
+            "e1": 0,
+            "e2": 0,
+            "x1": 60.00000000004972,
+            "z1": 0,
+            "x2": 94.9999999998692,
+            "z2": 34.99999999981135,
+            "startJoinX": -0.41421356237302703,
+            "startJoinZ": 1,
+            "endJoinX": -0.41421356237302703,
+            "endJoinZ": 1
+          },
+          {
+            "featureIndex": 0,
+            "featureSegmentIndex": 2,
+            "routeStartM": 109.49747468284701,
+            "trackId": "fixture",
+            "trackIds": [],
+            "properties": {
+              "source": "user",
+              "trackId": "fixture"
+            },
+            "structuresBuiltElsewhere": false,
+            "cx": 112.49999999991863,
+            "cz": 34.99999999981135,
+            "angle": 1.5707963267948966,
+            "len": 35.00000000009885,
+            "e1": 0,
+            "e2": 5,
+            "x1": 94.9999999998692,
+            "z1": 34.99999999981135,
+            "x2": 129.99999999996805,
+            "z2": 34.99999999981135,
+            "startJoinX": -0.41421356237302703,
+            "startJoinZ": 1,
+            "endJoinX": 0,
+            "endJoinZ": 1
+          },
+          {
+            "featureIndex": 0,
+            "featureSegmentIndex": 3,
+            "routeStartM": 144.49747468294586,
+            "trackId": "fixture",
+            "trackIds": [],
+            "properties": {
+              "source": "user",
+              "trackId": "fixture"
+            },
+            "structuresBuiltElsewhere": false,
+            "cx": 149.99999999998462,
+            "cz": 34.99999999981135,
+            "angle": 1.5707963267948966,
+            "len": 40.00000000003314,
+            "e1": 5,
+            "e2": 0,
+            "x1": 129.99999999996805,
+            "z1": 34.99999999981135,
+            "x2": 170.0000000000012,
+            "z2": 34.99999999981135,
+            "startJoinX": 0,
+            "startJoinZ": 1,
+            "endJoinX": 0,
+            "endJoinZ": 1
+          },
+          {
+            "featureIndex": 0,
+            "featureSegmentIndex": 4,
+            "routeStartM": 184.497474682979,
+            "trackId": "fixture",
+            "trackIds": [],
+            "properties": {
+              "source": "user",
+              "trackId": "fixture"
+            },
+            "structuresBuiltElsewhere": false,
+            "cx": 200.00000000002603,
+            "cz": 34.99999999981135,
+            "angle": 1.5707963267948966,
+            "len": 60.00000000004971,
+            "e1": 0,
+            "e2": 0,
+            "x1": 170.0000000000012,
+            "z1": 34.99999999981135,
+            "x2": 230.0000000000509,
+            "z2": 34.99999999981135,
+            "startJoinX": 0,
+            "startJoinZ": 1,
+            "endJoinX": 0,
+            "endJoinZ": 1
+          }
+        ],
+        "cuts": [
+          {
+            "kind": "surface-track",
+            "x1": 0,
+            "z1": 0,
+            "x2": 60.00000000004972,
+            "z2": 0,
+            "widthM": 1.1,
+            "pathId": "surface:0:0",
+            "pathOrder": 0
+          },
+          {
+            "kind": "surface-track",
+            "x1": 60.00000000004972,
+            "z1": 0,
+            "x2": 94.9999999998692,
+            "z2": 34.99999999981135,
+            "widthM": 1.1,
+            "pathId": "surface:0:0",
+            "pathOrder": 1
+          },
+          {
+            "kind": "surface-track",
+            "x1": 170.0000000000012,
+            "z1": 34.99999999981135,
+            "x2": 230.0000000000509,
+            "z2": 34.99999999981135,
+            "widthM": 1.1,
+            "pathId": "surface:0:1",
+            "pathOrder": 0
+          }
+        ],
+        "index": [
+          [
+            "-1|-1",
+            [
+              0
+            ]
+          ],
+          [
+            "-1|0",
+            [
+              0
+            ]
+          ],
+          [
+            "0|-1",
+            [
+              0
+            ]
+          ],
+          [
+            "0|0",
+            [
+              0
+            ]
+          ],
+          [
+            "1|-1",
+            [
+              0
+            ]
+          ],
+          [
+            "1|0",
+            [
+              0
+            ]
+          ],
+          [
+            "2|-1",
+            [
+              0,
+              1
+            ]
+          ],
+          [
+            "2|0",
+            [
+              0,
+              1
+            ]
+          ],
+          [
+            "2|1",
+            [
+              1
+            ]
+          ],
+          [
+            "3|-1",
+            [
+              1
+            ]
+          ],
+          [
+            "3|0",
+            [
+              1
+            ]
+          ],
+          [
+            "3|1",
+            [
+              1,
+              2
+            ]
+          ],
+          [
+            "4|-1",
+            [
+              1
+            ]
+          ],
+          [
+            "4|0",
+            [
+              1
+            ]
+          ],
+          [
+            "4|1",
+            [
+              1,
+              2
+            ]
+          ],
+          [
+            "5|1",
+            [
+              2,
+              3
+            ]
+          ],
+          [
+            "6|1",
+            [
+              3,
+              4
+            ]
+          ],
+          [
+            "7|1",
+            [
+              3,
+              4
+            ]
+          ],
+          [
+            "8|1",
+            [
+              4
+            ]
+          ],
+          [
+            "9|1",
+            [
+              4
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "name": "descending-bend",
+      "stops": [],
+      "features": [
+        {
+          "type": "Feature",
+          "properties": {
+            "source": "user",
+            "trackId": "fixture"
+          },
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                16,
+                45,
+                0
+              ],
+              [
+                16.000763099687216,
+                45,
+                -5
+              ],
+              [
+                16.001208241171422,
+                44.99968523743793,
+                -10
+              ]
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "segments": [
+          {
+            "featureIndex": 0,
+            "featureSegmentIndex": 0,
+            "routeStartM": 0,
+            "trackId": "fixture",
+            "trackIds": [],
+            "properties": {
+              "source": "user",
+              "trackId": "fixture"
+            },
+            "structuresBuiltElsewhere": false,
+            "cx": 30.00000000002486,
+            "cz": 0,
+            "angle": 1.5707963267948966,
+            "len": 60.00000000004972,
+            "e1": 0,
+            "e2": -5,
+            "x1": 0,
+            "z1": 0,
+            "x2": 60.00000000004972,
+            "z2": 0,
+            "startJoinX": 0,
+            "startJoinZ": 1,
+            "endJoinX": -0.41421356237302703,
+            "endJoinZ": 1
+          },
+          {
+            "featureIndex": 0,
+            "featureSegmentIndex": 1,
+            "routeStartM": 60.00000000004972,
+            "trackId": "fixture",
+            "trackIds": [],
+            "properties": {
+              "source": "user",
+              "trackId": "fixture"
+            },
+            "structuresBuiltElsewhere": false,
+            "cx": 77.49999999995946,
+            "cz": 17.499999999905675,
+            "angle": 0.7853981633975645,
+            "len": 49.49747468279729,
+            "e1": -5,
+            "e2": -10,
+            "x1": 60.00000000004972,
+            "z1": 0,
+            "x2": 94.9999999998692,
+            "z2": 34.99999999981135,
+            "startJoinX": -0.41421356237302703,
+            "startJoinZ": 1,
+            "endJoinX": -0.7071067811864653,
+            "endJoinZ": 0.7071067811866297
+          }
+        ],
+        "cuts": [
+          {
+            "kind": "ramp",
+            "x1": 0,
+            "z1": 0,
+            "x2": 60.00000000004972,
+            "z2": 0,
+            "widthM": 7.3999999999999995,
+            "startJoinX": 0,
+            "startJoinZ": 1,
+            "endJoinX": -0.41421356237302703,
+            "endJoinZ": 1,
+            "pathId": "ramp:0:0",
+            "pathOrder": 0
+          },
+          {
+            "kind": "ramp",
+            "x1": 60.00000000004972,
+            "z1": 0,
+            "x2": 94.9999999998692,
+            "z2": 34.99999999981135,
+            "widthM": 7.3999999999999995,
+            "startJoinX": -0.41421356237302703,
+            "startJoinZ": 1,
+            "endJoinX": -0.7071067811864653,
+            "endJoinZ": 0.7071067811866297,
+            "pathId": "ramp:0:0",
+            "pathOrder": 1
+          }
+        ],
+        "index": [
+          [
+            "-1|-1",
+            [
+              0
+            ]
+          ],
+          [
+            "-1|0",
+            [
+              0
+            ]
+          ],
+          [
+            "0|-1",
+            [
+              0
+            ]
+          ],
+          [
+            "0|0",
+            [
+              0
+            ]
+          ],
+          [
+            "1|-1",
+            [
+              0
+            ]
+          ],
+          [
+            "1|0",
+            [
+              0
+            ]
+          ],
+          [
+            "2|-1",
+            [
+              0,
+              1
+            ]
+          ],
+          [
+            "2|0",
+            [
+              0,
+              1
+            ]
+          ],
+          [
+            "2|1",
+            [
+              1
+            ]
+          ],
+          [
+            "3|-1",
+            [
+              1
+            ]
+          ],
+          [
+            "3|0",
+            [
+              1
+            ]
+          ],
+          [
+            "3|1",
+            [
+              1
+            ]
+          ],
+          [
+            "4|-1",
+            [
+              1
+            ]
+          ],
+          [
+            "4|0",
+            [
+              1
+            ]
+          ],
+          [
+            "4|1",
+            [
+              1
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "name": "underground-station",
+      "features": [
+        {
+          "type": "Feature",
+          "properties": {
+            "source": "user",
+            "trackId": "fixture"
+          },
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                16,
+                45,
+                -10
+              ],
+              [
+                16.000763099687216,
+                45,
+                -10
+              ],
+              [
+                16.00152619937443,
+                45,
+                -10
+              ]
+            ]
+          }
+        }
+      ],
+      "stops": [
+        {
+          "lng": 16.000763099687216,
+          "lat": 45,
+          "level": -1
+        }
+      ],
+      "expected": {
+        "segments": [
+          {
+            "featureIndex": 0,
+            "featureSegmentIndex": 0,
+            "routeStartM": 0,
+            "trackId": "fixture",
+            "trackIds": [],
+            "properties": {
+              "source": "user",
+              "trackId": "fixture"
+            },
+            "structuresBuiltElsewhere": false,
+            "cx": 30.00000000002486,
+            "cz": 0,
+            "angle": 1.5707963267948966,
+            "len": 60.00000000004972,
+            "e1": -10,
+            "e2": -10,
+            "x1": 0,
+            "z1": 0,
+            "x2": 60.00000000004972,
+            "z2": 0,
+            "startJoinX": 0,
+            "startJoinZ": 1,
+            "endJoinX": 0,
+            "endJoinZ": 1,
+            "walkHalfWidthM": 10.5
+          },
+          {
+            "featureIndex": 0,
+            "featureSegmentIndex": 1,
+            "routeStartM": 60.00000000004972,
+            "trackId": "fixture",
+            "trackIds": [],
+            "properties": {
+              "source": "user",
+              "trackId": "fixture"
+            },
+            "structuresBuiltElsewhere": false,
+            "cx": 90.00000000007458,
+            "cz": 0,
+            "angle": 1.5707963267948966,
+            "len": 60.00000000004972,
+            "e1": -10,
+            "e2": -10,
+            "x1": 60.00000000004972,
+            "z1": 0,
+            "x2": 120.00000000009943,
+            "z2": 0,
+            "startJoinX": 0,
+            "startJoinZ": 1,
+            "endJoinX": 0,
+            "endJoinZ": 1,
+            "walkHalfWidthM": 10.5
+          }
+        ],
+        "cuts": [],
+        "index": [
+          [
+            "-1|-1",
+            [
+              0
+            ]
+          ],
+          [
+            "-1|0",
+            [
+              0
+            ]
+          ],
+          [
+            "0|-1",
+            [
+              0
+            ]
+          ],
+          [
+            "0|0",
+            [
+              0
+            ]
+          ],
+          [
+            "1|-1",
+            [
+              0
+            ]
+          ],
+          [
+            "1|0",
+            [
+              0
+            ]
+          ],
+          [
+            "2|-1",
+            [
+              0,
+              1
+            ]
+          ],
+          [
+            "2|0",
+            [
+              0,
+              1
+            ]
+          ],
+          [
+            "3|-1",
+            [
+              1
+            ]
+          ],
+          [
+            "3|0",
+            [
+              1
+            ]
+          ],
+          [
+            "4|-1",
+            [
+              1
+            ]
+          ],
+          [
+            "4|0",
+            [
+              1
+            ]
+          ],
+          [
+            "5|-1",
+            [
+              1
+            ]
+          ],
+          [
+            "5|0",
+            [
+              1
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+/* Local diagnostic fixture, deliberately separate from the product UI. */
+body { margin: 20px; color: #e4eaf2; background: #18202a; font: 14px system-ui; }
+h1 { font-size: 21px; }
+#views { display: flex; flex-wrap: wrap; gap: 12px; }
+canvas { max-width: 45vw; height: auto; border: 1px solid #536477; }
+pre { white-space: pre-wrap; }
