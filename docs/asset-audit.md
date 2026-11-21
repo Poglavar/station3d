@@ -107,6 +107,11 @@ the public history.
   Overture base/building data currently includes ODbL sources.
 - DGU/GDI and other regional sources belong in downstream provider or world-pack
   manifests until their exact redistribution terms are recorded.
+  Exception, decided by the maintainer on 2026-11-21: regression-test fixtures
+  under `website/station-3d/__tests__/fixtures/` may carry small terrain samples
+  resampled from DGU elevation data (e.g. `ground-gric-formation.json`, a 59×62
+  grid at 4 m; `savska-underpass-cut.json`, 18 axis samples) as captured
+  evidence of a bug. Runtime assets and world packs stay under the rule above.
 - Each provider or world pack must supply attribution metadata, and the host
   must display it visibly. The engine exposes that metadata but does not yet
   render a universal attribution control of its own.
