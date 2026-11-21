@@ -87,6 +87,7 @@
     "__tests__/session-host.test.mjs",
     "__tests__/shadow-caster-cache.test.mjs",
     "__tests__/shared-tile-session.test.mjs",
+    "__tests__/station3d-session-query.test.mjs",
     "__tests__/strip-geometry-cache.test.mjs",
     "__tests__/surface-hierarchy.test.mjs",
     "__tests__/terrain-compiler-pool.test.mjs",

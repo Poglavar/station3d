@@ -47,6 +47,8 @@
             // reference rail service answers, OSM otherwise).
             railProfileMode: railProfileModeFrom(params.get('railProfile')),
             proposalIds: (params.get('proposals') || '').split(',').map(value => value.trim()).filter(Boolean),
+            // ?future=1: show the world's planned buildings (worldProfile.plannedBuildings).
+            plannedBuildings: params.get('future') === '1',
             campaignId: (params.get('campaign') || '').trim() || null,
             checkpointId: (params.get('checkpoint') || '').trim() || null,
         };
