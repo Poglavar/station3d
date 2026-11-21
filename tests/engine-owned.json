@@ -6,6 +6,7 @@
     "__tests__/bounds-grid.test.mjs",
     "__tests__/building-pipeline.test.mjs",
     "__tests__/cached-shadow-map.test.mjs",
+    "__tests__/campaign-pack-building-collision.test.mjs",
     "__tests__/contact-ao-batch.test.mjs",
     "__tests__/content-build-interface.test.mjs",
     "__tests__/controller-and-decor-tail-policy.test.mjs",

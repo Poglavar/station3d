@@ -9,6 +9,7 @@ const DEFAULT_ENDPOINT_QUANTIZATION_M = 0.1;
 const DEFAULT_LINE_ANGLE_QUANTIZATION_RAD = Math.PI / 360;
 const DEFAULT_LINE_OFFSET_QUANTIZATION_M = 0.15;
 const DEFAULT_LINE_GAP_TOLERANCE_M = 0.25;
+const DEFAULT_VERTICAL_QUANTIZATION_M = 0.1;
 
 function finite(value) {
     const number = Number(value);
@@ -82,6 +83,7 @@ function mergeCoplanarWallFragments(walls, {
     angleQuantum = DEFAULT_LINE_ANGLE_QUANTIZATION_RAD,
     offsetQuantum = DEFAULT_LINE_OFFSET_QUANTIZATION_M,
     gapTolerance = DEFAULT_LINE_GAP_TOLERANCE_M,
+    verticalQuantum = DEFAULT_VERTICAL_QUANTIZATION_M,
 } = {}) {
     const groups = new Map();
     for (const wall of walls) {
@@ -99,7 +101,13 @@ function mergeCoplanarWallFragments(walls, {
         const midpointZ = (wall.az + wall.bz) * 0.5;
         const offset = midpointX * normalX + midpointZ * normalZ;
         const offsetBin = Math.round(offset / offsetQuantum);
-        const groupKey = `${angleBin}:${offsetBin}`;
+        // A doorway or arch is a vertical gap in an otherwise coplanar facade.
+        // Keep wall bands with different vertical extents separate: collapsing
+        // a ground-level pier and the lintel above it into one bounding rectangle
+        // creates an invisible full-height wall across the opening.
+        const baseBin = Math.round(wall.baseY / verticalQuantum);
+        const topBin = Math.round(wall.topY / verticalQuantum);
+        const groupKey = `${angleBin}:${offsetBin}:${baseBin}:${topBin}`;
         let group = groups.get(groupKey);
         if (!group) {
             group = {
@@ -223,7 +231,9 @@ export function createCampaignPackBuildingCollisionIndex(packets, {
                 if (topY - baseY < minimumSpan) continue;
                 const edge = projectedWallEdge(points);
                 if (!edge || edge.lengthSq < 0.15 ** 2) continue;
-                const key = wallKey(edge.a, edge.b, quantum);
+                const baseBin = Math.round(baseY / DEFAULT_VERTICAL_QUANTIZATION_M);
+                const topBin = Math.round(topY / DEFAULT_VERTICAL_QUANTIZATION_M);
+                const key = `${wallKey(edge.a, edge.b, quantum)}:${baseBin}:${topBin}`;
                 const existing = byWallKey.get(key);
                 if (existing) {
                     existing.baseY = Math.min(existing.baseY, baseY);
