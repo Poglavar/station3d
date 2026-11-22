@@ -4,7 +4,7 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { MODEL_CATALOG } from './model-catalog.js';
 import { studyCatalog } from './model-studies.js';
 import { MODEL_CODES } from '../models/model-codes.js';
-import { generateModelCode, namedModel, validateModelCodes } from './model-names.js';
+import { generateModelCode, namedModel, siteModelEntries, validateModelCodes } from './model-names.js';
 import { MODEL_FORMATS, cameraNearPlane, controlDefaults, copyModelPreview, disposePreview, fitCamera, inspectModel, modelBounds, normalizePreview, readViewerLink } from './model-viewer-core.js';
 import { createModelImporter } from './model-import.js';
 
@@ -519,6 +519,16 @@ try {
     validateModelCodes([...MODEL_CATALOG, ...studies]);
     catalog.unshift(...studies.map(entry => namedModel(entry)));
 } catch (error) { catalogError = `The study catalog could not load: ${error.message}.`; }
+// A site's own models: the page may name a module with <meta name="station3d-model-catalog" content="…">.
+const siteCatalogUrl = document.querySelector('meta[name="station3d-model-catalog"]')?.content;
+if (siteCatalogUrl) {
+    try {
+        const site = await import(new URL(siteCatalogUrl, document.baseURI).href);
+        const entries = siteModelEntries(site, { engineEntries: catalog });
+        catalog.push(...entries);
+        for (const entry of entries) usedModelCodes.add(entry.code);
+    } catch (error) { catalogError = [catalogError, `The site's models could not load: ${error.message}.`].filter(Boolean).join(' '); }
+}
 if ([...$('#category').options].some(option => option.value === params.get('category'))) $('#category').value = params.get('category');
 $('#night').checked = params.get('night') === '1';
 $('#sea').checked = params.get('sea') !== '0';

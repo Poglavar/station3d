@@ -27,6 +27,16 @@ Links can use `?model=airplane-smuggler`, `?model=tmk-2400-new&compare=tmk-2400-
 
 The former rolling-stock and people pages redirect here, preserving their actor, crowd, camera, seed and animation options. `tools/face-study-shot.mjs` also uses this page and its deterministic seek API.
 
+## A site's own models
+
+A site that hosts the viewer can list its own models beside the engine's: its viewer page names a module with
+`<meta name="station3d-model-catalog" content="./path/to/catalog.js">`. The module exports `MODEL_CATALOG`, entries
+shaped like `model-catalog.js`'s (`id`, `label`, `category`, `source`, `description`, `create`), and `MODEL_CODES`,
+their permanent four-character codes. `siteModelEntries` (`model-names.js`) refuses an entry without a valid code, an
+id the engine already uses, or another model's code; the viewer then lists the entries and opens links to them like
+its own. The module may import engine modules by relative path when the site's dev server falls back to the
+package for files it does not hold.
+
 ## Open a file or module
 
 Use **Open a model**, drop files onto the canvas, or choose a folder. Select the model together with external textures, material libraries and buffers. Duplicate texture basenames must retain their folder paths.

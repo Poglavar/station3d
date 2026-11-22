@@ -329,6 +329,7 @@
     "__tests__/model-viewer-import.test.mjs",
     "__tests__/model-viewer-links.test.mjs",
     "__tests__/model-viewer-names.test.mjs",
+    "__tests__/model-viewer-site-catalog.test.mjs",
     "__tests__/model-viewer-studies.test.mjs",
     "__tests__/module-imports-resolve.test.mjs",
     "__tests__/mooring-shader-startup.test.mjs",
